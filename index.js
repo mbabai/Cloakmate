@@ -137,6 +137,15 @@ class Board {
         console.log(`:::Placing Piece(${pieceSymbols[player][pieceType]}) -> (${x},${y})`)
     }
 
+    getOnDeckPieceforPlayer(player) {
+        for (let pieceType = 0; pieceType < this.bitboards[player].length; pieceType++) {
+            if ((this.bitboards[player][pieceType] & 1n) !== 0n) { // Checking the on-deck bit
+                return pieceType; //found the piece
+            }
+        }
+        return null; // No piece on deck for the player
+    }
+
     moveStashPieceToOnDeck(player, pieceType) {
         // Check the stash count for the piece to be moved to on deck
         const stashCountForPiece = Number((this.bitboards[player][pieceType] & (0b11n << 1n)) >> 1n);
@@ -146,13 +155,7 @@ class Board {
         }
     
         // Check if there is already a piece on deck
-        let currentOnDeckPieceType = null;
-        for (let i = 0; i < this.bitboards[player].length; i++) {
-            if ((this.bitboards[player][i] & 1n) !== 0n) { // Checking the 'e' bit for on deck
-                currentOnDeckPieceType = i;
-                break;
-            }
-        }
+        let currentOnDeckPieceType = this.getOnDeckPieceforPlayer(player)
     
         // If there is a piece on deck, move it back to the stash
         if (currentOnDeckPieceType !== null) {
@@ -163,7 +166,7 @@ class Board {
             const currentStashCount = Number((this.bitboards[player][currentOnDeckPieceType] & (0b11n << 1n)) >> 1n) + 1;
             this.bitboards[player][currentOnDeckPieceType] &= ~(0b11n << 1n); // Clear the old stash count
             this.bitboards[player][currentOnDeckPieceType] |= BigInt(currentStashCount) << 1n; // Set the new stash count
-        }
+        } 
     
         // Decrement the stash count for the new piece, now that we've confirmed it's in the stash
         this.bitboards[player][pieceType] &= ~(0b11n << 1n); // Clear the old stash count
@@ -206,13 +209,7 @@ class Board {
 
     moveOnDeckToStash(player) {
         // Find the piece that's currently on deck for the specified player
-        let onDeckPieceType = null;
-        for (let i = 0; i < this.bitboards[player].length; i++) {
-            if ((this.bitboards[player][i] & 1n) !== 0n) { // Checking the 'e' bit for on deck
-                onDeckPieceType = i;
-                break;
-            }
-        }
+        let onDeckPieceType = getOnDeckPieceforPlayer(player)
     
         // If no piece is on deck, log an error and do nothing
         if (onDeckPieceType === null) {
@@ -333,10 +330,6 @@ thisBoard.moveStashPieceToOnDeck(colors.BLACK,pieces.ROOK)
 thisBoard.printBoard()
 thisBoard.swapDeckToBoard(colors.WHITE,0,0)
 thisBoard.moveStashPieceToOnDeck(colors.WHITE,pieces.BISHOP)
-thisBoard.printBoard()
-
-thisBoard.moveStashPieceToOnDeck(colors.WHITE,pieces.ROOK)
-thisBoard.moveOnDeckToStash(colors.WHITE)
 thisBoard.printBoard()
 thisBoard.movePiece(0,0,4,4)
 thisBoard.printBoard()
