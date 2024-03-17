@@ -1,4 +1,5 @@
 const express = require('express');
+const precalcs = require('./precalcs');
 const app = express();
 
 app.get('/', (req, res) => res.send('Hello World!'));
@@ -27,6 +28,21 @@ const pieceSymbols = { //queen is BOMB
     [colors.BLACK]: ['♕', '♔', '♘', '♗', '♖'] 
 };
 
+class Move {
+    constructor(board,player,declaration,x1,y1,x2,y2){
+        this.board = board;
+        this.player = player;
+        this.declaration = declaration;
+        this.x1 = x1;
+        this.y1 = y1;
+        this.x2 = x2;
+        this.y2 = y2;
+    }
+    isBluff(){
+        return this.board.getPieceAt(x1, y1).pieceType != this.declaration;
+    }
+}
+
 
 class Board {
 	constructor(height, width){
@@ -53,6 +69,13 @@ class Board {
 
     getBitLocationFromXY(x,y){
         return BigInt((this.height - y - 1) * this.width + x + 5);
+    }
+    getXYFromBitLocation(bitIndex){
+        bitIndex = Number(bitIndex) - 5; // Subtract the offset
+        let linearIndex = bitIndex % this.width; // Calculate the linear index within the board
+        let x = linearIndex;
+        let y = this.height - 1 - Math.floor(bitIndex / this.width);
+        return {x,y}
     }
 
     movePiece(x1, y1, x2, y2) {
