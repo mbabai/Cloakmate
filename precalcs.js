@@ -23,12 +23,20 @@ function generateAllPossibleMoves(board) {
     return movesLookup;
 }
 
-function getBitLocationFromXY(x,y,height=5,width=5){
-    return BigInt((height - y - 1) * width + x + 5);
+
+function getBitLocationFromXY(x, y, height = 5, width = 5) {
+            // Calculate the linear index of the (x, y) position on a 5x5 board
+    // Note: Assumes (0, 0) is the bottom-left of the board
+    const linearIndex = y * width + x;
+    // Adjust for the 5 reserved bits by adding 5 to the linear index
+    const bitIndex = linearIndex + 5;
+    // Shift a 1 to the correct position in the bit pattern
+    const bitLocation = 1n << BigInt(bitIndex);
+    return bitLocation;
 }
 
-function getXYFromBitLocation(bitIndex,height=5,width=5){
-    bitIndex = Number(bitIndex) - 5; // Subtract the offset
+function getXYFromBitLocation(bitLocation,height=5,width=5){
+    bitIndex = Math.log2(Number(bitLocation)) - 5; // Subtract the offset
     let linearIndex = bitIndex % width; // Calculate the linear index within the board
     let x = linearIndex;
     let y = height - 1 - Math.floor(bitIndex / width);
@@ -43,12 +51,13 @@ function createBishopMovementMask(startPosIndex) {
     const pos = getXYFromBitLocation(startPosIndex); // Convert index to x,y 
 
     directions.forEach(([dx, dy]) => {
-        for (let distance = 1; distance < 3; distance++) { // Limited to 3 squares
+        for (let distance = 1; distance < 4; distance++) { // Limited to 3 squares
             const newX = pos.x + dx * distance;
             const newY = pos.y + dy * distance;
             if (newX >= 0 && newX < 5 && newY >= 0 && newY < 5) {
+                console.log(`(${newX},${newY})`)
                 mask |= getBitLocationFromXY(newX,newY);
-            }
+            } 
         }
     });
     return mask;
@@ -77,7 +86,7 @@ function createBishopLegalMoveBitboard(startPosIndex,blockerBitboard){
     const pos = getXYFromBitLocation(startPosIndex); // Convert index to x,y 
 
     directions.forEach(([dx, dy]) => {
-        for (let distance = 1; distance < 3; distance++) { // Limited to 3 squares
+        for (let distance = 1; distance < 4; distance++) { // Limited to 3 squares
             const newX = pos.x + dx * distance;
             const newY = pos.y + dy * distance;
             if (newX >= 0 && newX < 5 && newY >= 0 && newY < 5) {
@@ -108,5 +117,22 @@ function createBishopLookupTable(height,width){
     return bishopMovesLookup;
 }
 
+function printMask(bigInt) {
+    // Extract the first 25 digits by shifting right by 5, ignoring the 5 least significant digits
+    let mask = bigInt >> 5n;
 
-module.exports = { createBishopLookupTable };
+    // Convert to a binary string, padding with leading zeros to ensure it has at least 25 digits
+    let binaryString = mask.toString(2).padStart(25, '0');
+
+    // Print 5 digits every line, starting from the end of the string
+    for (let i = 4; i >= 0; i--) {
+        // Extract a substring of 5 digits and print
+        console.log(binaryString.substring(i * 5, (i + 1) * 5).split("").reverse().join(""));
+    }
+}
+
+
+module.exports = { getBitLocationFromXY, 
+    createBishopLookupTable, 
+    createBishopMovementMask, 
+    printMask };
