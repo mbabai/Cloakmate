@@ -62,8 +62,8 @@ class Board {
             
         */
         this.bitboards = [
-            [0b010n,0b100n,0b100n,0b100n,0b100n], // white pieces: bomb, king, knight, bishop,rook
-            [0b010n,0b100n,0b100n,0b100n,0b100n]  // black pieces: bomb, king, knight, bishop,rook
+            [0b010n,0b100n,0b100n,0b100n,0b100n], // white pieces: bomb, king, knight, bishop, rook
+            [0b010n,0b100n,0b100n,0b100n,0b100n]  // black pieces: bomb, king, knight, bishop, rook
         ]
 	}
 
