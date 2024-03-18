@@ -29,6 +29,9 @@ const pieceSymbols = { //queen is BOMB
     [colors.BLACK]: ['♕', '♔', '♘', '♗', '♖'] 
 };
 
+const AllMoves = precalcs.createAllPiecesLookupTable()
+
+
 class Move {
     constructor(board,player,declaration,x1,y1,x2,y2){
         this.board = board;
@@ -278,6 +281,30 @@ class Board {
         this.bitboards[player][onDeckPieceType] |= 1 << posIndex;
         console.log(`:::On Deck(${pieceSymbols[player][onDeckPieceType]}) -> (${x},${y})`)
     }
+
+    // MOVE GENERATION
+    getAllPiecesBitboard(){
+        return  getFriendlyPieces(0) | getFriendlyPieces(1)
+    }
+    getFriendlyPieces(color){
+        return this.bitboards[color][0] | this.bitboards[color][1] | this.bitboards[color][2] | this.bitboards[color][3] | this.bitboards[color][4]
+    }
+
+    generatePieceLegalMoves(piece,color,startPosIndex){
+        const allPiecesBitboard = getAllPiecesBitboard()
+        const blockerBitboard = allPiecesBitboard & createPieceMovementMask(piece,startPosIndex)
+        let movesBitboard = AllMoves([piece,startPosIndex,blockerBitboard])
+        movesBitboard &= ~this.getFriendlyPieces(color)
+        let movesList = []
+        while (movesBitboard > 0) {
+            if ((movesBitboard & 1) === 1) {
+                movesList.push(index);
+            }
+            movesBitboard >>= 1n;
+            index++;
+        }
+        return movesList
+    }
     
     printBoard() {
         console.log("__________")    
@@ -349,25 +376,5 @@ thisBoard.printBoard()
 thisBoard.movePiece(0,4,1,0)
 thisBoard.printBoard()
 
-// console.log("###########################")
-// const thisX = 2
-// const thisY = 2
-// const location = utils.getBitIndexFromXY(thisX,thisY)
-// console.log(location)
-// console.log(`The Location: (${thisX},${thisY})`)
-// const movementMask = precalcs.createBishopMovementMask(location)
-// console.log("Base Legal Moves:")
-// precalcs.printMask(movementMask)
-// console.log("------")
-// let blockPatterns = precalcs.createAllBlockerBitboards(movementMask)
-// let currentBlockerBoard = (blockPatterns[120])
-// console.log("BlockerBoard:")
-// precalcs.printMask(currentBlockerBoard)
-// console.log("------")
-// console.log("LegalMoves:")
-// precalcs.printMask(precalcs.createBishopLegalMoveBitboard(location,currentBlockerBoard))
-// console.log("------")
-
-let allMoves = precalcs.createAllPiecesLookupTable()
-console.log(allMoves)
-console.log(allMoves.size)
+console.log(AllMoves)
+console.log(AllMoves.size)

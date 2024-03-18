@@ -128,8 +128,7 @@ function printMask(rawMask) {
 
 
 module.exports = {
-    createAllPiecesLookupTable, 
-    createPieceMovementMask, 
-    createAllBlockerBitboards,
-    createPieceLegalMoveBitboard,
-    printMask };
+    createAllPiecesLookupTable 
+    , createPieceMovementMask
+    , printMask
+};
