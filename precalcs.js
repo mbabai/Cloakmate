@@ -66,7 +66,7 @@ function createBishopMovementMask(startPosIndex) {
 function createAllBlockerBitboards(movementMask){
     let moveSquareIndices = []
     for (let i = 0; i<(30); i++){ // 30 is height*width + 5
-        if(((movementMask >> i) & 1) == 1){ 
+        if(((movementMask >> BigInt(i)) & 1n) == 1){ 
             moveSquareIndices.push(i)
         }
     }
@@ -75,9 +75,10 @@ function createAllBlockerBitboards(movementMask){
     for (let patternIndex = 0; patternIndex < numPatterns; patternIndex++){
         for (let bitIndex = 0; bitIndex < moveSquareIndices.length; bitIndex++){
             let bit = (patternIndex >> bitIndex) & 1;
-            blockerBitboards[patternIndex] |= BigInt(bit) << moveSquareIndices[bitIndex]
+            blockerBitboards[patternIndex] |= (bit) << moveSquareIndices[bitIndex]
         }
     }
+    return blockerBitboards
 }
 
 function createBishopLegalMoveBitboard(startPosIndex,blockerBitboard){
@@ -135,4 +136,5 @@ function printMask(bigInt) {
 module.exports = { getBitLocationFromXY, 
     createBishopLookupTable, 
     createBishopMovementMask, 
+    createAllBlockerBitboards,
     printMask };

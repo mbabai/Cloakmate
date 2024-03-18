@@ -360,9 +360,14 @@ thisBoard.movePiece(0,4,1,0)
 thisBoard.printBoard()
 
 console.log("###########################")
-const location = precalcs.getBitLocationFromXY(1,1)
+const location = precalcs.getBitLocationFromXY(1,2)
 console.log("The Location:")
 console.log(location.toString(2))
 console.log("The Mask:")
-const theMask = precalcs.createBishopMovementMask(location)
-precalcs.printMask(theMask)
+const movementMask = precalcs.createBishopMovementMask(location)
+let blockPatterns = precalcs.createAllBlockerBitboards(movementMask)
+for(i=0;i<10;i++){
+    precalcs.printMask(BigInt(blockPatterns[i]))
+    console.log("------")
+}
+// precalcs.printMask(movementMask)
