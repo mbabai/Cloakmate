@@ -1,5 +1,6 @@
 const express = require('express');
 const precalcs = require('./precalcs');
+const utils = require('./utils');
 const app = express();
 
 app.get('/', (req, res) => res.send('Hello World!'));
@@ -62,21 +63,10 @@ class Board {
             
         */
         this.bitboards = [
-            [0b010n,0b100n,0b100n,0b100n,0b100n], // white pieces: bomb, king, knight, bishop, rook
-            [0b010n,0b100n,0b100n,0b100n,0b100n]  // black pieces: bomb, king, knight, bishop, rook
+            [0b010,0b100,0b100,0b100,0b100], // white pieces: bomb, king, knight, bishop, rook
+            [0b010,0b100,0b100,0b100,0b100]  // black pieces: bomb, king, knight, bishop, rook
         ]
 	}
-
-    getBitLocationFromXY(x,y){
-        return BigInt((this.height - y - 1) * this.width + x + 5);
-    }
-    getXYFromBitLocation(bitIndex){
-        bitIndex = Number(bitIndex) - 5; // Subtract the offset
-        let linearIndex = bitIndex % this.width; // Calculate the linear index within the board
-        let x = linearIndex;
-        let y = this.height - 1 - Math.floor(bitIndex / this.width);
-        return {x,y}
-    }
 
     movePiece(x1, y1, x2, y2) {
         // Identify the piece at the source location
@@ -100,23 +90,23 @@ class Board {
     
         // Move the piece from the source to the target location
         // Calculate the position index for the source and target locations
-        const sourcePosIndex = this.getBitLocationFromXY(x1, y1);
-        const targetPosIndex = this.getBitLocationFromXY(x2, y2);
+        const sourcePosIndex = (utils.getBitIndexFromXY(x1, y1));
+        const targetPosIndex = (utils.getBitIndexFromXY(x2, y2));
         
         // Clear the bit at the source position
-        this.bitboards[sourcePieceInfo.player][sourcePieceInfo.pieceType] &= ~(1n << sourcePosIndex);
+        this.bitboards[sourcePieceInfo.player][sourcePieceInfo.pieceType] &= ~(1 << sourcePosIndex);
         // Set the bit at the target position
-        this.bitboards[sourcePieceInfo.player][sourcePieceInfo.pieceType] |= 1n << targetPosIndex;
+        this.bitboards[sourcePieceInfo.player][sourcePieceInfo.pieceType] |= 1 << targetPosIndex;
     
         console.log(`:::Moving Piece(${pieceSymbols[sourcePieceInfo.player][sourcePieceInfo.pieceType]}) from (${x1},${y1}) to (${x2},${y2})`);
     }
     
 
     getPieceAt(x, y) {
-        const posIndex = this.getBitLocationFromXY(x,y);
+        const posIndex = utils.getBitIndexFromXY(x,y);
         for (let player of [colors.WHITE, colors.BLACK]) {
             for (let pieceType = 0; pieceType < this.bitboards[player].length; pieceType++) {
-                if (BigInt(this.bitboards[player][pieceType]) & (1n << posIndex)) {
+                if ((this.bitboards[player][pieceType]) & (1 << (posIndex))) {
                     return { player, pieceType };
                 }
             }
@@ -132,37 +122,37 @@ class Board {
         }
     
         // Calculate the position index for updating the bitboard
-        const posIndex = this.getBitLocationFromXY(x, y);
+        const posIndex = utils.getBitIndexFromXY(x, y);
     
         // Remove the piece from its current position on the board
-        this.bitboards[targetPieceInfo.player][targetPieceInfo.pieceType] &= ~(1n << posIndex);
+        this.bitboards[targetPieceInfo.player][targetPieceInfo.pieceType] &= ~(1 << (posIndex));
     
         // Update the bitboard to reflect the captured status of the piece
         // Note: This assumes captured pieces are counted in the first two bits 'ab'
-        const capturedCount = Number((this.bitboards[targetPieceInfo.player][targetPieceInfo.pieceType] & (0b11000n)) >> 3n) + 1;
-        this.bitboards[targetPieceInfo.player][targetPieceInfo.pieceType] &= ~(0b11000n); // Clear the old captured count
-        this.bitboards[targetPieceInfo.player][targetPieceInfo.pieceType] |= (BigInt(capturedCount) << 3n); // Set the new captured count
+        const capturedCount = Number((this.bitboards[targetPieceInfo.player][targetPieceInfo.pieceType] & (0b11000)) >> 3) + 1;
+        this.bitboards[targetPieceInfo.player][targetPieceInfo.pieceType] &= ~(0b11000); // Clear the old captured count
+        this.bitboards[targetPieceInfo.player][targetPieceInfo.pieceType] |= ((capturedCount) << 3); // Set the new captured count
         
         console.log(`:::Capturing Piece(${pieceSymbols[targetPieceInfo.player][targetPieceInfo.pieceType]}) at (${x},${y}) due to...`)
     }
     
 
     placePiece(pieceType, player, x, y) {
-        const posIndex = this.getBitLocationFromXY(x,y);
+        const posIndex = utils.getBitIndexFromXY(x,y);
 
         // Ensure we clear the position across all piece types to prevent duplicates
         for (let i = 0; i < this.bitboards[player].length; i++) {
-            this.bitboards[player][i] &= ~(1n << posIndex);
+            this.bitboards[player][i] &= ~(1 << posIndex);
         }
 
         // Place the piece at the new position
-        this.bitboards[player][pieceType] |= (1n << posIndex);
+        this.bitboards[player][pieceType] |= (1 << posIndex);
         console.log(`:::Placing Piece(${pieceSymbols[player][pieceType]}) -> (${x},${y})`)
     }
 
     getOnDeckPieceforPlayer(player) {
         for (let pieceType = 0; pieceType < this.bitboards[player].length; pieceType++) {
-            if ((this.bitboards[player][pieceType] & 1n) !== 0n) { // Checking the on-deck bit
+            if ((this.bitboards[player][pieceType] & 1) !== 0) { // Checking the on-deck bit
                 return pieceType; //found the piece
             }
         }
@@ -171,7 +161,7 @@ class Board {
 
     moveStashPieceToOnDeck(player, pieceType) {
         // Check the stash count for the piece to be moved to on deck
-        const stashCountForPiece = Number((this.bitboards[player][pieceType] & (0b11n << 1n)) >> 1n);
+        const stashCountForPiece = Number((this.bitboards[player][pieceType] & (0b11 << 1)) >> 1);
         if (stashCountForPiece <= 0) {
             console.error("Error: The specified piece is not available in the stash.");
             return; // Exit the function as the operation cannot be completed
@@ -183,26 +173,26 @@ class Board {
         // If there is a piece on deck, move it back to the stash
         if (currentOnDeckPieceType !== null) {
             // Clear the on-deck status for the current piece
-            this.bitboards[player][currentOnDeckPieceType] &= ~1n;
+            this.bitboards[player][currentOnDeckPieceType] &= ~1;
     
             // Increment the stash count for the current piece
-            const currentStashCount = Number((this.bitboards[player][currentOnDeckPieceType] & (0b11n << 1n)) >> 1n) + 1;
-            this.bitboards[player][currentOnDeckPieceType] &= ~(0b11n << 1n); // Clear the old stash count
-            this.bitboards[player][currentOnDeckPieceType] |= BigInt(currentStashCount) << 1n; // Set the new stash count
+            const currentStashCount = Number((this.bitboards[player][currentOnDeckPieceType] & (0b11 << 1)) >> 1) + 1;
+            this.bitboards[player][currentOnDeckPieceType] &= ~(0b11 << 1); // Clear the old stash count
+            this.bitboards[player][currentOnDeckPieceType] |= (currentStashCount) << 1; // Set the new stash count
         } 
     
         // Decrement the stash count for the new piece, now that we've confirmed it's in the stash
-        this.bitboards[player][pieceType] &= ~(0b11n << 1n); // Clear the old stash count
-        this.bitboards[player][pieceType] |= BigInt(stashCountForPiece - 1) << 1n; // Set the new stash count
+        this.bitboards[player][pieceType] &= ~(0b11 << 1); // Clear the old stash count
+        this.bitboards[player][pieceType] |= (stashCountForPiece - 1) << 1; // Set the new stash count
     
         // Set the new piece as on deck
-        this.bitboards[player][pieceType] |= 1n;
+        this.bitboards[player][pieceType] |= 1;
         console.log(`:::Stash(${pieceSymbols[player][pieceType]}) -> On Deck`)
     }
 
     moveStashPieceToBoard(player, pieceType, x, y) {
         // Verify if the piece is available in the stash
-        const stashCount = Number((this.bitboards[player][pieceType] & (0b11n << 1n)) >> 1n);
+        const stashCount = Number((this.bitboards[player][pieceType] & (0b11 << 1)) >> 1);
         if (stashCount <= 0) {
             console.error("Error: The specified piece is not available in the stash.");
             return;
@@ -212,21 +202,21 @@ class Board {
         const targetPieceInfo = this.getPieceAt(x, y);
         if (targetPieceInfo) {
             // Move the piece at the target location back to its stash
-            const capturedStashCount = Number((this.bitboards[targetPieceInfo.player][targetPieceInfo.pieceType] & (0b11n << 1n)) >> 1n) + 1;
-            this.bitboards[targetPieceInfo.player][targetPieceInfo.pieceType] &= ~(0b11n << 1n); // Clear the old stash count
-            this.bitboards[targetPieceInfo.player][targetPieceInfo.pieceType] |= BigInt(capturedStashCount) << 1n; // Set the new stash count
+            const capturedStashCount = Number((this.bitboards[targetPieceInfo.player][targetPieceInfo.pieceType] & (0b11 << 1)) >> 1) + 1;
+            this.bitboards[targetPieceInfo.player][targetPieceInfo.pieceType] &= ~(0b11 << 1); // Clear the old stash count
+            this.bitboards[targetPieceInfo.player][targetPieceInfo.pieceType] |= (capturedStashCount) << 1; // Set the new stash count
         }
     
         // Decrement the stash count for the moving piece
-        this.bitboards[player][pieceType] &= ~(0b11n << 1n); // Clear the old stash count
-        this.bitboards[player][pieceType] |= BigInt(stashCount - 1) << 1n; // Set the new stash count
+        this.bitboards[player][pieceType] &= ~(0b11 << 1); // Clear the old stash count
+        this.bitboards[player][pieceType] |= (stashCount - 1) << 1; // Set the new stash count
     
         // Place the piece at the specified location on the board
-        const posIndex = this.getBitLocationFromXY(x, y);
+        const posIndex = (utils.getBitIndexFromXY(x, y));
         for (let i = 0; i < this.bitboards[player].length; i++) {
-            this.bitboards[player][i] &= ~(1n << posIndex); // Clear any existing piece at this position
+            this.bitboards[player][i] &= ~(1 << (posIndex)); // Clear any existing piece at this position
         }
-        this.bitboards[player][pieceType] |= 1n << posIndex;
+        this.bitboards[player][pieceType] |= 1 << (posIndex);
         console.log(`:::Stash(${pieceSymbols[player][pieceType]}) -> (${x},${y})`)
     }
 
@@ -241,19 +231,19 @@ class Board {
         }
     
         // Clear the on-deck status for the piece
-        this.bitboards[player][onDeckPieceType] &= ~1n;
+        this.bitboards[player][onDeckPieceType] &= ~1;
     
         // Increment the stash count for the piece
-        const stashCount = Number((this.bitboards[player][onDeckPieceType] & (0b11n << 1n)) >> 1n) + 1;
-        this.bitboards[player][onDeckPieceType] &= ~(0b11n << 1n); // Clear the old stash count
-        this.bitboards[player][onDeckPieceType] |= BigInt(stashCount) << 1n; // Set the new stash count
+        const stashCount = Number((this.bitboards[player][onDeckPieceType] & (0b11 << 1)) >> 1) + 1;
+        this.bitboards[player][onDeckPieceType] &= ~(0b11 << 1); // Clear the old stash count
+        this.bitboards[player][onDeckPieceType] |= (stashCount) << 1; // Set the new stash count
         console.log(`:::On Deck(${pieceSymbols[player][onDeckPieceType]}) -> Stash`)
     }
     swapDeckToBoard(player, x, y) {
         // Find the on-deck piece for the player
         let onDeckPieceType = null;
         for (let i = 0; i < this.bitboards[player].length; i++) {
-            if ((this.bitboards[player][i] & 1n) !== 0n) { // Checking the 'e' bit for on deck
+            if ((this.bitboards[player][i] & 1) !== 0) { // Checking the 'e' bit for on deck
                 onDeckPieceType = i;
                 break;
             }
@@ -273,19 +263,19 @@ class Board {
         }
     
         // Increment the stash count for the piece being replaced
-        const stashCount = Number((this.bitboards[player][targetPieceInfo.pieceType] & (0b11n << 1n)) >> 1n) + 1;
-        this.bitboards[player][targetPieceInfo.pieceType] &= ~(0b11n << 1n); // Clear the old stash count
-        this.bitboards[player][targetPieceInfo.pieceType] |= BigInt(stashCount) << 1n; // Set the new stash count
+        const stashCount = Number((this.bitboards[player][targetPieceInfo.pieceType] & (0b11 << 1)) >> 1) + 1;
+        this.bitboards[player][targetPieceInfo.pieceType] &= ~(0b11 << 1); // Clear the old stash count
+        this.bitboards[player][targetPieceInfo.pieceType] |= (stashCount) << 1; // Set the new stash count
     
         // Clear the on-deck status for the on-deck piece
-        this.bitboards[player][onDeckPieceType] &= ~1n;
+        this.bitboards[player][onDeckPieceType] &= ~1;
     
         // Place the on-deck piece at the specified location on the board
-        const posIndex = this.getBitLocationFromXY(x, y);
+        const posIndex = (utils.getBitIndexFromXY(x, y));
         for (let i = 0; i < this.bitboards[player].length; i++) {
-            this.bitboards[player][i] &= ~(1n << posIndex); // Clear any existing piece at this position
+            this.bitboards[player][i] &= ~(1 << posIndex); // Clear any existing piece at this position
         }
-        this.bitboards[player][onDeckPieceType] |= 1n << posIndex;
+        this.bitboards[player][onDeckPieceType] |= 1 << posIndex;
         console.log(`:::On Deck(${pieceSymbols[player][onDeckPieceType]}) -> (${x},${y})`)
     }
     
@@ -300,9 +290,9 @@ class Board {
         for (let player of [colors.WHITE, colors.BLACK]) {
             for (let pieceType = 0; pieceType < this.bitboards[player].length; pieceType++) {
                 const bitboard = this.bitboards[player][pieceType];
-                const capturedCount = Number((bitboard & (0b11n << 3n)) >> 3n);
-                const stashCount = Number((bitboard & (0b11n << 1n)) >> 1n);
-                const onDeckStatus = (bitboard & 1n) !== 0n;
+                const capturedCount = Number((bitboard & (0b11 << 3)) >> 3);
+                const stashCount = Number((bitboard & (0b11 << 1)) >> 1);
+                const onDeckStatus = (bitboard & 1) !== 0;
 
                 // Populate stashes and on-deck
                 stashes[player].push(...Array(stashCount).fill(pieceSymbols[player][pieceType]));
@@ -359,15 +349,25 @@ thisBoard.printBoard()
 thisBoard.movePiece(0,4,1,0)
 thisBoard.printBoard()
 
-console.log("###########################")
-const location = precalcs.getBitLocationFromXY(1,2)
-console.log("The Location:")
-console.log(location.toString(2))
-console.log("The Mask:")
-const movementMask = precalcs.createBishopMovementMask(location)
-let blockPatterns = precalcs.createAllBlockerBitboards(movementMask)
-for(i=0;i<10;i++){
-    precalcs.printMask(BigInt(blockPatterns[i]))
-    console.log("------")
-}
+// console.log("###########################")
+// const thisX = 2
+// const thisY = 2
+// const location = utils.getBitIndexFromXY(thisX,thisY)
+// console.log(location)
+// console.log(`The Location: (${thisX},${thisY})`)
+// const movementMask = precalcs.createBishopMovementMask(location)
+// console.log("Base Legal Moves:")
 // precalcs.printMask(movementMask)
+// console.log("------")
+// let blockPatterns = precalcs.createAllBlockerBitboards(movementMask)
+// let currentBlockerBoard = (blockPatterns[120])
+// console.log("BlockerBoard:")
+// precalcs.printMask(currentBlockerBoard)
+// console.log("------")
+// console.log("LegalMoves:")
+// precalcs.printMask(precalcs.createBishopLegalMoveBitboard(location,currentBlockerBoard))
+// console.log("------")
+
+let allBishopMoves = precalcs.createBishopLookupTable()
+console.log(allBishopMoves)
+console.log("------")
