@@ -29,47 +29,115 @@ const pieceSymbols = { //queen is BOMB
     [colors.BLACK]: ['♕', '♔', '♘', '♗', '♖'] 
 };
 
+const actions = {
+    MOVE: 0,
+    CHALLENGE: 1,
+    BOMB: 2,
+    SACRIFICE: 3
+};
+
 const AllMoves = precalcs.createAllPiecesLookupTable()
 
 
-class Move {
-    constructor(board,type,player,declaration,x1=null,y1=null,x2=null,y2=null){
-        this.board = board;
-        this.type = type; // "move", "challenge", "bomb"
+class Action {
+    constructor(type, player,  x1 = null, y1 = null, declaration = null, x2 = null, y2 = null) {
+        this.type = type;
         this.player = player;
-        this.declaration = declaration;
-        this.x1 = x1;
-        this.y1 = y1;
-        this.x2 = x2;
-        this.y2 = y2;
-        this.wasBluff = null;
+        
+        // Set attributes based on the action type
+        switch (type) {
+            case actions.MOVE:
+                this.x1 = x1;
+                this.y1 = y1;
+                this.declaration = declaration;
+                this.x2 = x2;
+                this.y2 = y2;
+                this.wasBluff = null;
+                this.wasCapture = null;
+                break;
+            case actions.CHALLENGE:
+                // Only type and player are needed for CHALLENGE
+                break;
+            case actions.BOMB:
+                this.declaration = pieces.BOMB;
+                this.wasBluff = null;
+                this.wasCapture = null;
+                // x1, y1 not used for BOMB
+                break;
+            case actions.SACRIFICE:
+                this.x1 = x1;
+                this.y1 = y1;
+                // declaration, x2, y2 not used for SACRIFICE
+                break;
+            default:
+                console.error("Invalid action type");
+        }
     }
+    isCapture(){
+        //must be called BEFORE the move is complete to be accurate
+        if(this.type == actions.BOMB) {return true;} //Bombs are always capturing
+        if(this.type != actions.MOVE) {return false;} //Not a move? not a capture
+        if(this.board.getPieceAt(this.x2,this.y2)) return true; // there was a piece at the target location before the move was completed
+        return false;
+    }
+
     isBluff(){
-        if(this.type == "move"){
-            return this.board.getPieceAt(this.x1, this.y1).pieceType != this.declaration;
-        } else if (this.type == "bomb"){
-            return this.board.lastCapturedPieceType == pieces.BOMB
+        // must be called AFTER the move is complete to be accurat
+        if(this.type == actions.MOVE){
+            return this.board.getPieceAt(this.x2, this.y2).type != this.declaration;
+        } else if (this.type == actions.BOMB){
+            return this.board.lastCapturedtype == pieces.BOMB; //the last piece taken was a bomb AFTER the move is completed
         } else {
             return; 
         }
     }
     isLegal(){
-        if(this.player != this.board.playerTurn) return false;
-        if(this.type == "move"){
-            let startPosIndex = utils.getBitIndexFromXY(this.x1,this.y1)
-            let endPosIndex = utils.getBitIndexFromXY(this.x2,this.y2)
-            if(!this.board.generatePieceColorLocationLegalMoves(this.declaration,this.player,startPosIndex).contains(endPosIndex)) return false;
-        } else if (this.type == "challenge"){
-            if(this.board.moves[this.board.moves.length - 1].type == "challenge") return false
+        if(this.player != this.board.playerTurn) {
+            console.error("Illegal action: Wrong player taking action!")
+            return false;
+        }
+        switch (this.type){
+            case actions.MOVE:
+                let startPosIndex = utils.getBitIndexFromXY(this.x1,this.y1)
+                let endPosIndex = utils.getBitIndexFromXY(this.x2,this.y2)
+                if(!this.board.generatePieceColorLocationLegalMoves(this.declaration,this.player,startPosIndex).contains(endPosIndex)) {
+                    console.error("Illegal move: Piece cannot move to destination!")
+                    return false;
+                }
+            case actions.CHALLENGE:
+                if(this.board.moves[this.board.moves.length - 1].type == actions.CHALLENGE) {
+                    console.error("Illegal challenge: Cannot challenge a challenge!")
+                    return false;
+                }
+            case actions.BOMB:
+                //todo, check that a piece was captured by the opponent on the last move
+                break;
+            case actions.SACRIFICE:
+                //todo, check that the opponent to a successful challenge before, and that a real piece was selected to sacrifice. 
+                break;
         }
         return true;
     }
     print(showBluff=false){
         let bluffMark = ''
         if(showBluff){
-            bluffMark = "!"
+            bluffMark = "??"
         } 
-        console.log(`${pieceSymbols[this.player][this.declaration]}${bluffMark}: (${this.x1},${this.y1}) => (${this.x2},${this.y2})`)
+        switch (this.type){
+            case actions.MOVE:
+                console.log(`Move: ${pieceSymbols[this.player][this.declaration]}${bluffMark}: (${this.x1},${this.y1}) => (${this.x2},${this.y2})`)
+                break;
+            case actions.CHALLENGE:
+                console.log("CHALLENGE!")
+                break;
+            case actions.BOMB:
+                console.log(`BOMB!!${bluffMark}`)
+                break;
+            case actions.SACRIFICE:
+                let piece = this.board.getPieceAt(this.x1, this.y1)
+                console.log(`Sacrifice  ${pieceSymbols[piece.player][piece.type]} at (${this.x1},${this.y1}) => `)
+                break;
+        }
     }
 }
 
@@ -95,9 +163,10 @@ class Board {
             [0b010,0b100,0b100,0b100,0b100], // white pieces: bomb, king, knight, bishop, rook
             [0b010,0b100,0b100,0b100,0b100]  // black pieces: bomb, king, knight, bishop, rook
         ]
-        this.moves = []
+        this.actions = []
         this.startingBoard = []
-        this.lastCapturedPieceType = null
+        this.lastCapturedPiece = {} //{player, type} tracked for bluffs/bombs
+        this.lastMoveLocation  = {} // {x,y} tracked for bluffs/bombs
 	}
 
     saveStartingBoard(){
@@ -134,20 +203,21 @@ class Board {
         const targetPosIndex = (utils.getBitIndexFromXY(x2, y2));
         
         // Clear the bit at the source position
-        this.bitboards[sourcePieceInfo.player][sourcePieceInfo.pieceType] &= ~(1 << sourcePosIndex);
+        this.bitboards[sourcePieceInfo.player][sourcePieceInfo.type] &= ~(1 << sourcePosIndex);
         // Set the bit at the target position
-        this.bitboards[sourcePieceInfo.player][sourcePieceInfo.pieceType] |= 1 << targetPosIndex;
+        this.bitboards[sourcePieceInfo.player][sourcePieceInfo.type] |= 1 << targetPosIndex;
     
-        // console.log(`:::Moving Piece(${pieceSymbols[sourcePieceInfo.player][sourcePieceInfo.pieceType]}) from (${x1},${y1}) to (${x2},${y2})`);
+        this.lastMoveLocation = {"x":x2,"y":y2} // track this for bombs and bluffs
+        // console.log(`:::Moving Piece(${pieceSymbols[sourcePieceInfo.player][sourcePieceInfo.type]}) from (${x1},${y1}) to (${x2},${y2})`);
     }
     
 
     getPieceAt(x, y) {
         const posIndex = utils.getBitIndexFromXY(x,y);
         for (let player of [colors.WHITE, colors.BLACK]) {
-            for (let pieceType = 0; pieceType < this.bitboards[player].length; pieceType++) {
-                if ((this.bitboards[player][pieceType]) & (1 << (posIndex))) {
-                    return { player, pieceType };
+            for (let type = 0; type < this.bitboards[player].length; type++) {
+                if ((this.bitboards[player][type]) & (1 << (posIndex))) {
+                    return { player, type };
                 }
             }
         }
@@ -165,20 +235,47 @@ class Board {
         const posIndex = utils.getBitIndexFromXY(x, y);
     
         // Remove the piece from its current position on the board
-        this.bitboards[targetPieceInfo.player][targetPieceInfo.pieceType] &= ~(1 << (posIndex));
+        this.bitboards[targetPieceInfo.player][targetPieceInfo.type] &= ~(1 << (posIndex));
     
         // Update the bitboard to reflect the captured status of the piece
         // Note: This assumes captured pieces are counted in the first two bits 'ab'
-        const capturedCount = Number((this.bitboards[targetPieceInfo.player][targetPieceInfo.pieceType] & (0b11000)) >> 3) + 1;
-        this.bitboards[targetPieceInfo.player][targetPieceInfo.pieceType] &= ~(0b11000); // Clear the old captured count
-        this.bitboards[targetPieceInfo.player][targetPieceInfo.pieceType] |= ((capturedCount) << 3); // Set the new captured count
+        const capturedCount = Number((this.bitboards[targetPieceInfo.player][targetPieceInfo.type] & (0b11000)) >> 3) + 1;
+        this.bitboards[targetPieceInfo.player][targetPieceInfo.type] &= ~(0b11000); // Clear the old captured count
+        this.bitboards[targetPieceInfo.player][targetPieceInfo.type] |= ((capturedCount) << 3); // Set the new captured count
         
-        this.lastCapturedPieceType = targetPieceInfo.pieceType; // track this for the bomb
-        // console.log(`:::Capturing Piece(${pieceSymbols[targetPieceInfo.player][targetPieceInfo.pieceType]}) at (${x},${y}) due to...`)
+        this.lastCapturedPiece = targetPieceInfo; // track this for the bomb/bluffs
+        // console.log(`:::Capturing Piece(${pieceSymbols[targetPieceInfo.player][targetPieceInfo.type]}) at (${x},${y}) due to...`)
+    }
+    uncaptureAtXY(x, y) {
+        // Check if there is information about the last captured piece
+        if (!this.lastCapturedPiece) {
+            console.error("Error: No recently captured piece to uncapture.");
+            return;
+        }
+        
+        const {player, type} = this.lastCapturedPiece;
+        const posIndex = utils.getBitIndexFromXY(x, y);
+    
+        // Decrease the captured count for the piece's type and player
+        let capturedCount = Number((this.bitboards[player][type] & (0b11000)) >> 3);
+        if (capturedCount > 0) {
+            capturedCount -= 1;
+        } else {
+            console.error("Error: Captured count inconsistency.");
+            return;
+        }
+        this.bitboards[player][type] &= ~(0b11000); // Clear the old captured count
+        this.bitboards[player][type] |= (capturedCount << 3); // Set the new captured count
+    
+        // Set the piece back to its position on the board
+        this.bitboards[player][type] |= (1 << posIndex);
+    
+        // console.log(`:::Uncapturing Piece(${pieceSymbols[player][type]}) at (${x},${y})`);
     }
     
+    
 
-    placePiece(pieceType, player, x, y) {
+    placePiece(type, player, x, y) {
         const posIndex = utils.getBitIndexFromXY(x,y);
 
         // Ensure we clear the position across all piece types to prevent duplicates
@@ -187,53 +284,53 @@ class Board {
         }
 
         // Place the piece at the new position
-        this.bitboards[player][pieceType] |= (1 << posIndex);
-        // console.log(`:::Placing Piece(${pieceSymbols[player][pieceType]}) -> (${x},${y})`)
+        this.bitboards[player][type] |= (1 << posIndex);
+        // console.log(`:::Placing Piece(${pieceSymbols[player][type]}) -> (${x},${y})`)
     }
 
     getOnDeckPieceforPlayer(player) {
-        for (let pieceType = 0; pieceType < this.bitboards[player].length; pieceType++) {
-            if ((this.bitboards[player][pieceType] & 1) !== 0) { // Checking the on-deck bit
-                return pieceType; //found the piece
+        for (let type = 0; type < this.bitboards[player].length; type++) {
+            if ((this.bitboards[player][type] & 1) !== 0) { // Checking the on-deck bit
+                return type; //found the piece
             }
         }
         return null; // No piece on deck for the player
     }
 
-    moveStashPieceToOnDeck(player, pieceType) {
+    moveStashPieceToOnDeck(player, type) {
         // Check the stash count for the piece to be moved to on deck
-        const stashCountForPiece = Number((this.bitboards[player][pieceType] & (0b11 << 1)) >> 1);
+        const stashCountForPiece = Number((this.bitboards[player][type] & (0b11 << 1)) >> 1);
         if (stashCountForPiece <= 0) {
             console.error("Error: The specified piece is not available in the stash.");
             return; // Exit the function as the operation cannot be completed
         }
     
         // Check if there is already a piece on deck
-        let currentOnDeckPieceType = this.getOnDeckPieceforPlayer(player)
+        let currentOnDecktype = this.getOnDeckPieceforPlayer(player)
     
         // If there is a piece on deck, move it back to the stash
-        if (currentOnDeckPieceType !== null) {
+        if (currentOnDecktype !== null) {
             // Clear the on-deck status for the current piece
-            this.bitboards[player][currentOnDeckPieceType] &= ~1;
+            this.bitboards[player][currentOnDecktype] &= ~1;
     
             // Increment the stash count for the current piece
-            const currentStashCount = Number((this.bitboards[player][currentOnDeckPieceType] & (0b11 << 1)) >> 1) + 1;
-            this.bitboards[player][currentOnDeckPieceType] &= ~(0b11 << 1); // Clear the old stash count
-            this.bitboards[player][currentOnDeckPieceType] |= (currentStashCount) << 1; // Set the new stash count
+            const currentStashCount = Number((this.bitboards[player][currentOnDecktype] & (0b11 << 1)) >> 1) + 1;
+            this.bitboards[player][currentOnDecktype] &= ~(0b11 << 1); // Clear the old stash count
+            this.bitboards[player][currentOnDecktype] |= (currentStashCount) << 1; // Set the new stash count
         } 
     
         // Decrement the stash count for the new piece, now that we've confirmed it's in the stash
-        this.bitboards[player][pieceType] &= ~(0b11 << 1); // Clear the old stash count
-        this.bitboards[player][pieceType] |= (stashCountForPiece - 1) << 1; // Set the new stash count
+        this.bitboards[player][type] &= ~(0b11 << 1); // Clear the old stash count
+        this.bitboards[player][type] |= (stashCountForPiece - 1) << 1; // Set the new stash count
     
         // Set the new piece as on deck
-        this.bitboards[player][pieceType] |= 1;
-        // console.log(`:::Stash(${pieceSymbols[player][pieceType]}) -> On Deck`)
+        this.bitboards[player][type] |= 1;
+        // console.log(`:::Stash(${pieceSymbols[player][type]}) -> On Deck`)
     }
 
-    moveStashPieceToBoard(player, pieceType, x, y) {
+    moveStashPieceToBoard(player, type, x, y) {
         // Verify if the piece is available in the stash
-        const stashCount = Number((this.bitboards[player][pieceType] & (0b11 << 1)) >> 1);
+        const stashCount = Number((this.bitboards[player][type] & (0b11 << 1)) >> 1);
         if (stashCount <= 0) {
             console.error("Error: The specified piece is not available in the stash.");
             return;
@@ -243,55 +340,55 @@ class Board {
         const targetPieceInfo = this.getPieceAt(x, y);
         if (targetPieceInfo) {
             // Move the piece at the target location back to its stash
-            const capturedStashCount = Number((this.bitboards[targetPieceInfo.player][targetPieceInfo.pieceType] & (0b11 << 1)) >> 1) + 1;
-            this.bitboards[targetPieceInfo.player][targetPieceInfo.pieceType] &= ~(0b11 << 1); // Clear the old stash count
-            this.bitboards[targetPieceInfo.player][targetPieceInfo.pieceType] |= (capturedStashCount) << 1; // Set the new stash count
+            const capturedStashCount = Number((this.bitboards[targetPieceInfo.player][targetPieceInfo.type] & (0b11 << 1)) >> 1) + 1;
+            this.bitboards[targetPieceInfo.player][targetPieceInfo.type] &= ~(0b11 << 1); // Clear the old stash count
+            this.bitboards[targetPieceInfo.player][targetPieceInfo.type] |= (capturedStashCount) << 1; // Set the new stash count
         }
     
         // Decrement the stash count for the moving piece
-        this.bitboards[player][pieceType] &= ~(0b11 << 1); // Clear the old stash count
-        this.bitboards[player][pieceType] |= (stashCount - 1) << 1; // Set the new stash count
+        this.bitboards[player][type] &= ~(0b11 << 1); // Clear the old stash count
+        this.bitboards[player][type] |= (stashCount - 1) << 1; // Set the new stash count
     
         // Place the piece at the specified location on the board
         const posIndex = (utils.getBitIndexFromXY(x, y));
         for (let i = 0; i < this.bitboards[player].length; i++) {
             this.bitboards[player][i] &= ~(1 << (posIndex)); // Clear any existing piece at this position
         }
-        this.bitboards[player][pieceType] |= 1 << (posIndex);
-        // console.log(`:::Stash(${pieceSymbols[player][pieceType]}) -> (${x},${y})`)
+        this.bitboards[player][type] |= 1 << (posIndex);
+        // console.log(`:::Stash(${pieceSymbols[player][type]}) -> (${x},${y})`)
     }
 
     moveOnDeckToStash(player) {
         // Find the piece that's currently on deck for the specified player
-        let onDeckPieceType = getOnDeckPieceforPlayer(player)
+        let onDecktype = getOnDeckPieceforPlayer(player)
     
         // If no piece is on deck, log an error and do nothing
-        if (onDeckPieceType === null) {
+        if (onDecktype === null) {
             console.error("Error: There is no piece on deck for the specified player.");
             return; // Exit the function
         }
     
         // Clear the on-deck status for the piece
-        this.bitboards[player][onDeckPieceType] &= ~1;
+        this.bitboards[player][onDecktype] &= ~1;
     
         // Increment the stash count for the piece
-        const stashCount = Number((this.bitboards[player][onDeckPieceType] & (0b11 << 1)) >> 1) + 1;
-        this.bitboards[player][onDeckPieceType] &= ~(0b11 << 1); // Clear the old stash count
-        this.bitboards[player][onDeckPieceType] |= (stashCount) << 1; // Set the new stash count
-        // console.log(`:::On Deck(${pieceSymbols[player][onDeckPieceType]}) -> Stash`)
+        const stashCount = Number((this.bitboards[player][onDecktype] & (0b11 << 1)) >> 1) + 1;
+        this.bitboards[player][onDecktype] &= ~(0b11 << 1); // Clear the old stash count
+        this.bitboards[player][onDecktype] |= (stashCount) << 1; // Set the new stash count
+        // console.log(`:::On Deck(${pieceSymbols[player][onDecktype]}) -> Stash`)
     }
     swapDeckToBoard(player, x, y) {
         // Find the on-deck piece for the player
-        let onDeckPieceType = null;
+        let onDecktype = null;
         for (let i = 0; i < this.bitboards[player].length; i++) {
             if ((this.bitboards[player][i] & 1) !== 0) { // Checking the 'e' bit for on deck
-                onDeckPieceType = i;
+                onDecktype = i;
                 break;
             }
         }
     
         // If no piece is on deck, show an error
-        if (onDeckPieceType === null) {
+        if (onDecktype === null) {
             console.error("Error: There is no piece on deck for the specified player.");
             return;
         }
@@ -304,20 +401,20 @@ class Board {
         }
     
         // Increment the stash count for the piece being replaced
-        const stashCount = Number((this.bitboards[player][targetPieceInfo.pieceType] & (0b11 << 1)) >> 1) + 1;
-        this.bitboards[player][targetPieceInfo.pieceType] &= ~(0b11 << 1); // Clear the old stash count
-        this.bitboards[player][targetPieceInfo.pieceType] |= (stashCount) << 1; // Set the new stash count
+        const stashCount = Number((this.bitboards[player][targetPieceInfo.type] & (0b11 << 1)) >> 1) + 1;
+        this.bitboards[player][targetPieceInfo.type] &= ~(0b11 << 1); // Clear the old stash count
+        this.bitboards[player][targetPieceInfo.type] |= (stashCount) << 1; // Set the new stash count
     
         // Clear the on-deck status for the on-deck piece
-        this.bitboards[player][onDeckPieceType] &= ~1;
+        this.bitboards[player][onDecktype] &= ~1;
     
         // Place the on-deck piece at the specified location on the board
         const posIndex = (utils.getBitIndexFromXY(x, y));
         for (let i = 0; i < this.bitboards[player].length; i++) {
             this.bitboards[player][i] &= ~(1 << posIndex); // Clear any existing piece at this position
         }
-        this.bitboards[player][onDeckPieceType] |= 1 << posIndex;
-        // console.log(`:::On Deck(${pieceSymbols[player][onDeckPieceType]}) -> (${x},${y})`)
+        this.bitboards[player][onDecktype] |= 1 << posIndex;
+        // console.log(`:::On Deck(${pieceSymbols[player][onDecktype]}) -> (${x},${y})`)
     }
 
     // MOVE GENERATION
@@ -343,52 +440,35 @@ class Board {
         }
         return movesList
     }
-    explodeBomb(){
-        let lastMove = this.moves[this.moves.length -1]
-        
-        this.captureAtXY(lastMove.x2,lastMove.y2)
-    }
 
-    makeMove(move){
-        move.board = this; //Just in case, set the move's board to this board.
-        if(!move.isLegal){
-            console.log("Illegal Move!")
-            return;
-        }
-        if(move.type == "move"){
-            move.wasBluff = move.isBluff()
-            this.movePiece(move.x1,move.y1,move.x2,move.y2)
-            this.playerTurn = 1 - this.playerTurn; //flip who's turn it is.
-            this.moves.push(move)
-        } else if (move.type == "bomb"){
-            explodeBomb()
-
-        } else if (move.type == "challenge"){
-            let lastMove = this.moves[this.moves.length -1]
-            if (lastMove.type == "move"){
-                if(lastMove.wasBluff){
-                    this.undoLastMove()
-                    this.captureAtXY(lastMove.x1,lastMove.y1)
-                    this.moves.push(lastMove)
-                    this.moves.push(move)
-                } else {
-                    this.moves.push(move)
-                    //TODO - losing a piece
-                }
-            } else if (lastMove.type == "bomb"){
-
-            }
-        }
-        
+    takeAction(action){
+        action.board = this; //Just in case, set the move's board to this board.
+        if(!action.isLegal){return;}
+        switch (action.type){
+            case actions.MOVE:
+                action.wasCapture = action.isCapture()
+                this.movePiece(action.x1,action.y1,action.x2,action.y2)
+                this.playerTurn = 1 - this.playerTurn; //flip who's turn it is.
+                action.wasBluff = action.isBluff()
+                this.actions.push(action)
+                break;
+            case actions.CHALLENGE:
+                break;
+            case actions.BOMB:
+                break;
+            case actions.SACRIFICE:
+                this.captureAtXY(action.x1,action.y1)
+                break;
+        }        
         this.turnNumber++; //increment the move
-        move.print()
+        action.print()
         this.printBoard()
     }
-    undoLastMove(){
-        let lastMove = this.moves.pop()
+    undoLastAction(){
+        let lastMove = this.actions.pop()
         this.loadStartingBoard()
-        for(let i = 0; i < this.moves.length;i++){
-            this.makeMove(i)
+        for(let i = 0; i < this.actions.length;i++){
+            this.takeAction(i)
         }
         return lastMove
     }
@@ -402,18 +482,18 @@ class Board {
 
         // Iterate through bitboards to populate above variables
         for (let player of [colors.WHITE, colors.BLACK]) {
-            for (let pieceType = 0; pieceType < this.bitboards[player].length; pieceType++) {
-                const bitboard = this.bitboards[player][pieceType];
+            for (let type = 0; type < this.bitboards[player].length; type++) {
+                const bitboard = this.bitboards[player][type];
                 const capturedCount = Number((bitboard & (0b11 << 3)) >> 3);
                 const stashCount = Number((bitboard & (0b11 << 1)) >> 1);
                 const onDeckStatus = (bitboard & 1) !== 0;
 
                 // Populate stashes and on-deck
-                stashes[player].push(...Array(stashCount).fill(pieceSymbols[player][pieceType]));
-                if (onDeckStatus) onDeck[player] = pieceSymbols[player][pieceType];
+                stashes[player].push(...Array(stashCount).fill(pieceSymbols[player][type]));
+                if (onDeckStatus) onDeck[player] = pieceSymbols[player][type];
                 
                 // Populate captured pieces list
-                if (capturedCount > 0) captured.push(...Array(capturedCount).fill(pieceSymbols[player][pieceType]));
+                if (capturedCount > 0) captured.push(...Array(capturedCount).fill(pieceSymbols[player][type]));
                 
             }
         }
@@ -425,7 +505,7 @@ class Board {
             let row = '';
             for (let x = 0; x < this.width; x++) {
                 const piece = this.getPieceAt(x, y);
-                row += piece ? pieceSymbols[piece.player][piece.pieceType] : '□';
+                row += piece ? pieceSymbols[piece.player][piece.type] : '□';
                 row += ' ';
             }
             console.log(row);
@@ -457,5 +537,5 @@ thisBoard.moveStashPieceToOnDeck(colors.BLACK,pieces.ROOK)
 thisBoard.printBoard()
 thisBoard.saveStartingBoard()
 let move1 = new Move(thisBoard,"move",color.WHITE,pieces.BISHOP,0,0,2,2)
-thisBoard.makeMove(move1)
+thisBoard.takeAction(move1)
 thisBoard.challengeMove()
