@@ -41,9 +41,24 @@ class Move {
         this.y1 = y1;
         this.x2 = x2;
         this.y2 = y2;
+        this.wasBluff = null;
     }
     isBluff(){
-        return this.board.getPieceAt(x1, y1).pieceType != this.declaration;
+        return this.board.getPieceAt(this.x1, this.y1).pieceType != this.declaration;
+    }
+    isLegal(){
+        if(this.player != this.board.playerTurn) return false;
+        let startPosIndex = utils.getBitIndexFromXY(this.x1,move.y1)
+        let endPosIndex = utils.getBitIndexFromXY(mothisve.x2,move.y2)
+        if(!this.board.generatePieceColorLocationLegalMoves(this.declaration,this.player,startPosIndex).contains(endPosIndex)) return false;
+        return true;
+    }
+    print(showBluff=false){
+        let bluffMark = ''
+        if(showBluff){
+            bluffMark = "!"
+        } 
+        console.log(`${pieceSymbols[this.player][this.declaration]}${bluffMark}: (${this.x1},${this.y1}) => (${this.x2},${this.y2})`)
     }
 }
 
@@ -55,7 +70,7 @@ class Board {
 		this.game = null
 
 		this.playerTurn = colors.WHITE //0 for white, 1 for black
-		this.turnNumber = 0 //0 for white, 1 for black
+		this.turnNumber = 0 // First turn as white is turn 0
         //bitboards!!
         /* 
         format of bitboards:
@@ -69,6 +84,7 @@ class Board {
             [0b010,0b100,0b100,0b100,0b100], // white pieces: bomb, king, knight, bishop, rook
             [0b010,0b100,0b100,0b100,0b100]  // black pieces: bomb, king, knight, bishop, rook
         ]
+        this.moves = []
 	}
 
     movePiece(x1, y1, x2, y2) {
@@ -101,7 +117,7 @@ class Board {
         // Set the bit at the target position
         this.bitboards[sourcePieceInfo.player][sourcePieceInfo.pieceType] |= 1 << targetPosIndex;
     
-        console.log(`:::Moving Piece(${pieceSymbols[sourcePieceInfo.player][sourcePieceInfo.pieceType]}) from (${x1},${y1}) to (${x2},${y2})`);
+        // console.log(`:::Moving Piece(${pieceSymbols[sourcePieceInfo.player][sourcePieceInfo.pieceType]}) from (${x1},${y1}) to (${x2},${y2})`);
     }
     
 
@@ -290,7 +306,7 @@ class Board {
         return this.bitboards[color][0] | this.bitboards[color][1] | this.bitboards[color][2] | this.bitboards[color][3] | this.bitboards[color][4]
     }
 
-    generatePieceLegalMoves(piece,color,startPosIndex){
+    generatePieceColorLocationLegalMoves(piece,color,startPosIndex){
         const allPiecesBitboard = getAllPiecesBitboard()
         const blockerBitboard = allPiecesBitboard & createPieceMovementMask(piece,startPosIndex)
         let movesBitboard = AllMoves([piece,startPosIndex,blockerBitboard])
@@ -300,10 +316,25 @@ class Board {
             if ((movesBitboard & 1) === 1) {
                 movesList.push(index);
             }
-            movesBitboard >>= 1n;
+            movesBitboard >>= 1;
             index++;
         }
         return movesList
+    }
+
+    makeMove(move){
+        move.board = this; //Just in case, set the move's board to this board.
+        if(!move.isLegal){
+            console.log("Illegal Move!")
+            return;
+        }
+        move.wasBluff = move.isBluff()
+        this.movePiece(move.x1,move.y1,move.x2,move.y2)
+        this.turnNumber++; //increment the move
+        this.playerTurn = 1 - this.playerTurn; //flip who's turn it is.
+        this.moves.push(move)
+        move.print()
+        this.printBoard()
     }
     
     printBoard() {
@@ -368,13 +399,5 @@ thisBoard.moveStashPieceToBoard(colors.BLACK,pieces.KNIGHT,3,4)
 thisBoard.moveStashPieceToBoard(colors.BLACK,pieces.KNIGHT,4,4)
 thisBoard.moveStashPieceToOnDeck(colors.BLACK,pieces.ROOK)
 thisBoard.printBoard()
-thisBoard.swapDeckToBoard(colors.WHITE,0,0)
-thisBoard.moveStashPieceToOnDeck(colors.WHITE,pieces.BISHOP)
-thisBoard.printBoard()
-thisBoard.movePiece(0,0,4,4)
-thisBoard.printBoard()
-thisBoard.movePiece(0,4,1,0)
-thisBoard.printBoard()
-
-console.log(AllMoves)
-console.log(AllMoves.size)
+let move1 = new Move(thisBoard,0,pieces.BISHOP,0,0,2,2)
+thisBoard.makeMove(move1)
