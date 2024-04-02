@@ -57,6 +57,7 @@ class Action {
                 break;
             case actions.CHALLENGE:
                 // Only type and player are needed for CHALLENGE
+                this.wasSuccessful = null //We'll see later if the challenge was successful
                 break;
             case actions.BOMB:
                 this.declaration = pieces.BOMB;
@@ -86,7 +87,7 @@ class Action {
         if(this.type == actions.MOVE){
             return this.board.getPieceAt(this.x2, this.y2).type != this.declaration;
         } else if (this.type == actions.BOMB){
-            return this.board.lastCapturedtype == pieces.BOMB; //the last piece taken was a bomb AFTER the move is completed
+            return this.board.lastCapturedPiece.type == pieces.BOMB; //the last piece taken was a bomb AFTER the move is completed
         } else {
             return; 
         }
@@ -96,24 +97,50 @@ class Action {
             console.error("Illegal action: Wrong player taking action!")
             return false;
         }
+        let lastAction = this.board.actions[this.board.actions.length - 1]
         switch (this.type){
             case actions.MOVE:
+                if(lastAction && lastAction.type == actions.CHALLENGE){
+                    console.error("Illegal move: Player was just challenged!")
+                    return false;
+                } else if (this.mustSacrifice){
+                    console.error("Illegal move: Player must Sacrifice!")
+                    return false;
+                }
                 let startPosIndex = utils.getBitIndexFromXY(this.x1,this.y1)
                 let endPosIndex = utils.getBitIndexFromXY(this.x2,this.y2)
-                if(!this.board.generatePieceColorLocationLegalMoves(this.declaration,this.player,startPosIndex).contains(endPosIndex)) {
+                if(!this.board.generatePieceColorLocationLegalMoves(this.declaration,this.player,startPosIndex).includes(endPosIndex)) {
                     console.error("Illegal move: Piece cannot move to destination!")
                     return false;
                 }
+                break;
             case actions.CHALLENGE:
-                if(this.board.moves[this.board.moves.length - 1].type == actions.CHALLENGE) {
+                if(lastAction && lastAction.type == actions.CHALLENGE) {
                     console.error("Illegal challenge: Cannot challenge a challenge!")
                     return false;
+                } else if (this.mustSacrifice){
+                    console.error("Illegal move: Player must Sacrifice!")
+                    return false;
                 }
+                break;
             case actions.BOMB:
-                //todo, check that a piece was captured by the opponent on the last move
+                if(lastAction && !lastAction.wasCapture){
+                    console.error("Illegal bomb: Cannot declare bomb without a capture!")
+                    return false;
+                } else if (this.mustSacrifice){
+                    console.error("Illegal move: Player must Sacrifice!")
+                    return false;
+                }
                 break;
             case actions.SACRIFICE:
                 //todo, check that the opponent to a successful challenge before, and that a real piece was selected to sacrifice. 
+                if(lastAction && lastAction.type != actions.CHALLENGE){
+                    console.error("Illegal sacrifice: Cannot sacrifice if the prior action wasn't a challenge!")
+                    return false;
+                } else if (!this.mustSacrifice){
+                    console.error("Illegal move: Player must NOT Sacrifice!")
+                    return false;
+                }
                 break;
         }
         return true;
@@ -150,6 +177,7 @@ class Board {
 
 		this.playerTurn = colors.WHITE //0 for white, 1 for black
 		this.turnNumber = 0 // First turn as white is turn 0
+        this.mustSacrifice = false;
         //bitboards!!
         /* 
         format of bitboards:
@@ -419,16 +447,17 @@ class Board {
 
     // MOVE GENERATION
     getAllPiecesBitboard(){
-        return  getFriendlyPieces(0) | getFriendlyPieces(1)
+        return  this.getFriendlyPieces(0) | this.getFriendlyPieces(1)
     }
     getFriendlyPieces(color){
         return this.bitboards[color][0] | this.bitboards[color][1] | this.bitboards[color][2] | this.bitboards[color][3] | this.bitboards[color][4]
     }
 
     generatePieceColorLocationLegalMoves(piece,color,startPosIndex){
-        const allPiecesBitboard = getAllPiecesBitboard()
-        const blockerBitboard = allPiecesBitboard & createPieceMovementMask(piece,startPosIndex)
-        let movesBitboard = AllMoves([piece,startPosIndex,blockerBitboard])
+        const allPiecesBitboard = this.getAllPiecesBitboard()
+        const blockerBitboard = allPiecesBitboard & precalcs.createPieceMovementMask(piece,startPosIndex)
+        precalcs.printMask(precalcs.createPieceMovementMask(piece,startPosIndex))
+        let movesBitboard = AllMoves.get([piece,startPosIndex,blockerBitboard])
         movesBitboard &= ~this.getFriendlyPieces(color)
         let movesList = []
         while (movesBitboard > 0) {
@@ -438,29 +467,54 @@ class Board {
             movesBitboard >>= 1;
             index++;
         }
+        console.log(movesList)
         return movesList
     }
 
     takeAction(action){
         action.board = this; //Just in case, set the move's board to this board.
-        if(!action.isLegal){return;}
+        if(!action.isLegal()){return;}
+        let lastAction = this.actions[this.actions.length - 1]
         switch (action.type){
-            case actions.MOVE:
+            case actions.MOVE: // A regular move. 
                 action.wasCapture = action.isCapture()
                 this.movePiece(action.x1,action.y1,action.x2,action.y2)
                 this.playerTurn = 1 - this.playerTurn; //flip who's turn it is.
                 action.wasBluff = action.isBluff()
                 this.actions.push(action)
                 break;
-            case actions.CHALLENGE:
+            case actions.CHALLENGE:  
+            /*
+                The following scenarios must be taken into account:
+                1a. The move/capture was NOT a bluff -> challenger sacrifices
+                1b. The move/capture WAS a bluff -> the mover/capturer loses the moving piece - revive the captured piece
+                2a. The bomb declaration was NOT a bluff -> challenger sacrifices a piece.
+                2b. The bomb declaration WAS a bluff -> the bomb player sacrifices a pices
+            */
+                this.mustSacrifice = true; 
+                if(lastAction.wasBluff && lastAction.type == actions.MOVE){
+                    this.playerTurn = 1 - this.playerTurn; //flip who's turn it is
+                    this.captureAtXY(lastAction.x2,lastAction.y2)
+                    if(lastAction.wasCapture){
+                        this.reviveLastCapturedPiece(lastAction.x2,lastAction.y2)
+                    }  
+                    //bring back the last captured piece
+                } else { //if the challenge failed (not a bluff), this same player must sacrifice.
+                    //bring back the bomb (if there was one)
+                    
+                }
                 break;
             case actions.BOMB:
+                action.wasBluff = (this.lastCapturedPiece.type != pieces.BOMB)
+                
+                this.playerTurn = 1 - this.playerTurn; //flip who's turn it is.
                 break;
             case actions.SACRIFICE:
                 this.captureAtXY(action.x1,action.y1)
                 break;
         }        
         this.turnNumber++; //increment the move
+        this.actions.push(action) //Add this action to the list
         action.print()
         this.printBoard()
     }
@@ -472,6 +526,34 @@ class Board {
         }
         return lastMove
     }
+
+    reviveLastCapturedPieceAtXY(x, y) {
+        // Check if there is a last captured piece to revive
+        if (!this.lastCapturedPiece) {
+            console.error("Error: No captured piece available to revive.");
+            return;
+        }
+    
+        const { player, type } = this.lastCapturedPiece;
+        const posIndex = utils.getBitIndexFromXY(x, y); // Assumes utils.getBitIndexFromXY(x, y) is defined
+    
+        // Decrease the captured count for the piece's type and player, if necessary
+        let capturedCount = Number((this.bitboards[player][type] & (0b11000)) >> 3);
+        if (capturedCount > 0) {
+            capturedCount -= 1;
+            this.bitboards[player][type] &= ~(0b11000); // Clear the old captured count
+            this.bitboards[player][type] |= (capturedCount << 3); // Set the new captured count
+        }
+    
+        // Revive the piece at the specified position on the board
+        this.bitboards[player][type] |= (1 << posIndex);
+    
+        // Optionally, reset or update lastCapturedPiece after revival
+        this.lastCapturedPiece = null;
+    
+        console.log(`:::Reviving Piece(${pieceSymbols[player][type]}) at (${x},${y})`);
+    }
+    
     
     printBoard() {
         console.log("__________")    
@@ -536,6 +618,7 @@ thisBoard.moveStashPieceToBoard(colors.BLACK,pieces.KNIGHT,4,4)
 thisBoard.moveStashPieceToOnDeck(colors.BLACK,pieces.ROOK)
 thisBoard.printBoard()
 thisBoard.saveStartingBoard()
-let move1 = new Move(thisBoard,"move",color.WHITE,pieces.BISHOP,0,0,2,2)
+let move1 = new Action(actions.MOVE,colors.WHITE,0,0,pieces.BISHOP,2,2)
 thisBoard.takeAction(move1)
-thisBoard.challengeMove()
+let move2 = new Action(actions.MOVE,colors.BLACK,4,4,pieces.BISHOP,2,2)
+thisBoard.takeAction(move2)
