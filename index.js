@@ -206,7 +206,7 @@ class Board {
         ]
         this.actions = []
         this.startingBoard = []
-        this.lastCapturedPiece = {} //{player, type} tracked for bluffs/bombs
+        this.lastCapturedPiece = null //{player, type} tracked for bluffs/bombs
         this.lastMoveLocation  = {} // {x,y} tracked for bluffs/bombs
 	}
 
@@ -215,7 +215,20 @@ class Board {
     }
     loadStartingBoard(){
         this.bitboards = this.startingBoard.map(innerArray => innerArray.slice());
+    }
 
+    countColorPiecesOnBoard(color){
+        let onBoardBits = this.getFriendlyPieces(color) >> 5
+        let count = 0;
+        while (onBoardBits > 0) {
+            count += onBoardBits & 1; // Increment count if the LSB is 1
+            onBoardBits = onBoardBits >>> 1; // Unsigned right shift operator
+        }
+        return count
+    }
+
+    isGameOver(){
+        return this.countColorPiecesOnBoard(1 - this.playerTurn) == 0;
     }
 
     movePiece(x1, y1, x2, y2) {
@@ -506,20 +519,24 @@ class Board {
                 break;
             case actions.CHALLENGE:  
                 if(lastAction.wasBluff && lastAction.type == actions.MOVE){ //Kill the bluffing piece, and the turn does NOT flip.
+                    // 0 move -> 1 challenge (bluff) -> 1 move...
                     if(lastAction.wasCapture){ //If this was a capture, we undo it with a revive
                         this.reviveLastCapturedPieceAtXY(lastAction.x2,lastAction.y2)
                     }  else { //With no capture, we just have to lose the piece that just moved
                         this.captureAtXY(lastAction.x2,lastAction.y2)
                     }
                 } else if (!lastAction.wasBluff && lastAction.type == actions.MOVE) { //if the challenge failed (not a bluff), this same player must sacrifice.
+                    // 0 move -> 1 challenge (NOT bluff) -> 1 sacrifices -> 0 on decks -> 1 move...
                     this.playerToSacrifice = action.player; // The Current player will have to make a sacrifice. Nothing else.
                     this.playerToOnDeck = lastAction.player; // the other player will select a new on-deck piece
                     this.swapDeckToBoard(lastAction.player,lastAction.x2,lastAction.y2)
                 } else if (lastAction.wasBluff && lastAction.type == actions.BOMB){ // A bomb was declared, and was a bluff
+                    // 0 move -> 1 bomb -> 0 challenge (bluff) -> 1 sacrifices -> 1 move...
                     this.reviveLastCapturedPieceAtXY(twoActionsAgo.x2,twoActionsAgo.y2) //This undoes the bomb
                     this.playerToSacrifice = lastAction.player; // The bomb bluffer must still sacrifice yet another piece. 
                     this.flipTurn() // since we're actually  going to flip turns
                 } else if (!lastAction.wasBluff && lastAction.type == actions.BOMB){
+                    // 0 move -> 1 bomb -> 0 challenge (NOT bluff) -> 1 On Decks -> 0 sacrifices -> 1 move...
                     this.playerToSacrifice = action.player; //The challenger must sac, we don't flip the turn.
                     this.playerToOnDeck = lastAction.player;
                     this.swapDeckToBoard(lastAction.player,twoActionsAgo.x2,twoActionsAgo.y2) // it was the move prior that had the capture move.
@@ -538,7 +555,10 @@ class Board {
                 action.piece = this.getPieceAt(action.x1,action.y1)
                 this.playerToSacrifice = null;
                 this.captureAtXY(action.x1,action.y1)
-                this.flipTurn()
+                if (!(twoActionsAgo.type == actions.BOMB && twoActionsAgo.wasBluff)){
+                    // We must NOT be in this line: 0 move -> 1 bomb -> 0 challenge (bluff) -> 1 sacrifices -> 1 move... 
+                    this.flipTurn()
+                }
                 break;
             case actions.ONDECK:
                 this.moveStashPieceToOnDeck(action.player, action.declaration)
@@ -635,7 +655,11 @@ class Board {
         }
         console.log(`W-Stash: (${onDeck[colors.WHITE]}) ${stashes[colors.WHITE].join(' ')} `);
         console.log("...........")
-        console.log(`Captured: ${captured.join(' ')}`);
+        console.log(this.lastCapturedPiece)
+        console.log(`Captured: last:${this.lastCapturedPiece != null ? `(${pieceSymbols[this.lastCapturedPiece.player][this.lastCapturedPiece.type]})`:`()`} ${captured.join(' ')}`); 
+        if(this.isGameOver()){
+            console.log(`Game Over - Winner is ${this.playerTurn == colors.WHITE ? "White" : "Black"}!`)
+        }
         console.log("__________")
     }
 }
@@ -680,4 +704,9 @@ thisBoard.takeAction(new Action(actions.BOMB,colors.WHITE))
 console.log("Move 10")
 thisBoard.takeAction(new Action(actions.CHALLENGE,colors.BLACK))
 console.log("Move 11")
-thisBoard.takeAction(new Action(actions.SACRIFICE,colors.WHITE,1,4))
+thisBoard.takeAction(new Action(actions.SACRIFICE,colors.WHITE,1,0))
+console.log("Move 12")
+thisBoard.takeAction(new Action(actions.MOVE,colors.WHITE,2,0,pieces.KING,3,0))
+console.log("Move 13")
+thisBoard.takeAction(new Action(actions.CHALLENGE,colors.BLACK))
+
