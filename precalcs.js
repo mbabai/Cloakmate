@@ -76,7 +76,7 @@ function createPieceLegalMoveBitboard(piece,startPosIndex,blockerBitboard){
     const pos = utils.getXYFromBitIndex(startPosIndex); // Convert index to x,y 
 
     pieceMovement.directions.forEach(([dx, dy]) => {
-        for (let distance = 1; distance < pieceMovement.maxDistance; distance++) { // Limited to 3 squares
+        for (let distance = 1; distance <= pieceMovement.maxDistance; distance++) { // Limited to 3 squares
             const newX = pos.x + dx * distance;
             const newY = pos.y + dy * distance;
             if (newX >= 0 && newX < 5 && newY >= 0 && newY < 5) {
@@ -90,39 +90,51 @@ function createPieceLegalMoveBitboard(piece,startPosIndex,blockerBitboard){
             
         }
     });
+    // if(piece == pieces.BISHOP){
+    //     console.log(`${piece} at location ${startPosIndex}:`)
+    //     console.log("blocker bitboard:")
+    //     printMask(blockerBitboard)
+    //     console.log("Resulting legal moves:")
+    //     printMask(mask)
+    // }
     return mask;
 }
 
 function createAllPiecesLookupTable(height=5,width=5){
     // pre-generate all bishop moves.
-    let allMovesLookup = new Map()
+    let movementMasks = new Map()
+    let legalMovesLookup = new Map()
     for(let piece = 1; piece <=4; piece++){//iterate through all non-bomb pieces
         for(let StartPosIndex = 5; StartPosIndex < (height*width +5); StartPosIndex++ ){
             let movementMask = createPieceMovementMask(piece,StartPosIndex)
+            movementMasks.set(JSON.stringify([piece,StartPosIndex]), movementMask)
             let blockPatterns = createAllBlockerBitboards(movementMask)
-            // console.log(Object.keys(blockPatterns).length)
             for(let i = 0; i < Object.keys(blockPatterns).length; i++){
                 blockerBitboard = blockPatterns[i]
                 legalMoveBitboard = createPieceLegalMoveBitboard(piece,StartPosIndex, blockerBitboard)
-                allMovesLookup.set([piece,StartPosIndex,blockerBitboard],legalMoveBitboard)
+                legalMovesLookup.set(JSON.stringify([piece,StartPosIndex,blockerBitboard]),legalMoveBitboard)
             }
         }
     }
-    return allMovesLookup;
+    return {movementMasks, legalMovesLookup};
 }
 
-function printMask(rawMask) {
+function printMask(rawMask,H=5,W=5) {
     // Extract the first 25 digits by shifting right by 5, ignoring the 5 least significant digits
     let mask = (rawMask) >> 5;
 
     // Convert to a binary string, padding with leading zeros to ensure it has at least 25 digits
     let binaryString = mask.toString(2).padStart(25, '0');
 
-    // Print 5 digits every line, starting from the end of the string
-    for (let i = 4; i >= 0; i--) {
-        // Extract a substring of 5 digits and print
-        console.log(binaryString.substring(i * 5, (i + 1) * 5).split("").reverse().join(""));
+    const rows = [];
+    for (let i = 0; i < H; i++) {
+        const start = i * W;
+        const end = start + W;
+        rows.push(binaryString.substring(start, end));
     }
+
+    // Reverse the array to start from the bottom and log each row
+    rows.reverse().forEach(row => console.log(row));
     console.log("------")
 }
 

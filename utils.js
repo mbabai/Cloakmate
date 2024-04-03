@@ -10,7 +10,7 @@ function getXYFromBitIndex(bitIndex,height=5,width=5){
     bitIndex = bitIndex - 5; // Subtract the offset
     let linearIndex = bitIndex % width; // Calculate the linear index within the board
     let x = linearIndex;
-    let y = height - 1 - Math.floor(bitIndex / width);
+    let y = Math.floor(bitIndex / width);
     return {x,y}
 }
 

@@ -36,7 +36,7 @@ const actions = {
     SACRIFICE: 3
 };
 
-const AllMoves = precalcs.createAllPiecesLookupTable()
+const All = precalcs.createAllPiecesLookupTable()
 
 
 class Action {
@@ -455,14 +455,15 @@ class Board {
 
     generatePieceColorLocationLegalMoves(piece,color,startPosIndex){
         const allPiecesBitboard = this.getAllPiecesBitboard()
-        const blockerBitboard = allPiecesBitboard & precalcs.createPieceMovementMask(piece,startPosIndex)
-        precalcs.printMask(precalcs.createPieceMovementMask(piece,startPosIndex))
-        let movesBitboard = AllMoves.get([piece,startPosIndex,blockerBitboard])
+        let thisMovementMask = All.movementMasks.get(JSON.stringify([piece,startPosIndex]))
+        const blockerBitboard = allPiecesBitboard & thisMovementMask
+        let movesBitboard = All.legalMovesLookup.get(JSON.stringify([piece,startPosIndex,blockerBitboard]))
         movesBitboard &= ~this.getFriendlyPieces(color)
         let movesList = []
+        let index = 0;
         while (movesBitboard > 0) {
             if ((movesBitboard & 1) === 1) {
-                movesList.push(index);
+                movesList.push(index); 
             }
             movesBitboard >>= 1;
             index++;
@@ -618,7 +619,9 @@ thisBoard.moveStashPieceToBoard(colors.BLACK,pieces.KNIGHT,4,4)
 thisBoard.moveStashPieceToOnDeck(colors.BLACK,pieces.ROOK)
 thisBoard.printBoard()
 thisBoard.saveStartingBoard()
+console.log("Move 1")
 let move1 = new Action(actions.MOVE,colors.WHITE,0,0,pieces.BISHOP,2,2)
 thisBoard.takeAction(move1)
+console.log("Move 2")
 let move2 = new Action(actions.MOVE,colors.BLACK,4,4,pieces.BISHOP,2,2)
 thisBoard.takeAction(move2)
