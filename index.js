@@ -69,12 +69,15 @@ class Action {
             case actions.SACRIFICE:
                 this.x1 = x1;
                 this.y1 = y1;
+                this.piece = null
                 // declaration, x2, y2 not used for SACRIFICE
                 break;
             case actions.ONDECK:
                 this.declaration = declaration; // this is the piece that will go on deck.
+                break;
             default:
                 console.error("Invalid action type");
+                break;
         }
     }
     isCapture(){
@@ -100,16 +103,18 @@ class Action {
             console.error("Illegal action: Wrong player taking action!")
             return false;
         }
+
+        if (this.type != actions.SACRIFICE && this.board.playerToSacrifice == this.board.playerTurn){
+            console.error("Illegal action: Player must Sacrifice!")
+            return false;
+        } else if (this.type != actions.ONDECK && this.board.playerToOnDeck == this.board.playerTurn){
+            console.error("Illegal action: Player must On Deck!")
+            return false;
+        }
+
         let lastAction = this.board.actions[this.board.actions.length - 1]
         switch (this.type){
             case actions.MOVE:
-                if(lastAction && lastAction.type == actions.CHALLENGE){
-                    console.error("Illegal move: Player was just challenged!")
-                    return false;
-                } else if (this.board.playerToSacrifice == this.player){
-                    console.error("Illegal move: Player must Sacrifice!")
-                    return false;
-                }
                 let startPosIndex = utils.getBitIndexFromXY(this.x1,this.y1)
                 let endPosIndex = utils.getBitIndexFromXY(this.x2,this.y2)
                 if(!this.board.generatePieceColorLocationLegalMoves(this.declaration,this.player,startPosIndex).includes(endPosIndex)) {
@@ -121,24 +126,24 @@ class Action {
                 if(lastAction && lastAction.type == actions.CHALLENGE) {
                     console.error("Illegal challenge: Cannot challenge a challenge!")
                     return false;
-                } else if (this.board.playerToSacrifice == this.player){
-                    console.error("Illegal move: Player must Sacrifice!")
-                    return false;
-                }
+                } 
                 break;
             case actions.BOMB:
                 if(lastAction && !lastAction.wasCapture){
                     console.error("Illegal bomb: Cannot declare bomb without a capture!")
                     return false;
-                } else if (this.board.playerToSacrifice == this.player){
-                    console.error("Illegal move: Player must Sacrifice!")
-                    return false;
-                }
+                } 
                 break;
             case actions.SACRIFICE:
                 //todo, check that the opponent to a successful challenge before, and that a real piece was selected to sacrifice. 
                 if (this.board.playerToSacrifice != this.player){
                     console.error("Illegal Sacrifice: Player must NOT Sacrifice!")
+                    return false;
+                } else if (this.board.getPieceAt(this.x1, this.y1) == null) {
+                    console.error("Illegal Sacrifice: No piece at location!")
+                    return false;
+                } else if (this.board.getPieceAt(this.x1, this.y1).player != this.player){
+                    console.error("Illegal Sacrifice: Cannot sacrifice an opponent's piece!")
                     return false;
                 }
                 break;
@@ -168,8 +173,7 @@ class Action {
                 console.log(`BOMB!!${bluffMark}`)
                 break;
             case actions.SACRIFICE:
-                let piece = this.board.getPieceAt(this.x1, this.y1)
-                console.log(`Sacrifice  ${pieceSymbols[piece.player][piece.type]} at (${this.x1},${this.y1}) => `)
+                console.log(`Sacrifice  ${pieceSymbols[this.piece.player][this.piece.type]} at (${this.x1},${this.y1})`)
                 break;
             case actions.ONDECK:
                 console.log(`On Deck  ${pieceSymbols[this.player][this.declaration]}`)
@@ -477,7 +481,6 @@ class Board {
             movesBitboard >>= 1;
             index++;
         }
-        console.log(movesList)
         return movesList
     }
 
@@ -504,7 +507,7 @@ class Board {
             case actions.CHALLENGE:  
                 if(lastAction.wasBluff && lastAction.type == actions.MOVE){ //Kill the bluffing piece, and the turn does NOT flip.
                     if(lastAction.wasCapture){ //If this was a capture, we undo it with a revive
-                        this.reviveLastCapturedPiece(lastAction.x2,lastAction.y2)
+                        this.reviveLastCapturedPieceAtXY(lastAction.x2,lastAction.y2)
                     }  else { //With no capture, we just have to lose the piece that just moved
                         this.captureAtXY(lastAction.x2,lastAction.y2)
                     }
@@ -513,7 +516,7 @@ class Board {
                     this.playerToOnDeck = lastAction.player; // the other player will select a new on-deck piece
                     this.swapDeckToBoard(lastAction.player,lastAction.x2,lastAction.y2)
                 } else if (lastAction.wasBluff && lastAction.type == actions.BOMB){ // A bomb was declared, and was a bluff
-                    this.reviveLastCapturedPiece(twoActionsAgo.x2,twoActionsAgo.y2) //This undoes the bomb
+                    this.reviveLastCapturedPieceAtXY(twoActionsAgo.x2,twoActionsAgo.y2) //This undoes the bomb
                     this.playerToSacrifice = lastAction.player; // The bomb bluffer must still sacrifice yet another piece. 
                     this.flipTurn() // since we're actually  going to flip turns
                 } else if (!lastAction.wasBluff && lastAction.type == actions.BOMB){
@@ -532,10 +535,14 @@ class Board {
                 this.flipTurn()
                 break;
             case actions.SACRIFICE:
+                action.piece = this.getPieceAt(action.x1,action.y1)
+                this.playerToSacrifice = null;
                 this.captureAtXY(action.x1,action.y1)
+                this.flipTurn()
                 break;
             case actions.ONDECK:
                 this.moveStashPieceToOnDeck(action.player, action.declaration)
+                this.playerToOnDeck = null;
                 this.flipTurn()
                 break;
         }        
@@ -653,8 +660,24 @@ thisBoard.moveStashPieceToOnDeck(colors.BLACK,pieces.ROOK)
 thisBoard.printBoard()
 thisBoard.saveStartingBoard()
 console.log("Move 1")
-let move1 = new Action(actions.MOVE,colors.WHITE,0,0,pieces.BISHOP,2,2)
-thisBoard.takeAction(move1)
+thisBoard.takeAction(new Action(actions.MOVE,colors.WHITE,0,0,pieces.BISHOP,2,2)) //real move
 console.log("Move 2")
-let move2 = new Action(actions.MOVE,colors.BLACK,4,4,pieces.BISHOP,2,2)
-thisBoard.takeAction(move2)
+thisBoard.takeAction(new Action(actions.MOVE,colors.BLACK,4,4,pieces.KNIGHT,3,2)) // real move
+console.log("Move 3")
+thisBoard.takeAction(new Action(actions.CHALLENGE,colors.WHITE))
+console.log("Move 4")
+thisBoard.takeAction(new Action(actions.SACRIFICE,colors.WHITE,4,0))
+console.log("Move 5")
+thisBoard.takeAction(new Action(actions.ONDECK,colors.BLACK,null,null,pieces.BISHOP))
+console.log("Move 6")
+thisBoard.takeAction(new Action(actions.MOVE,colors.WHITE,2,2,pieces.ROOK,3,2)) // real move
+console.log("Move 7")
+thisBoard.takeAction(new Action(actions.CHALLENGE,colors.BLACK))
+console.log("Move 8")
+thisBoard.takeAction(new Action(actions.MOVE,colors.BLACK,3,2,pieces.ROOK,3,0)) // real move
+console.log("Move 9")
+thisBoard.takeAction(new Action(actions.BOMB,colors.WHITE))
+console.log("Move 10")
+thisBoard.takeAction(new Action(actions.CHALLENGE,colors.BLACK))
+console.log("Move 11")
+thisBoard.takeAction(new Action(actions.SACRIFICE,colors.WHITE,1,4))
