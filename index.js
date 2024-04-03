@@ -193,6 +193,7 @@ class Board {
 		this.turnNumber = 0 // First turn as white is turn 0
         this.playerToSacrifice = null;
         this.playerToOnDeck = null
+        this.winner = null
         /* 
         format of bitboards:
             [height*width bits - location on board] 
@@ -658,6 +659,7 @@ class Board {
         console.log(this.lastCapturedPiece)
         console.log(`Captured: last:${this.lastCapturedPiece != null ? `(${pieceSymbols[this.lastCapturedPiece.player][this.lastCapturedPiece.type]})`:`()`} ${captured.join(' ')}`); 
         if(this.isGameOver()){
+            this.winner = this.playerTurn
             console.log(`Game Over - Winner is ${this.playerTurn == colors.WHITE ? "White" : "Black"}!`)
         }
         console.log("__________")
