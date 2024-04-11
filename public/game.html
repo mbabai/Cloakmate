@@ -7,6 +7,15 @@
     <link rel="stylesheet" href="/css/style.css"> <!-- Linking the CSS file -->
     <script>
         document.addEventListener('DOMContentLoaded', function() {
+            window.toggleButtons = function() {
+                var bombButton = document.getElementById('bomb-button');
+                var challengeButton = document.getElementById('challenge-button');
+
+                // Toggle the display style
+                bombButton.style.display = bombButton.style.display === 'none' ? 'block' : 'none';
+                challengeButton.style.display = challengeButton.style.display === 'none' ? 'block' : 'none';
+            };
+
             // Create a new WebSocket.
             const socket = new WebSocket('ws://localhost:3000');
 
@@ -42,8 +51,10 @@
             <div class="cell black"></div><div class="cell white"></div><div class="cell black"></div><div class="cell white"></div><div class="cell black"></div>
             <div class="cell white"></div><div class="cell black"></div><div class="cell white"></div><div class="cell black"></div><div class="cell white"></div>
             <div class="cell black"></div><div class="cell white"></div><div class="cell black"></div><div class="cell white"></div><div class="cell black"></div>
+            
+            <button id="bomb-button" class="game-button">Bomb!</button>
             <div class="on-deck-cell"></div>
-
+            <button id="challenge-button" class="game-button">Challenge</button>
         </div>
     </div>
 </body>

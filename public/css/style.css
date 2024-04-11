@@ -58,3 +58,31 @@ html, body {
 .cell:nth-child(even) {
     background-color: #CCC; /* White cells */
 }
+
+.game-button {
+    width: calc((100% / 5) * 1.7); /* Adjust the width to bring buttons closer to the middle */
+    height: calc(100% / 5); /* Same height as the on-deck-cell */
+    background-color: darkgreen; /* Deep green background */
+    color: white; /* White text */
+    border: none; /* No border for a no-frills look */
+    font-size: 3cqh; /* Adjust the font size to be viewport-responsive */
+    padding: 1cqh; /* Padding to ensure text is within the button bounds */
+    font-weight: bold; /* Make the text bold */
+    position: absolute;
+    top: calc(100% + 10px); /* Aligned with the on-deck-cell vertically */
+    display: flex;
+    justify-content: center; /* Center horizontally */
+    align-items: center; /* Center vertically */
+    cursor: pointer; /* Changes cursor to pointer on hover */
+    outline: none; /* Remove focus outline */
+}
+
+/* Specific styles for the Bomb! button for a larger font */
+#bomb-button {
+    font-size: 3.5cqh; /* Slightly larger font size for "Bomb!" since it's shorter */
+    left: calc(50% - (100% / 5 * 0.75) - (100% / 5 * 1.7)); /* Recalculate the position to bring closer to center */
+}
+
+#challenge-button {
+    left: calc(50% + (100% / 5 * 0.75)); /* Recalculate the position to bring closer to center */
+}
