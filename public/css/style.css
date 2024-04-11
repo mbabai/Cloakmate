@@ -40,10 +40,21 @@ html, body {
     height: 100%;
 }
 
+.on-deck-cell {
+    width: calc(100% / 5); /* Make the square the width of one cell of the board */
+    height: calc(100% / 5); /* Make the square the height of one cell of the board */
+    background-color: black; /* Grey color for the square */
+    position: absolute;
+    left: 50%; /* Start at the horizontal center of the main div */
+    transform: translateX(-50%); /* Shift the square leftwards by half its width */
+    top: calc(100% + 10px); /* Position right below the board div, accounting for the board's margin-bottom */
+    border: 1px solid white;
+}
+
 .cell:nth-child(odd) {
-    background-color: #555; /* Black cells */
+    background-color: #888; /* Black cells */
 }
 
 .cell:nth-child(even) {
-    background-color: #777; /* White cells */
+    background-color: #CCC; /* White cells */
 }
