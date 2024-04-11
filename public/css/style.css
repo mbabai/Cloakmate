@@ -1,0 +1,49 @@
+html, body {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: Black;
+    overflow: hidden; /* Prevent scrolling */
+}
+
+.main {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: relative; /* Allows absolute positioning inside */
+    width: 100vw;
+    height: 100vh;
+    max-height: calc(100vw * 1.6);
+    max-width: calc(100vh / 1.6);
+    background: #111; /* Dark background for the main div */
+}
+
+.board {
+    width: 95%;
+    height: calc(95% / 1.6); /* Maintain the aspect ratio of the main div */
+    position: absolute;
+    top: 40%;
+    left: 50%;
+    transform: translate(-50%, -50%); /* Center the board */
+    display: grid;
+    grid-template-columns: repeat(5, 1fr); /* Creates a 5x5 grid */
+    grid-template-rows: repeat(5, 1fr);
+    background: #ddd; /* Light background for visibility */
+    box-shadow: 0 0 10px rgba(0,0,0,0.5); /* Optional: Adds shadow for depth */
+}
+
+.cell {
+    width: 100%;
+    height: 100%;
+}
+
+.cell:nth-child(odd) {
+    background-color: #555; /* Black cells */
+}
+
+.cell:nth-child(even) {
+    background-color: #777; /* White cells */
+}

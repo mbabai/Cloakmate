@@ -4,8 +4,9 @@
   "description": "",
   "main": "index.js",
   "dependencies": {
-    "express": "^4.18.3",
-    "socket.io": "^4.7.5"
+    "express": "^4.19.2",
+    "socket.io": "^4.7.5",
+    "ws": "^8.16.0"
   },
   "devDependencies": {},
   "scripts": {

@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cloakmate</title>
+    <link rel="stylesheet" href="/css/style.css"> <!-- Linking the CSS file -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Create a new WebSocket.
+            const socket = new WebSocket('ws://localhost:3000');
+
+            // Connection opened
+            socket.addEventListener('open', function (event) {
+                socket.send('Hello Server!'); // Send a message to the server
+            });
+
+            // Listen for messages
+            socket.addEventListener('message', function (event) {
+                console.log('Message from server ', event.data);
+            });
+
+            // Listen for possible errors
+            socket.addEventListener('error', function (event) {
+                console.error('WebSocket error: ', event);
+            });
+
+            // Listen for close
+            socket.addEventListener('close', function (event) {
+                console.log('WebSocket connection closed');
+            });
+        });
+    </script>
+</head>
+<body>
+    <div class="main">
+        <div class="board">
+            <!-- Generate the 5x5 board using divs -->
+            <!-- Each cell has a class 'cell', and additional class for coloring: 'black' or 'white' -->
+            <div class="cell black"></div><div class="cell white"></div><div class="cell black"></div><div class="cell white"></div><div class="cell black"></div>
+            <div class="cell white"></div><div class="cell black"></div><div class="cell white"></div><div class="cell black"></div><div class="cell white"></div>
+            <div class="cell black"></div><div class="cell white"></div><div class="cell black"></div><div class="cell white"></div><div class="cell black"></div>
+            <div class="cell white"></div><div class="cell black"></div><div class="cell white"></div><div class="cell black"></div><div class="cell white"></div>
+            <div class="cell black"></div><div class="cell white"></div><div class="cell black"></div><div class="cell white"></div><div class="cell black"></div>
+        </div>
+    </div>
+</body>
+</html>
