@@ -56,10 +56,17 @@ html, body {
     display: block; /* Removes any extra space below the image */
 }
 
+.game-piece.selected {
+    position: relative;
+    z-index: 1;
+    background: radial-gradient(circle, rgba(65, 105, 225, 0.75) 0%, rgba(65, 105, 225, 0.35) 40%, transparent 80%);
+}
+
 .cell .game-piece {
     width: auto; /* Adjust size to better fit within board cells, could use max-width as well */
     height: 95%; /* Maintain aspect ratio */
     margin: auto; /*Center the image within the cell */
+    border:none;
 }
 
 .inventory {
@@ -81,7 +88,6 @@ html, body {
 .inventory-slot {
     width: calc(100% / 5); /* Adjust the width to match your layout needs */
     height: calc(95%);
-    /* border: 1px solid white; White border for better visibility */
 }
 
 .top-row .inventory-slot, .bottom-row .inventory-slot {

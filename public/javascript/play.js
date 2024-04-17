@@ -38,6 +38,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const dropTargets = document.querySelectorAll('.cell, .inventory-slot, .on-deck-cell');
     const bottomRowCells = document.querySelectorAll('.board .cell:nth-last-child(-n+5)'); // Correctly selecting the bottom row
     const onDeckCell = document.querySelector('.on-deck-cell');
+    let selectedPiece = null; // To keep track of the currently selected piece
 
     gamePieces.forEach(piece => {
         piece.addEventListener('dragstart', handleDragStart);
@@ -83,7 +84,45 @@ document.addEventListener('DOMContentLoaded', function() {
         updateBottomRowHighlight();
         updateOnDeckHighlight();
     }
-    
+
+
+    gamePieces.forEach(piece => {
+        piece.addEventListener('click', selectPiece);
+    });
+
+    dropTargets.forEach(target => {
+        target.addEventListener('click', placePiece);
+    });
+
+    function selectPiece(event) {
+        // Clear any previously selected piece
+        if (selectedPiece) {
+            selectedPiece.classList.remove('selected'); // Optional: Visual cue
+        }
+        
+        selectedPiece = event.target;
+        selectedPiece.classList.add('selected'); // Optional: Visual cue
+        event.stopPropagation(); // Prevent this click from triggering placePiece
+    }
+
+    function placePiece(event) {
+        if (!selectedPiece) return; // No piece selected, nothing to do
+
+        const target = event.target;
+        if (target.classList.contains('cell') || target.classList.contains('inventory-slot') || target.classList.contains('on-deck-cell')) {
+            // If the target is another image, append to its parent (e.g., moving to a non-empty cell)
+            if (target.tagName.toLowerCase() === 'img') {
+                target.parentNode.appendChild(selectedPiece);
+            } else {
+                target.appendChild(selectedPiece);
+            }
+            selectedPiece.classList.remove('selected'); // Optional: Remove visual cue
+            selectedPiece = null; // Reset the selected piece
+        }
+        updateBottomRowHighlight();
+        updateOnDeckHighlight();
+        shiftInventory()
+    }    
 
     function shiftInventory() {
         const slots = document.querySelectorAll('.inventory-slot');
