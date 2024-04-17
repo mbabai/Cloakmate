@@ -33,12 +33,14 @@ document.addEventListener('DOMContentLoaded', function() {
     };
     toggleButtons();
 
-    const gamePhase = 'setup'; // This will later be dynamic based on game state
+    let gamePhase = 'setup'; // This will later be dynamic based on game state
     const gamePieces = document.querySelectorAll('.game-piece');
     const dropTargets = document.querySelectorAll('.cell, .inventory-slot, .on-deck-cell');
     const bottomRowCells = document.querySelectorAll('.board .cell:nth-last-child(-n+5)'); // Correctly selecting the bottom row
     const onDeckCell = document.querySelector('.on-deck-cell');
+    const inventorySlots = document.querySelectorAll('.inventory-slot'); // Ensure this selects all inventory slots
     let selectedPiece = null; // To keep track of the currently selected piece
+
 
     gamePieces.forEach(piece => {
         piece.addEventListener('dragstart', handleDragStart);
@@ -105,19 +107,33 @@ document.addEventListener('DOMContentLoaded', function() {
         event.stopPropagation(); // Prevent this click from triggering placePiece
     }
 
-    function placePiece(event) {
-        if (!selectedPiece) return; // No piece selected, nothing to do
 
-        const target = event.target;
-        if (target.classList.contains('cell') || target.classList.contains('inventory-slot') || target.classList.contains('on-deck-cell')) {
-            // If the target is another image, append to its parent (e.g., moving to a non-empty cell)
-            if (target.tagName.toLowerCase() === 'img') {
-                target.parentNode.appendChild(selectedPiece);
-            } else {
-                target.appendChild(selectedPiece);
+    function placePiece(event) {
+        if (!selectedPiece) return; // No piece selected, exit the function
+
+        // Find the target cell or slot by climbing up to the closest relevant parent
+        const target = event.target.closest('.cell, .inventory-slot, .on-deck-cell');
+
+        // Determine if the target is an allowed placement location
+        const isBottomRow = Array.from(bottomRowCells).includes(target);
+        const isOnDeck = target === onDeckCell;
+        const isInInventory = Array.from(inventorySlots).includes(target);
+
+        // Check if placement should proceed based on the game phase and target validity
+        if (gamePhase === 'setup' && (isBottomRow || isOnDeck || isInInventory)) {
+            if (target.classList.contains('cell') || target.classList.contains('inventory-slot') || target.classList.contains('on-deck-cell')) {
+                // If the target is another image, append to its parent (e.g., moving to a non-empty cell)
+                if (target.tagName.toLowerCase() === 'img') {
+                    target.parentNode.appendChild(selectedPiece);
+                } else {
+                    target.appendChild(selectedPiece);
+                }
+                selectedPiece.classList.remove('selected'); // Optional: Remove visual cue
+                selectedPiece = null; // Reset the selected piece
             }
-            selectedPiece.classList.remove('selected'); // Optional: Remove visual cue
-            selectedPiece = null; // Reset the selected piece
+        } else {
+            // Optionally handle illegal moves or provide feedback
+            console.log("Illegal move during setup phase.");
         }
         updateBottomRowHighlight();
         updateOnDeckHighlight();
