@@ -38,25 +38,80 @@ html, body {
 .cell {
     width: 100%;
     height: 100%;
+    background-image:url(http://www.zingerbugimages.com/backgrounds/white_marble_background_seamless.jpg);
+    background-size: 100% 100%, 200% 200%, 200% 200%, 150% 150%;
+    background-blend-mode: overlay, soft-light, soft-light, multiply;
+
+
 }
 
-.on-deck-cell {
-    width: calc(100% / 5); /* Make the square the width of one cell of the board */
-    height: calc(100% / 5); /* Make the square the height of one cell of the board */
-    background-color: black; /* Grey color for the square */
+.board .cell.highlighted {
+    box-shadow: inset 0 0 15px rgba(200, 170, 0, 0.9); /* Subtle glow effect */
+    transition: box-shadow 0.3s;
+}
+
+.game-piece {
+    max-width: 100%; /* Prevents the image from exceeding the width of the container */
+    max-height: 100%; /* Prevents the image from exceeding the height of the container */
+    display: block; /* Removes any extra space below the image */
+}
+
+.cell .game-piece {
+    width: auto; /* Adjust size to better fit within board cells, could use max-width as well */
+    height: 95%; /* Maintain aspect ratio */
+    margin: auto; /*Center the image within the cell */
+}
+
+.inventory {
+    display: flex;
+    flex-direction: column;
     position: absolute;
-    left: 50%; /* Start at the horizontal center of the main div */
-    transform: translateX(-50%); /* Shift the square leftwards by half its width */
-    top: calc(100% + 10px); /* Position right below the board div, accounting for the board's margin-bottom */
+    width: 95%;
+    height: 22%;
+    top: calc(70% + 10px); /* Position right below the board */
+}
+
+.inventory-row {
+    display: flex;
+    justify-content: center;
+    width: 100%;
+    height:50%;
+}
+
+.inventory-slot {
+    width: calc(100% / 5); /* Adjust the width to match your layout needs */
+    height: calc(95%);
+    /* border: 1px solid white; White border for better visibility */
+}
+
+.top-row .inventory-slot, .bottom-row .inventory-slot {
+    flex: 1;
+}
+
+/* Adjusting existing .on-deck-cell styles */
+.on-deck-cell {
+    background-color: black;
     border: 1px solid white;
+    flex: 1; /* Make the on-deck cell larger than the slots */
+}
+
+.on-deck-cell.empty {
+    box-shadow: inset 0 0 20px rgba(255, 215, 0, 0.8); /* Subtle glow effect */
+    transition: box-shadow 0.3s;
+}
+
+.on-deck-cell .game-piece {
+    width: auto; /* Adjust size to better fit within board cells, could use max-width as well */
+    height: 95%; /* Maintain aspect ratio */
+    margin: auto; /*Center the image within the cell */
 }
 
 .cell:nth-child(odd) {
-    background-color: #888; /* Black cells */
+    background-color: #595959; /* Black cells */
 }
 
 .cell:nth-child(even) {
-    background-color: #CCC; /* White cells */
+    background-color: #A9A9A9; /* White cells */
 }
 
 .game-button {
@@ -69,7 +124,8 @@ html, body {
     padding: 1cqh; /* Padding to ensure text is within the button bounds */
     font-weight: bold; /* Make the text bold */
     position: absolute;
-    top: calc(100% + 10px); /* Aligned with the on-deck-cell vertically */
+    top: calc(70% + 10px); /* Aligned with the on-deck-cell vertically */
+    height: 10%;
     display: flex;
     justify-content: center; /* Center horizontally */
     align-items: center; /* Center vertically */
@@ -80,9 +136,38 @@ html, body {
 /* Specific styles for the Bomb! button for a larger font */
 #bomb-button {
     font-size: 3.5cqh; /* Slightly larger font size for "Bomb!" since it's shorter */
-    left: calc(50% - (100% / 5 * 0.75) - (100% / 5 * 1.7)); /* Recalculate the position to bring closer to center */
+    left: calc(50% - (100% / 5 * 0.6) - (100% / 5 * 1.7)); /* Recalculate the position to bring closer to center */
 }
 
 #challenge-button {
-    left: calc(50% + (100% / 5 * 0.75)); /* Recalculate the position to bring closer to center */
+    left: calc(50% + (100% / 5 * 0.6)); /* Recalculate the position to bring closer to center */
+}
+
+.game-clock {
+    z-index: 10;
+    top:2%;
+    display: flex;
+    position: absolute;
+    height:5%;
+    width:80%;
+    justify-content: center;
+    margin-bottom: 20px; /* Space between the clock and the board */
+}
+
+.clock {
+    font-family: 'LCD', 'Lucida Console', monospace; /* Styling for digital clock appearance */
+    font-size: 3cqh;
+    padding: 1cqh 1cqh;
+    border: 1px solid grey; /* Thin grey border as specified */
+    margin: 0 18cqh;
+}
+
+.black-clock {
+    background-color: black;
+    color: white;
+}
+
+.white-clock {
+    background-color: white;
+    color: black;
 }

@@ -9,6 +9,12 @@
 </head>
 <body>
     <div class="main">
+        <div class="game-clock">
+            <div class="clock black-clock">10:00</div>
+            <div class="clock white-clock">10:00</div>
+        </div>
+        <button id="readyButton" class="game-button" style="display: none; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index:10;">Ready!</button>
+
         <div class="board">
             <!-- Generate the 5x5 board using divs -->
             <!-- Each cell has a class 'cell', and additional class for coloring: 'black' or 'white' -->
@@ -17,11 +23,27 @@
             <div class="cell black"></div><div class="cell white"></div><div class="cell black"></div><div class="cell white"></div><div class="cell black"></div>
             <div class="cell white"></div><div class="cell black"></div><div class="cell white"></div><div class="cell black"></div><div class="cell white"></div>
             <div class="cell black"></div><div class="cell white"></div><div class="cell black"></div><div class="cell white"></div><div class="cell black"></div>
-            
-            <button id="bomb-button" class="game-button">Bomb!</button>
-            <div class="on-deck-cell"></div>
-            <button id="challenge-button" class="game-button">Challenge</button>
         </div>
+        <div class="inventory">
+            <div class="inventory-row top-row">
+                <div class="inventory-slot"><img src="/images/PawnWhiteKing.svg" draggable="true" id="piece1" class="game-piece"></div>
+                <div class="inventory-slot"><img src="/images/PawnWhiteBishop.svg" draggable="true" id="piece2" class="game-piece"></div>
+                <div class="on-deck-cell"></div>
+                <div class="inventory-slot"><img src="/images/PawnWhiteBishop.svg" draggable="true" id="piece3" class="game-piece"></div>
+                <div class="inventory-slot"><img src="/images/PawnWhiteKing.svg" draggable="true" id="piece4" class="game-piece"></div>
+            </div>
+            <div class="inventory-row bottom-row">
+                <div class="inventory-slot"><img src="/images/PawnWhiteRook.svg" draggable="true" id="piece5" class="game-piece"></div>
+                <div class="inventory-slot"><img src="/images/PawnWhiteKnight.svg" draggable="true" id="piece6" class="game-piece"></div>
+                <div class="inventory-slot"><img src="/images/PawnWhiteBomb.svg" draggable="true" id="piece7" class="game-piece"></div>
+                <div class="inventory-slot"><img src="/images/PawnWhiteKnight.svg" draggable="true" id="piece8" class="game-piece"></div>
+                <div class="inventory-slot"><img src="/images/PawnWhiteRook.svg" draggable="true" id="piece9" class="game-piece"></div>
+            </div>
+        </div>
+        <button id="bomb-button" class="game-button">Bomb!</button>
+        <button id="challenge-button" class="game-button">Challenge</button>
+
+        
     </div>
 </body>
 </html>
