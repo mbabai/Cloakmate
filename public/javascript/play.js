@@ -160,10 +160,6 @@ document.addEventListener('DOMContentLoaded', function() {
         readyButton.style.display = (isBottomRowFilled && isOnDeckFilled) ? 'block' : 'none';
     }
 
-    // Initialize the board state
-    updateBottomRowHighlight();
-    updateOnDeckHighlight();
-
     readyButton.addEventListener('click', function() {
         const pieces = Array.from(bottomRowCells).map(cell => {
             return cell.children.length > 0 ? extractPieceName(cell.children[0].getAttribute('src')) : '';
@@ -189,8 +185,9 @@ document.addEventListener('DOMContentLoaded', function() {
         const lastPeriodIndex = src.lastIndexOf('.');
         return src.substring(lastSlashIndex, lastPeriodIndex).replace(/PawnWhite|PawnBlack/g, '').toLowerCase();
     }
-
-
+    // Initialize the board state
+    updateBottomRowHighlight();
+    updateOnDeckHighlight();
     checkReadiness();
 
 
