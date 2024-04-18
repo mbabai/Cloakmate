@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Game Lobby</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+    <div id="lobby-container">
+        <input type="text" id="username-input" placeholder="Enter your display name..." autofocus>
+        <button id="enter-lobby">Enter Lobby</button>
+        <div id="user-display" style="display:none;">
+            <h1>Welcome, <span id="username-display"></span>!</h1>
+            <button class="game-option" data-selection="AI">Play against AI</button>
+            <button class="game-option" data-selection="player">Play against another player</button>
+            <input type="text" id="opponent-name" placeholder="Enter opponent's username" style="display:none;">
+            <button class="game-option" data-selection="queue">Enter queue</button>
+        </div>
+    </div>
+    <script src="/javascript/lobby.js"></script>
+</body>
+</html>

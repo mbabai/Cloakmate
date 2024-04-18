@@ -30,6 +30,7 @@ const socket = new WebSocket('ws://localhost:3000');
 
 socket.onmessage = (event) => {
   console.log('Message from server ', event.data);
+  routeData(event.data)
 };
 
 socket.onopen = () => {
@@ -37,10 +38,16 @@ socket.onopen = () => {
 };
 
 
+function routeData(data){
+  switch(data.type){
+    case ""
+  }
+}
 
 // Global 
 var allGames = new Map()
 let gameNumber = 0
+let playerNames = []
 
 allGames.set(gameNumber++,new game.Game())
 thisBoard = allGames.get(0).board

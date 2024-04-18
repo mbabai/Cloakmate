@@ -32,13 +32,13 @@ html, body {
     grid-template-columns: repeat(5, 1fr); /* Creates a 5x5 grid */
     grid-template-rows: repeat(5, 1fr);
     background: #ddd; /* Light background for visibility */
+    background-image:url(http://www.zingerbugimages.com/backgrounds/white_marble_background_seamless.jpg);
     box-shadow: 0 0 10px rgba(0,0,0,0.5); /* Optional: Adds shadow for depth */
 }
 
 .cell {
     width: 100%;
     height: 100%;
-    background-image:url(http://www.zingerbugimages.com/backgrounds/white_marble_background_seamless.jpg);
     background-size: 100% 100%, 200% 200%, 200% 200%, 150% 150%;
     background-blend-mode: overlay, soft-light, soft-light, multiply;
 
@@ -113,11 +113,11 @@ html, body {
 }
 
 .cell:nth-child(odd) {
-    background-color: #595959; /* Black cells */
+    background-color: #39393977; /* Black cells */
 }
 
 .cell:nth-child(even) {
-    background-color: #A9A9A9; /* White cells */
+    background-color: #C9C9C977; /* White cells */
 }
 
 .game-button {
@@ -176,4 +176,37 @@ html, body {
 .white-clock {
     background-color: white;
     color: black;
+}
+
+
+/* LOBBY */
+#lobby-container {
+    text-align: center;
+    padding: 20px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    border-radius: 8px;
+    background: white;
+}
+
+input[type="text"] {
+    padding: 10px;
+    margin: 10px 0;
+    border: 2px solid #ccc;
+    border-radius: 4px;
+    display: block;
+    width: 80%;
+}
+
+button {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 5px;
+    background-color: #007BFF;
+    color: white;
+    cursor: pointer;
+    margin: 10px;
+}
+
+button:hover {
+    background-color: #0056b3;
 }
