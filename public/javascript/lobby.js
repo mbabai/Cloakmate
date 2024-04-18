@@ -7,7 +7,10 @@ document.addEventListener('DOMContentLoaded', function() {
     const aiDifficulty = document.getElementById('ai-difficulty');
     const customOptions = document.getElementById('custom-options');
     const playButton = document.getElementById('play-button');
-    const socket = new WebSocket('ws://localhost:3000'); // Adjust the WebSocket server URL
+    const opponentNameInput = document.getElementById('opponent-name');
+    const statusText = document.getElementById('status-text');
+    const socket = new WebSocket('ws://localhost:3000');
+    let stopAnimation = null //use this to start/stop animation of ellipses
 
     socket.onopen = function() {
         console.log('WebSocket connection established');
@@ -23,14 +26,11 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     socket.addEventListener('message', function(event) {
-        console.log(event.data)
         const data = JSON.parse(event.data);
         if (data.type === "username-status") {
             if (data.status === "accepted") {
                 document.getElementById('name-entry').style.display = 'none';
-                document.getElementById('username-display').textContent = data.username; // Top center display
-                document.getElementById('username-display').style.display = 'block'; // Show top username
-                document.querySelector('.username-inline').textContent = data.username; // Inline username display
+                usernameDisplay.textContent = data.username;
                 userDisplay.style.display = 'block';
             } else {
                 alert('Username is taken, please choose another.');
@@ -44,18 +44,59 @@ document.addEventListener('DOMContentLoaded', function() {
         aiDifficulty.style.display = this.value === 'AI' ? 'block' : 'none';
         customOptions.style.display = this.value === 'custom' ? 'block' : 'none';
         playButton.style.display = this.value ? 'block' : 'none';
+        playButton.textContent = 'Go!';
+        playButton.style.backgroundColor = '#007BFF'; // Default blue color
+        // if (statusText.parentNode) statusText.parentNode.removeChild(statusText); // Remove any existing status text
     });
 
     playButton.addEventListener('click', function() {
         const selection = gameSelection.value;
         let message = { type: "Enter Game", username: usernameDisplay.textContent, selection: selection };
 
-        if (selection === "AI") {
-            message.difficulty = aiDifficulty.value;
-        } else if (selection === "custom") {
-            message.opponentName = document.getElementById('opponent-name').value;
-            message.gameLength = document.getElementById('game-length').value;
+        switch (selection) {
+            case "AI":
+                alert("Sorry, AI play is not yet available. Please stay tuned!");
+                break;
+            case "custom":
+                if (opponentNameInput.value.trim() !== "") {
+                    message.type = "find-opponent";
+                    message.opponentName = opponentNameInput.value.trim();
+                    socket.send(JSON.stringify(message));
+                }
+                break;
+            case "quickplay":
+                if (playButton.textContent === "Go!") {
+                    playButton.textContent = "Cancel";
+                    playButton.style.backgroundColor = '#FF4136'; // Red color for cancel
+                    statusText.textContent = "Searching for opponent...";
+                    document.body.appendChild(statusText);
+                    stopAnimation = animateEllipsis();
+                    message.type = "quickplay-queue";
+                    socket.send(JSON.stringify(message));
+                } else {
+                    stopAnimation();
+                    playButton.textContent = "Go!";
+                    playButton.style.backgroundColor = '#007BFF'; // Default blue color
+                    if (statusText.parentNode) statusText.parentNode.removeChild(statusText);
+                    message.type = "quickplay-cancel";
+                    socket.send(JSON.stringify(message));
+                }
+                break;
         }
-        socket.send(JSON.stringify(message));
     });
+
+    function animateEllipsis() {
+        const element = document.getElementById('status-text');
+        element.style.display = 'block';
+        let count = 0;
+        const interval = setInterval(() => {
+            element.textContent = "Searching for opponent" + ".".repeat(count % 4);
+            count++;
+        }, 500);
+    
+        return () => {
+            clearInterval(interval);
+            element.style.display = 'none';
+        };
+    }
 });

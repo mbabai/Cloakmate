@@ -203,6 +203,19 @@ html, body {
     height:45%;
 }
 
+#status-text {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 5cqh;
+    width: 100%;
+    text-align: center;
+    color: #000; /* Styling the text color */
+    display: block;
+    z-index: 12;
+
+}
+
 input[type="text"], select {
     padding: 10px;
     margin: 10px 0;

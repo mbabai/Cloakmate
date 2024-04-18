@@ -7,34 +7,60 @@ const app = express();
 const server = http.createServer(app);
 const wss = new WebSocket.Server({ server });
 
-let allWS = [] //tracking all web sockets
-let clientID = 0
-const heartbeat = setInterval(function(){
-  let usernameList = ""
-  allWS.forEach(ws => {
-    usernameList += ws.username+", "
-  });
-  console.log(`${allWS.length} users: ${usernameList}`)
+class Lobby{
+  constructor() {
+    this.WStoUsername = new Map() // get a username from a web socket
+    this.Users = new Map() // get all player data (including WS) from username
+    this.anonID = 0
+    this.heartbeat = setInterval(this.pulse,1000,this)
+  }   
+  pulse(lobby){
+    const keysArray = Array.from(lobby.Users.keys());
+    const usernameList = keysArray.join(', ')
+    console.log(`${lobby.Users.size} users: ${usernameList}`)
+  }
 
-},4000)
+  getLobbyUser(username){
+    return this.Users.get(username)
+  }
+  
+  getLobbyUsernameFromWS(ws){
+    return this.WStoUsername.get(ws)
+  }
+  
+  isUserInLobby(username){
+    return this.Users.has(username)
+  }
+  
+  addLobbyUser(ws,username){
+    if(username == ""){
+      username = "anon"+(++this.anonID)
+    }
+    this.WStoUsername.set(ws,username)
+    this.Users.set(username,{ws})
+  }
+  
+  removeLobbyUser(ws){
+    const username = this.WStoUsername.get(ws)
+    this.WStoUsername.delete(ws)
+    this.Users.delete(username)
+  }
+}
+
+let lobby = new Lobby()
 
 // Serve static files from the 'public' directory
 app.use(express.static('public'));
 
 // WebSocket setup
 wss.on('connection', function connection(ws) {
-  ws.clientID = ++clientID
-  allWS.push(ws)
     ws.on('message', function incoming(message) {
         console.log('received: %s', message);
         const json = JSON.parse(message)
         routeMessage(ws, json)
     });
     ws.on('close', function close(){
-      const index = allWS.indexOf(ws);
-      if (index > -1) {
-          allWS.splice(index, 1); // Remove 1 item at the index
-      }
+      lobby.removeLobbyUser(ws)
     })
 });
 
@@ -63,33 +89,18 @@ socket.on('close', function close() {
 function routeMessage(ws, message){ //TODO --------------------------------
   switch(message.type){
     case "check-username":
-      if (message.username == ""){
-        const anonymousName = "anonymous"+(ws.clientID)
-        ws.username = anonymousName
-        ws.send(JSON.stringify({type:"username-status", status:"accepted", username:anonymousName}))
-        console.log(`Adding player "${anonymousName}"`)
-      }else if (getWSbyUsername(message.username) == null){
-        ws.send(JSON.stringify({type:"username-status", status:"accepted",username:message.username}))
-        ws.username = message.username
-        console.log(`Adding player "${message.username}"`)
-      } else {
+      if (lobby.isUserInLobby(message.username)){
         ws.send(JSON.stringify({type:"username-status", status:"taken"}));
         console.debug(`Name "${message.username}" already taken.`)
+      } else {
+        ws.send(JSON.stringify({type:"username-status", status:"accepted",username:message.username}))
+        lobby.addLobbyUser(ws,message.username)
+        console.log(`Adding player "${message.username}"`)
       }
       break;
     default:
       break;
   }
-}
-
-function getWSbyUsername(username){
-  for(let i = 0;i < allWS.length;i++){
-    let thisWebSocket = allWS[i]
-    if(thisWebSocket.username == username){
-      return thisWebSocket
-    }
-  }
-  return null
 }
 
 // Global 
