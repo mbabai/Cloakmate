@@ -23,7 +23,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     socket.addEventListener('message', function(event) {
-        console.log(event)
+        console.log(event.data)
         const data = JSON.parse(event.data);
         if (data.type === "username-status") {
             if (data.status === "accepted") {

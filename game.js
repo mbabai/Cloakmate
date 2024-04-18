@@ -7,15 +7,35 @@ const app = express();
 const server = http.createServer(app);
 const wss = new WebSocket.Server({ server });
 
+let allWS = [] //tracking all web sockets
+let clientID = 0
+const heartbeat = setInterval(function(){
+  let usernameList = ""
+  allWS.forEach(ws => {
+    usernameList += ws.username+", "
+  });
+  console.log(`${allWS.length} users: ${usernameList}`)
+
+},4000)
+
 // Serve static files from the 'public' directory
 app.use(express.static('public'));
 
 // WebSocket setup
 wss.on('connection', function connection(ws) {
+  ws.clientID = ++clientID
+  allWS.push(ws)
     ws.on('message', function incoming(message) {
         console.log('received: %s', message);
-        routeMessage(ws, message)
+        const json = JSON.parse(message)
+        routeMessage(ws, json)
     });
+    ws.on('close', function close(){
+      const index = allWS.indexOf(ws);
+      if (index > -1) {
+          allWS.splice(index, 1); // Remove 1 item at the index
+      }
+    })
 });
 
 const port = process.env.PORT || 3000;
@@ -24,30 +44,37 @@ server.listen(port, () => {
     console.log(`Server running on http://localhost:${port}`);
 });
 
-
-const socket = new WebSocket('ws://localhost:3000');
+const socket = new WebSocket(`ws://localhost:${port}`);
 
 socket.onmessage = (event) => {
   console.log('Message from server ', event.data);
 };
 
 socket.onopen = () => {
-  socket.send('Web Sockets Live!');
+  // socket.send({type:"message", message:'Web Sockets Live!'});
 };
+
+socket.on('close', function close() {
+  console.log('Connection closed');
+  // Optionally handle reconnections or clean up resources
+});
 
 
 function routeMessage(ws, message){ //TODO --------------------------------
   switch(message.type){
     case "check-username":
       if (message.username == ""){
-        const anonymousName = "anonymous"+(anonymousNumber++)
-        ws.send(JSON.stringify({type:"username-status", status:"accepted", anonymousName:anonymousName}))
-        playerNames.push(anonymousName)
-      }else if (playerNames.includes(message.username)){
-        ws.send(JSON.stringify({type:"username-status", status:"taken"}));
+        const anonymousName = "anonymous"+(ws.clientID)
+        ws.username = anonymousName
+        ws.send(JSON.stringify({type:"username-status", status:"accepted", username:anonymousName}))
+        console.log(`Adding player "${anonymousName}"`)
+      }else if (getWSbyUsername(message.username) == null){
+        ws.send(JSON.stringify({type:"username-status", status:"accepted",username:message.username}))
+        ws.username = message.username
+        console.log(`Adding player "${message.username}"`)
       } else {
-        ws.send(JSON.stringify({type:"username-status", status:"accepted"}))
-        playerNames.push(message.username)
+        ws.send(JSON.stringify({type:"username-status", status:"taken"}));
+        console.debug(`Name "${message.username}" already taken.`)
       }
       break;
     default:
@@ -55,15 +82,24 @@ function routeMessage(ws, message){ //TODO --------------------------------
   }
 }
 
+function getWSbyUsername(username){
+  for(let i = 0;i < allWS.length;i++){
+    let thisWebSocket = allWS[i]
+    if(thisWebSocket.username == username){
+      return thisWebSocket
+    }
+  }
+  return null
+}
+
 // Global 
 var allGames = new Map()
 let gameNumber = 0
-let playerNames = []
-let anonymousNumber = 0
+
 
 allGames.set(gameNumber++,new game.Game())
 thisBoard = allGames.get(0).board
-thisBoard.printBoard()
+// thisBoard.printBoard()
 // console.log("GAME START!!!")
 // //place pieces - white
 // thisBoard.moveStashPieceToBoard(game.colors.WHITE,game.pieces.KING,0,0)
