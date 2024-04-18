@@ -14,9 +14,8 @@ app.use(express.static('public'));
 wss.on('connection', function connection(ws) {
     ws.on('message', function incoming(message) {
         console.log('received: %s', message);
+        routeMessage(ws, message)
     });
-
-    ws.send('Hello! Message from server...');
 });
 
 const port = process.env.PORT || 3000;
@@ -30,7 +29,6 @@ const socket = new WebSocket('ws://localhost:3000');
 
 socket.onmessage = (event) => {
   console.log('Message from server ', event.data);
-  routeData(event.data)
 };
 
 socket.onopen = () => {
@@ -38,16 +36,30 @@ socket.onopen = () => {
 };
 
 
-function routeData(data){ //TODO --------------------------------
-  // switch(data.type){
-  //   case ""
-  // }
+function routeMessage(ws, message){ //TODO --------------------------------
+  switch(message.type){
+    case "check-username":
+      if (message.username == ""){
+        const anonymousName = "anonymous"+(anonymousNumber++)
+        ws.send(JSON.stringify({type:"username-status", status:"accepted", anonymousName:anonymousName}))
+        playerNames.push(anonymousName)
+      }else if (playerNames.includes(message.username)){
+        ws.send(JSON.stringify({type:"username-status", status:"taken"}));
+      } else {
+        ws.send(JSON.stringify({type:"username-status", status:"accepted"}))
+        playerNames.push(message.username)
+      }
+      break;
+    default:
+      break;
+  }
 }
 
 // Global 
 var allGames = new Map()
 let gameNumber = 0
 let playerNames = []
+let anonymousNumber = 0
 
 allGames.set(gameNumber++,new game.Game())
 thisBoard = allGames.get(0).board

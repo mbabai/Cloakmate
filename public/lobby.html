@@ -8,16 +8,39 @@
 </head>
 <body>
     <div id="lobby-container">
-        <input type="text" id="username-input" placeholder="Enter your display name..." autofocus>
-        <button id="enter-lobby">Enter Lobby</button>
+        <div id="name-entry">
+            <input type="text" id="username-input" placeholder="Enter your display name..." autofocus>
+            <button id="enter-lobby">Enter Lobby</button>
+        </div>
+
         <div id="user-display" style="display:none;">
             <h1>Welcome, <span id="username-display"></span>!</h1>
-            <button class="game-option" data-selection="AI">Play against AI</button>
-            <button class="game-option" data-selection="player">Play against another player</button>
-            <input type="text" id="opponent-name" placeholder="Enter opponent's username" style="display:none;">
-            <button class="game-option" data-selection="queue">Enter queue</button>
+            <select id="game-selection">
+                <option value="">Select game type...</option>
+                <option value="AI">Play against AI</option>
+                <option value="custom">Play Custom</option>
+                <option value="quickplay">Quickplay Queue</option>
+            </select>
+
+            <select id="ai-difficulty" style="display: none;">
+                <option value="easy">Easy</option>
+                <option value="medium">Medium</option>
+                <option value="hard">Hard</option>
+            </select>
+
+            <div id="custom-options" style="display: none;">
+                <input type="text" id="opponent-name" placeholder="Opponent's username">
+                <select id="game-length">
+                    <option value="1">Blitz (1 minute)</option>
+                    <option value="5">Standard (5 minutes)</option>
+                    <option value="15">Long (15 minutes)</option>
+                </select>
+            </div>
+
+            <button id="play-button" style="display: none;">Play</button>
         </div>
     </div>
+
     <script src="/javascript/lobby.js"></script>
 </body>
 </html>

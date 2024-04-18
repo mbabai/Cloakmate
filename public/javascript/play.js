@@ -5,7 +5,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Connection opened
     socket.addEventListener('open', function (event) {
-        socket.send('Hello Server!'); // Send a message to the server
+        socket.send(JSON.stringify({type:"Server",message:"Server Open"})); // Send a message to the server
     });
 
     // Listen for messages

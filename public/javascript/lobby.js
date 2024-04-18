@@ -1,51 +1,59 @@
 document.addEventListener('DOMContentLoaded', function() {
-    const enterLobbyButton = document.getElementById('enter-lobby');
     const usernameInput = document.getElementById('username-input');
+    const enterLobbyButton = document.getElementById('enter-lobby');
     const userDisplay = document.getElementById('user-display');
     const usernameDisplay = document.getElementById('username-display');
-    const gameOptions = document.querySelectorAll('.game-option');
-    const opponentNameInput = document.getElementById('opponent-name');
-    let anonymousNumber = 0
+    const gameSelection = document.getElementById('game-selection');
+    const aiDifficulty = document.getElementById('ai-difficulty');
+    const customOptions = document.getElementById('custom-options');
+    const playButton = document.getElementById('play-button');
+    const socket = new WebSocket('ws://localhost:3000'); // Adjust the WebSocket server URL
+
+    socket.onopen = function() {
+        console.log('WebSocket connection established');
+    };
+
+    socket.onmessage = function(event) {
+        console.log('Message from server:', event.data);
+    };
 
     enterLobbyButton.addEventListener('click', function() {
-        let username = usernameInput.value.trim();
-        if (!username) {
-            username = "anonymous" + anonymousNumber++;
-        }
-        usernameDisplay.textContent = username;
-        userDisplay.style.display = 'block';
-        usernameInput.style.display = 'none';
-        enterLobbyButton.style.display = 'none';
+        const username = usernameInput.value.trim();
+        socket.send(JSON.stringify({ type: "check-username", username: username }));
     });
 
-    gameOptions.forEach(option => {
-        option.addEventListener('click', function() {
-            const selection = this.getAttribute('data-selection');
-            let message = {
-                type: "Enter Game",
-                username: usernameDisplay.textContent,
-                selection: selection
-            };
-
-            if (selection === "player") {
-                opponentNameInput.style.display = 'block';
-                opponentNameInput.addEventListener('change', function() {
-                    message.opponentName = this.value.trim();
-                    connectWebSocket(message);
-                });
+    socket.addEventListener('message', function(event) {
+        console.log(event)
+        const data = JSON.parse(event.data);
+        if (data.type === "username-status") {
+            if (data.status === "accepted") {
+                document.getElementById('name-entry').style.display = 'none';
+                usernameDisplay.textContent = data.username;
+                userDisplay.style.display = 'block';
             } else {
-                connectWebSocket(message);
+                alert('Username is taken, please choose another.');
+                usernameInput.value = '';
+                usernameInput.focus();
             }
-        });
+        }
     });
 
-    function connectWebSocket(message) {
-        const socket = new WebSocket('ws://localhost:3000');
-        socket.onopen = function() {
-            socket.send(JSON.stringify(message));
-        };
-        socket.onmessage = function(event) {
-            console.log('Message from server ', event.data);
-        };
-    }
+    gameSelection.addEventListener('change', function() {
+        aiDifficulty.style.display = this.value === 'AI' ? 'block' : 'none';
+        customOptions.style.display = this.value === 'custom' ? 'block' : 'none';
+        playButton.style.display = this.value ? 'block' : 'none';
+    });
+
+    playButton.addEventListener('click', function() {
+        const selection = gameSelection.value;
+        let message = { type: "Enter Game", username: usernameDisplay.textContent, selection: selection };
+
+        if (selection === "AI") {
+            message.difficulty = aiDifficulty.value;
+        } else if (selection === "custom") {
+            message.opponentName = document.getElementById('opponent-name').value;
+            message.gameLength = document.getElementById('game-length').value;
+        }
+        socket.send(JSON.stringify(message));
+    });
 });
