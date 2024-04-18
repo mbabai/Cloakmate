@@ -7,39 +7,53 @@
     <link rel="stylesheet" href="/css/style.css">
 </head>
 <body>
-    <div id="lobby-container">
-        <div id="name-entry">
-            <input type="text" id="username-input" placeholder="Enter your display name..." autofocus>
-            <button id="enter-lobby">Enter Lobby</button>
+    <div class="main">
+        <div class="board" style="z-index:0">
+            <!-- Generate the 5x5 board using divs -->
+            <!-- Each cell has a class 'cell', and additional class for coloring: 'black' or 'white' -->
+            <div class="cell black"></div><div class="cell white"></div><div class="cell black"></div><div class="cell white"></div><div class="cell black"></div>
+            <div class="cell white"></div><div class="cell black"></div><div class="cell white"></div><div class="cell black"></div><div class="cell white"></div>
+            <div class="cell black"></div><div class="cell white"></div><div class="cell black"></div><div class="cell white"></div><div class="cell black"></div>
+            <div class="cell white"></div><div class="cell black"></div><div class="cell white"></div><div class="cell black"></div><div class="cell white"></div>
+            <div class="cell black"></div><div class="cell white"></div><div class="cell black"></div><div class="cell white"></div><div class="cell black"></div>
         </div>
+        <div id="username-display" style="display:none;"></div> <!-- Top center username display -->
 
-        <div id="user-display" style="display:none;">
-            <h1>Welcome, <span id="username-display"></span>!</h1>
-            <select id="game-selection">
-                <option value="">Select game type...</option>
-                <option value="AI">Play against AI</option>
-                <option value="custom">Play Custom</option>
-                <option value="quickplay">Quickplay Queue</option>
-            </select>
-
-            <select id="ai-difficulty" style="display: none;">
-                <option value="easy">Easy</option>
-                <option value="medium">Medium</option>
-                <option value="hard">Hard</option>
-            </select>
-
-            <div id="custom-options" style="display: none;">
-                <input type="text" id="opponent-name" placeholder="Opponent's username">
-                <select id="game-length">
-                    <option value="1">Blitz (1 minute)</option>
-                    <option value="5">Standard (5 minutes)</option>
-                    <option value="15">Long (15 minutes)</option>
-                </select>
+        <div id="lobby-container">
+            <div id="name-entry">
+                <input type="text" id="username-input" placeholder="Enter your username..." autofocus>
+                <button id="enter-lobby">Enter Lobby</button>
             </div>
 
-            <button id="play-button" style="display: none;">Play</button>
+            <div id="user-display" style="display:none;">
+                <h1>Welcome, <span class="username-inline"></span>!</h1>
+                <select id="game-selection">
+                    <option value="">Select game type...</option>
+                    <option value="AI">Play against AI</option>
+                    <option value="custom">Play Custom</option>
+                    <option value="quickplay">Quickplay Queue</option>
+                </select>
+
+                <select id="ai-difficulty" style="display: none;">
+                    <option value="easy">Easy</option>
+                    <option value="medium">Medium</option>
+                    <option value="hard">Hard</option>
+                </select>
+
+                <div id="custom-options" style="display: none;">
+                    <input type="text" id="opponent-name" placeholder="Opponent's username">
+                    <select id="game-length">
+                        <option value="1">Blitz (1 minute)</option>
+                        <option value="5">Standard (5 minutes)</option>
+                        <option value="15">Long (15 minutes)</option>
+                    </select>
+                </div>
+
+                <button id="play-button" style="display: none;">Play</button>
+            </div>
         </div>
     </div>
+    
     <script src="/javascript/lobby.js"></script>
 </body>
 </html>

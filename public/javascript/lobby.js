@@ -28,7 +28,9 @@ document.addEventListener('DOMContentLoaded', function() {
         if (data.type === "username-status") {
             if (data.status === "accepted") {
                 document.getElementById('name-entry').style.display = 'none';
-                usernameDisplay.textContent = data.username;
+                document.getElementById('username-display').textContent = data.username; // Top center display
+                document.getElementById('username-display').style.display = 'block'; // Show top username
+                document.querySelector('.username-inline').textContent = data.username; // Inline username display
                 userDisplay.style.display = 'block';
             } else {
                 alert('Username is taken, please choose another.');

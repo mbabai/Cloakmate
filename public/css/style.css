@@ -180,21 +180,37 @@ html, body {
 
 
 /* LOBBY */
+#username-display {
+    position: absolute;
+    top: 10px;
+    width: 100%;
+    text-align: center;
+    font-size: 24px;
+    color: white;
+}
+
 #lobby-container {
+    z-index:10;
+    position: absolute;
+    top:15%;
     text-align: center;
     padding: 20px;
     box-shadow: 0 4px 8px rgba(0,0,0,0.1);
     border-radius: 8px;
-    background: white;
+    background: #FFFD;
+    width: 80%; /* Responsive width */
+    max-width: 500px; /* Maximum size */
+    height:45%;
 }
 
-input[type="text"] {
+input[type="text"], select {
     padding: 10px;
     margin: 10px 0;
     border: 2px solid #ccc;
     border-radius: 4px;
     display: block;
-    width: 80%;
+    width: 100%; /* Full width inputs */
+    box-sizing: border-box; /* Border and padding included in width */
 }
 
 button {
@@ -205,6 +221,7 @@ button {
     color: white;
     cursor: pointer;
     margin: 10px;
+    width: 100%;
 }
 
 button:hover {
