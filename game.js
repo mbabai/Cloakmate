@@ -11,13 +11,20 @@ class Lobby{
   constructor() {
     this.WStoUsername = new Map() // get a username from a web socket
     this.Users = new Map() // get all player data (including WS) from username
+    this.quickplayQueue = []
     this.anonID = 0
-    this.heartbeat = setInterval(this.pulse,1000,this)
+    this.logState()
+    // this.heartbeat = setInterval(this.logState(),2000,this)
   }   
-  pulse(lobby){
-    const keysArray = Array.from(lobby.Users.keys());
-    const usernameList = keysArray.join(', ')
-    console.log(`${lobby.Users.size} users: ${usernameList}`)
+
+  logState(){
+    //TODO -------------------------------------------------FIX THIS FUNCTION!
+    const keysArray = Array.from(this.Users.keys());
+    const lobbyNameList = keysArray.join(', ')
+    console.log(`Lobby (${this.Users.size} users): ${lobbyNameList}`)
+    const queueNameList = this.quickplayQueue.join(', ')
+    console.log(`Queue (${this.quickplayQueue.length} users): ${queueNameList}`)
+    // wss.clients.size;
   }
 
   getLobbyUser(username){
@@ -28,22 +35,63 @@ class Lobby{
     return this.WStoUsername.get(ws)
   }
   
+  tryAdduser(username){
+    if(this.isUserInLobby(username)){
+      console.debug(`Name "${username}" already taken.`)
+      this.logState()
+      return false;
+    } else {
+      console.log(`Adding player "${username}"`)
+      this.addLobbyUser(username)
+      this.logState()
+      return true;
+    }
+  }
+
   isUserInLobby(username){
     return this.Users.has(username)
   }
   
-  addLobbyUser(ws,username){
+  addLobbyUser(ws,username,inGame=false){
     if(username == ""){
       username = "anon"+(++this.anonID)
     }
     this.WStoUsername.set(ws,username)
-    this.Users.set(username,{ws})
+    this.Users.set(username,{ws,inGame})
   }
   
-  removeLobbyUser(ws){
-    const username = this.WStoUsername.get(ws)
-    this.WStoUsername.delete(ws)
-    this.Users.delete(username)
+  removeLobbyUser(ws) {
+    const username = this.WStoUsername.get(ws);
+    if (username) {
+      this.removeFromQueue(username); // Also remove from queue
+      this.WStoUsername.delete(ws);
+      this.Users.delete(username);
+      console.log(`Removed ${username} from lobby and queue.`);
+    }
+  }
+
+  addToQueue(username) {
+    if (!this.quickplayQueue.includes(username)) {
+      this.quickplayQueue.push(username);
+      console.log(`Added ${username} to quickplay queue.`);
+    }
+    this.logState()
+  }
+
+  removeFromQueue(username) {
+    const index = this.quickplayQueue.indexOf(username);
+    if (index !== -1) {
+      this.quickplayQueue.splice(index, 1);
+      console.log(`Removed ${username} from quickplay queue.`);
+    }
+    this.logState()
+  }
+  invitePlayer(username){
+    this.logState()
+    if(!this.Users.has(username)) return "not-found";
+    const thisPlayer = this.Users.get(username)
+    if (thisPlayer.inGame) return "in-game";
+    return "found"
   }
 }
 
@@ -61,6 +109,7 @@ wss.on('connection', function connection(ws) {
     });
     ws.on('close', function close(){
       lobby.removeLobbyUser(ws)
+      lobby.logState()
     })
 });
 
@@ -89,13 +138,28 @@ socket.on('close', function close() {
 function routeMessage(ws, message){ //TODO --------------------------------
   switch(message.type){
     case "check-username":
-      if (lobby.isUserInLobby(message.username)){
-        ws.send(JSON.stringify({type:"username-status", status:"taken"}));
-        console.debug(`Name "${message.username}" already taken.`)
-      } else {
+      if(lobby.tryAdduser(message.username)){
         ws.send(JSON.stringify({type:"username-status", status:"accepted",username:message.username}))
-        lobby.addLobbyUser(ws,message.username)
-        console.log(`Adding player "${message.username}"`)
+        
+      } else {
+        ws.send(JSON.stringify({type:"username-status", status:"taken"}));
+      }
+      break;
+    case "quickplay-queue":
+      lobby.addToQueue(message.username)
+      break;
+    case "quickplay-cancel":
+      lobby.removeFromQueue(message.username)
+      break;
+    case "find-opponent":
+      let playerStatus = lobby.invitePlayer(message.username)
+      if(playerStatus == "not-found"){
+        ws.send(JSON.stringify({type:"custom-status", status:"not-found", username:message.username}))
+      } else if(playerStatus == "in-game") {
+        ws.send(JSON.stringify({type:"custom-status", status:"in-game", username:message.username}))
+      }else if(playerStatus == "found") {
+        p2 = lobby.Users.get(message.username)
+        p2.ws.send(JSON.stringify({type:"game-invite", length:message.length, username:message.username}))
       }
       break;
     default:
@@ -155,3 +219,5 @@ thisBoard = allGames.get(0).board
 // thisBoard.takeAction(new game.Action(game.actions.MOVE,game.colors.WHITE,2,0,game.pieces.KING,3,0))
 // console.log("Move 13")
 // thisBoard.takeAction(new game.Action(game.actions.CHALLENGE,game.colors.BLACK))
+
+

@@ -189,6 +189,17 @@ html, body {
     color: white;
 }
 
+.username-bar {
+    width: 100%;
+    text-align: center;
+    color: white; /* Adjust based on your color scheme */
+    font-size: 24px;
+    position: absolute;
+    top: 0;
+    padding: 10px 0;
+    background-color: rgba(0, 0, 0, 0.8); /* Semi-transparent black */
+}
+
 #lobby-container {
     z-index:10;
     position: absolute;
@@ -207,9 +218,10 @@ html, body {
     position: absolute;
     left: 50%;
     transform: translateX(-50%);
-    font-size: 5cqh;
+    font-size: 3.5cqh;
     width: 100%;
     text-align: center;
+    top:68%;
     color: #000; /* Styling the text color */
     display: block;
     z-index: 12;
@@ -239,4 +251,62 @@ button {
 
 button:hover {
     background-color: #0056b3;
+}
+
+/* Dialog Overlay */
+.dialog-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.4); /* Semi-transparent background */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1001; /* Ensure it is above other content */
+}
+
+/* Dialog Box */
+.dialog-box {
+    background-color: #28a745; /* Green background */
+    color: white; /* White text color for contrast */
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    width: auto;
+    max-width: 80%; /* Limits max width to avoid overly wide dialogs */
+    text-align: center;
+}
+
+/* Button Styling */
+.dialog-button {
+    padding: 10px 20px;
+    margin: 10px;
+    border: none;
+    border-radius: 5px;
+    font-weight: bold;
+    cursor: pointer;
+    outline: none;
+    transition: background-color 0.3s ease;
+}
+
+/* Accept Button */
+#accept-invite {
+    background-color: #007BFF; /* Blue background for accept */
+    color: white;
+}
+
+#accept-invite:hover {
+    background-color: #0056b3; /* Darker blue on hover */
+}
+
+/* Decline Button */
+#decline-invite {
+    background-color: #FF4136; /* Red background for decline */
+    color: white;
+}
+
+#decline-invite:hover {
+    background-color: #c32f1d; /* Darker red on hover */
 }

@@ -8,6 +8,14 @@
 </head>
 <body>
     <div class="main">
+        <div id="username-display" class="username-bar" style="display:none;"></div>
+        
+        <div id="invite-dialog" style="display: none; position: fixed; top: 20%; left: 50%; transform: translateX(-50%); z-index: 1000; background: white; border-radius: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.3); padding: 20px; text-align: center;">
+            <p id="invite-message"></p>
+            <button id="accept-invite" style="padding: 10px 20px; border: none; border-radius: 5px; background-color: #007BFF; color: white; margin-right: 10px;">Accept</button>
+            <button id="decline-invite" style="padding: 10px 20px; border: none; border-radius: 5px; background-color: #FF4136; color: white;">Decline</button>
+        </div>        
+        
         <div class="board" style="z-index:0">
             <!-- Generate the 5x5 board using divs -->
             <!-- Each cell has a class 'cell', and additional class for coloring: 'black' or 'white' -->
@@ -17,7 +25,6 @@
             <div class="cell white"></div><div class="cell black"></div><div class="cell white"></div><div class="cell black"></div><div class="cell white"></div>
             <div class="cell black"></div><div class="cell white"></div><div class="cell black"></div><div class="cell white"></div><div class="cell black"></div>
         </div>
-        <div id="username-display" style="display:none;"></div> <!-- Top center username display -->
 
         <div id="lobby-container">
             <div id="status-text" style="display: none;"></div> <!-- Placeholder for status text -->
