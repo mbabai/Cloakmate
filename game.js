@@ -24,7 +24,7 @@ class Lobby{
     console.log(`Lobby (${this.Users.size} users): ${lobbyNameList}`)
     const queueNameList = this.quickplayQueue.join(', ')
     console.log(`Queue (${this.quickplayQueue.length} users): ${queueNameList}`)
-    // wss.clients.size;
+    wss.clients.size;
   }
 
   getLobbyUser(username){
@@ -35,14 +35,14 @@ class Lobby{
     return this.WStoUsername.get(ws)
   }
   
-  tryAdduser(username){
+  tryAdduser(ws,username){
     if(this.isUserInLobby(username)){
       console.debug(`Name "${username}" already taken.`)
       this.logState()
       return false;
     } else {
       console.log(`Adding player "${username}"`)
-      this.addLobbyUser(username)
+      this.addLobbyUser(ws,username)
       this.logState()
       return true;
     }
@@ -101,16 +101,18 @@ let lobby = new Lobby()
 app.use(express.static('public'));
 
 // WebSocket setup
-wss.on('connection', function connection(ws) {
-    ws.on('message', function incoming(message) {
-        console.log('received: %s', message);
-        const json = JSON.parse(message)
-        routeMessage(ws, json)
-    });
-    ws.on('close', function close(){
-      lobby.removeLobbyUser(ws)
-      lobby.logState()
-    })
+wss.on('connection', function connection(ws,req) {
+  // const ip = req.socket.remoteAddress;
+  // console.log(`New connection from ${ip}`);
+  ws.on('message', function incoming(message) {
+      console.log('received: %s', message);
+      const json = JSON.parse(message)
+      routeMessage(ws, json)
+  });
+  ws.on('close', function close(){
+    lobby.removeLobbyUser(ws)
+    lobby.logState()
+  })
 });
 
 const port = process.env.PORT || 3000;
@@ -138,9 +140,8 @@ socket.on('close', function close() {
 function routeMessage(ws, message){ //TODO --------------------------------
   switch(message.type){
     case "check-username":
-      if(lobby.tryAdduser(message.username)){
+      if(lobby.tryAdduser(ws, message.username)){
         ws.send(JSON.stringify({type:"username-status", status:"accepted",username:message.username}))
-        
       } else {
         ws.send(JSON.stringify({type:"username-status", status:"taken"}));
       }
