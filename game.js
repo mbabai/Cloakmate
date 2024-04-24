@@ -13,6 +13,9 @@ class Lobby{
     this.Users = new Map() // get all player data (including WS) from username
     this.quickplayQueue = []
     this.anonID = 0
+    this.games = new Map()
+    this.gameNumber = 0
+
     this.heartbeat = setInterval(this.logState,2000,this)
   }   
 
@@ -38,11 +41,10 @@ class Lobby{
   tryAdduser(ws,username){
     if(this.isUserInLobby(username)){
       console.debug(`Name "${username}" already taken.`)
-      return false;
+      return null;
     } else {
       console.log(`Adding player "${username}"`)
-      this.addLobbyUser(ws,username)
-      return true;
+      return this.addLobbyUser(ws,username);
     }
   }
 
@@ -56,6 +58,7 @@ class Lobby{
     }
     this.WStoUsername.set(ws,username)
     this.Users.set(username,{ws,inGame})
+    return username
   }
   
   removeLobbyUser(ws) {
@@ -85,6 +88,12 @@ class Lobby{
     const thisPlayer = this.getLobbyUser(username)
     if (thisPlayer.inGame) return "in-game";
     return "found"
+  }
+
+  startMatch(p1username,p2username,length){
+    this.games.set(++this.gameNumber,new game.Game(p1username,p2username,length))
+    this.games.get(this.gameNumber).randomizePlayerColor()
+    return {gameNumber:this.gameNumber,white:this.games.get(this.gameNumber).players[0],black:this.games.get(this.gameNumber).players[1]}
   }
 }
 
@@ -130,10 +139,13 @@ socket.on('close', function close() {
 
 
 function routeMessage(ws, message){ //TODO --------------------------------
+  let p1 = null;
+  let p2 = null;
   switch(message.type){
     case "check-username":
-      if(lobby.tryAdduser(ws, message.username)){
-        ws.send(JSON.stringify({type:"username-status", status:"accepted",username:message.username}))
+      let newName = lobby.tryAdduser(ws, message.username)
+      if(newName){
+        ws.send(JSON.stringify({type:"username-status", status:"accepted",username:newName}))
       } else {
         ws.send(JSON.stringify({type:"username-status", status:"taken"}));
       }
@@ -151,27 +163,39 @@ function routeMessage(ws, message){ //TODO --------------------------------
       } else if(playerStatus == "in-game") {
         ws.send(JSON.stringify({type:"decline", reason:"in-game", username:message.opponentName}))
       }else if(playerStatus == "found") {
-        let p2 = lobby.getLobbyUser(message.opponentName)
+        p2 = lobby.getLobbyUser(message.opponentName)
         p2.ws.send(JSON.stringify({type:"game-invite", length:message.length, username:message.username}))
       }
       break;
     case "decline":
       if (!lobby.isUserInLobby(message.opponentUsername)) break;
-      let p1 = lobby.getLobbyUser(message.opponentUsername)
+      p1 = lobby.getLobbyUser(message.opponentUsername)
       p1.ws.send(JSON.stringify({type:"decline", reason:"decline"}))
+      break;
+    case "accept":
+      if (!lobby.isUserInLobby(message.opponentUsername)){ // in case somehow that user is not found.
+        ws.send(JSON.stringify({type:"decline", reason:"not-found", username:message.opponentName}))
+        break;
+      } 
+      p2username = lobby.getLobbyUsernameFromWS(ws)
+      let game = lobby.startMatch(message.opponentUsername,p2username,message.length)
+      p1 = lobby.getLobbyUser(game.white)
+      p2 = lobby.getLobbyUser(game.black)
+      p1.ws.send(JSON.stringify({type:"match",myColor:"white",whitePlayer:game.white, blackPlayer:game.black, length:message.length,gameNumber:game.gameNumber}))
+      p2.ws.send(JSON.stringify({type:"match",myColor:"black",whitePlayer:game.white, blackPlayer:game.black, length:message.length,gameNumber:game.gameNumber}))
+      break;
+    case "entered-game":
+      lobby.addLobbyUser(ws,message.username,true) // this will overwrite others with the same name, but no one else should have it. 
+      console.log(`${message.username} has entered a game!`)
       break;
     default:
       break;
   }
 }
 
+
 // Global 
-var allGames = new Map()
-let gameNumber = 0
 
-
-allGames.set(gameNumber++,new game.Game())
-thisBoard = allGames.get(0).board
 // thisBoard.printBoard()
 // console.log("GAME START!!!")
 // //place pieces - white

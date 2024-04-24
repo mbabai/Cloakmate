@@ -6,6 +6,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Connection opened
     socket.addEventListener('open', function (event) {
         socket.send(JSON.stringify({type:"Server",message:"Server Open"})); // Send a message to the server
+        setupGameFromUrl();
     });
 
     // Listen for messages
@@ -31,7 +32,7 @@ document.addEventListener('DOMContentLoaded', function() {
         bombButton.style.display = bombButton.style.display === 'none' ? 'block' : 'none';
         challengeButton.style.display = challengeButton.style.display === 'none' ? 'block' : 'none';
     };
-    toggleButtons();
+    toggleButtons();    
 
     let gamePhase = 'setup'; // This will later be dynamic based on game state
     const gamePieces = document.querySelectorAll('.game-piece');
@@ -201,10 +202,53 @@ document.addEventListener('DOMContentLoaded', function() {
         const lastPeriodIndex = src.lastIndexOf('.');
         return src.substring(lastSlashIndex, lastPeriodIndex).replace(/PawnWhite|PawnBlack/g, '').toLowerCase();
     }
+
+    function setupGameFromUrl() {
+        const params = new URLSearchParams(window.location.search);
+        const blackPlayer = params.get('blackPlayer');
+        const whitePlayer = params.get('whitePlayer');
+        const myColor = params.get('myColor');
+        const length = parseInt(params.get('length'));
+        const gameNumber = parseInt(params.get('gameNumber'));
+    
+        // Set player names and times
+        const leftName = document.getElementById('left-player-name');
+        const rightName = document.getElementById('right-player-name');
+        const leftClock = document.getElementById('left-clock-time');
+        const rightClock = document.getElementById('right-clock-time');
+        const clockName = document.getElementById('clock-name');
+    
+        // Decide the clock label
+        const clockLabel = length === 1 ? "Blitz" : length === 5 ? "Standard" : "Classic";
+        clockName.textContent = clockLabel;
+    
+        // Assign names and times based on player color
+        if (myColor === 'black') {
+            leftName.textContent = whitePlayer;
+            rightName.textContent = blackPlayer;
+            leftClock.textContent = `${length}:00`;
+            rightClock.textContent = `${length}:00`;
+        } else {
+            leftName.textContent = blackPlayer;
+            rightName.textContent = whitePlayer;
+            leftClock.textContent = `${length}:00`;
+            rightClock.textContent = `${length}:00`;
+        }
+    
+        let myName = myColor == "white" ? whitePlayer : blackPlayer;
+        console.log(myName)
+         // Send WebSocket message
+         const message = {
+            type: "entered-game",
+            username: myName,
+            gameNumber: params.get('gameNumber') // Ensure this parameter is used if required
+        };
+        socket.send(JSON.stringify(message));
+    }
+
     // Initialize the board state
+    
     updateBottomRowHighlight();
     updateOnDeckHighlight();
-    checkReadiness();
-
-
+    checkReadiness()
 });

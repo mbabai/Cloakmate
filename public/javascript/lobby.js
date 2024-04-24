@@ -53,6 +53,8 @@ document.addEventListener('DOMContentLoaded', function() {
             case "decline":
                 inviteDeclined(data.reason);
                 break;
+            case "match":
+                startGame(data.myColor,data.whitePlayer,data.blackPlayer,data.length,data.gameNumber)
             default:
                 break;
         }
@@ -79,7 +81,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 break;
             case "custom":
                 const opponentName = opponentNameInput.value.trim();
-                const gameLength = gameLengthInput.value.trim()
+                const gameLength = parseInt(gameLengthInput.value.trim())
+                console.log(gameLength)
                 if (playButton.textContent === "Go!" && opponentName !== "") {
                     playButton.textContent = "Cancel";
                     playButton.style.backgroundColor = '#FF4136'; // Red color for cancel
@@ -134,80 +137,102 @@ document.addEventListener('DOMContentLoaded', function() {
             element.style.display = 'none';
             revertMainDialogue()
         };
-}
-
-function receivedInvite(username, length) {
-    console.log(`Got an invite from ${username} for a ${length} minute game.`)
-    const message = `You have gotten an invite from ${username} for a game of length ${length} minute(s)`;
-    document.getElementById('invite-message').textContent = message;
-    document.getElementById('invite-dialog').style.display = 'block';
-
-    const acceptButton = document.getElementById('accept-invite');
-    const declineButton = document.getElementById('decline-invite');
-
-    acceptButton.onclick = () => acceptInvite(username);
-    declineButton.onclick = () => declineInvite(username);
-}
-
-function acceptInvite(opponentUsername) {
-    const socketMessage = {
-        type: 'accept',
-        opponentUsername: opponentUsername
-    };
-    socket.send(JSON.stringify(socketMessage));
-    closeInviteDialog();
-}
-
-function declineInvite(opponentUsername) {
-    const socketMessage = {
-        type: 'decline',
-        opponentUsername: opponentUsername,
-    };
-    socket.send(JSON.stringify(socketMessage));
-    closeInviteDialog();
-}
-
-function closeInviteDialog() {
-    document.getElementById('invite-dialog').style.display = 'none';
-}
-
-function inviteDeclined(reason) {
-    let displayText;
-    switch(reason) {
-        case "not-found":
-            displayText = "Error: Player not found.";
-            break;
-        case "in-game":
-            displayText = "Player is in another match.";
-            break;
-        case "decline":
-            displayText = "Invitation Declined.";
-            break;
-        default:
-            displayText = "Error: Unknown reason";
-    }
-    stopAnimation();
-    alert(displayText);
-}
-
-function revertMainDialogue() {
-    const statusText = document.getElementById('status-text');
-    const inviteDialog = document.getElementById('invite-dialog');
-    playButton.textContent = "Go!";
-    playButton.style.backgroundColor = '#007BFF'; // Default blue color
-    // Assume there is an element that needs to be hidden when reverting the dialogue state
-    if (inviteDialog) {
-        inviteDialog.style.display = 'none';
     }
 
-    // Resetting status text if used
-    if (statusText) {
-        statusText.textContent = '';
+    function receivedInvite(username, length) {
+        console.log(`Got an invite from ${username} for a ${length} minute game.`)
+        const message = `You have gotten an invite from ${username} for a game of length ${length} minute(s)`;
+        document.getElementById('invite-message').textContent = message;
+        document.getElementById('invite-dialog').style.display = 'block';
+
+        const acceptButton = document.getElementById('accept-invite');
+        const declineButton = document.getElementById('decline-invite');
+
+        acceptButton.onclick = () => acceptInvite(username,length);
+        declineButton.onclick = () => declineInvite(username);
     }
 
-    // Additional UI components that need to be reset can be handled here
-    // For example, resetting input fields, buttons, etc.
-}
+    function acceptInvite(opponentUsername,length) {
+        const socketMessage = {
+            type: 'accept',
+            opponentUsername: opponentUsername,
+            length:length
+        };
+        socket.send(JSON.stringify(socketMessage));
+        closeInviteDialog();
+    }
 
+    function declineInvite(opponentUsername) {
+        const socketMessage = {
+            type: 'decline',
+            opponentUsername: opponentUsername,
+        };
+        socket.send(JSON.stringify(socketMessage));
+        closeInviteDialog();
+    }
+
+    function closeInviteDialog() {
+        document.getElementById('invite-dialog').style.display = 'none';
+    }
+
+    function inviteDeclined(reason) {
+        let displayText;
+        switch(reason) {
+            case "not-found":
+                displayText = "Error: Player not found.";
+                break;
+            case "in-game":
+                displayText = "Player is in another match.";
+                break;
+            case "decline":
+                displayText = "Invitation Declined.";
+                break;
+            default:
+                displayText = "Error: Unknown reason";
+        }
+        stopAnimation();
+        alert(displayText);
+    }
+
+    function revertMainDialogue() {
+        const statusText = document.getElementById('status-text');
+        const inviteDialog = document.getElementById('invite-dialog');
+        playButton.textContent = "Go!";
+        playButton.style.backgroundColor = '#007BFF'; // Default blue color
+        // Assume there is an element that needs to be hidden when reverting the dialogue state
+        if (inviteDialog) {
+            inviteDialog.style.display = 'none';
+        }
+
+        // Resetting status text if used
+        if (statusText) {
+            statusText.textContent = '';
+        }
+
+        // Additional UI components that need to be reset can be handled here
+        // For example, resetting input fields, buttons, etc.
+    }
+
+    function startGame(myColor,whitePlayer,blackPlayer,length,gameNumber){
+        // console.log(`MyColor: ${myColor}, whitePlayer:${whitePlayer}, blackPlayer:${blackPlayer}, length:${length}, gameNumber:${gameNumber}`)
+        let clock = length == 1 ? "Blitz" : length == 5 ? "Standard" : "Classic";
+        if(stopAnimation) stopAnimation();
+        alert(`${whitePlayer} vs. ${blackPlayer} \n${clock} (${length}min) match starting!`)
+        const baseUrl = 'play.html';
+
+        // Construct query parameters
+        const params = new URLSearchParams({
+            myColor: myColor,
+            whitePlayer: whitePlayer,
+            blackPlayer: blackPlayer,
+            length: length,
+            gameNumber: gameNumber
+        });
+
+        // Create the full URL with parameters
+        const fullUrl = `${baseUrl}?${params.toString()}`;
+        // Redirect to the constructed URL
+        window.location.href = fullUrl;
+    }
 
 });

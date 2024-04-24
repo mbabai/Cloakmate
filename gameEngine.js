@@ -658,11 +658,20 @@ class Board {
 
 
 class Game {
-    constructor() {
-        this.players = []
+    constructor(p1,p2,length) {
+        this.players = [p1,p2] //0-index white, 1-index black
         this.winner = null
         this.board = new Board(5,5) //default to 5x5 board.
+        this.length = length;
     };
+    randomizePlayerColor(){
+        let i = 2;
+        while (i !=0){
+            let r = Math.floor(Math.random() * i);
+            i--;
+            [this.players[i], this.players[r]] = [this.players[r], this.players[i]];
+        }
+    }
 }
 
         

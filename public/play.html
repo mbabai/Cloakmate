@@ -10,8 +10,15 @@
 <body>
     <div class="main">
         <div class="game-clock">
-            <div class="clock black-clock">10:00</div>
-            <div class="clock white-clock">10:00</div>
+            <div id="left-clock" class="clock-container">
+                <div id="left-player-name" class="player-name"></div>
+                <div id="left-clock-time" class="clock"></div>
+            </div>
+            <div id="clock-name" class="clock-name">Game Type</div>
+            <div id="right-clock" class="clock-container">
+                <div id="right-player-name" class="player-name"></div>
+                <div id="right-clock-time" class="clock"></div>
+            </div>
         </div>
         <button id="readyButton" class="game-button" style="display: none; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index:10;">Ready!</button>
 
