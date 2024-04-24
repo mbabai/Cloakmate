@@ -39,12 +39,13 @@ class Lobby{
   }
   
   tryAdduser(ws,username){
-    if(this.isUserInLobby(username)){
-      console.debug(`Name "${username}" already taken.`)
+    let newName = username.slice(0,18)
+    if(this.isUserInLobby(newName)){
+      console.debug(`Name "${newName}" already taken.`)
       return null;
     } else {
-      console.log(`Adding player "${username}"`)
-      return this.addLobbyUser(ws,username);
+      console.log(`Adding player "${newName}"`)
+      return this.addLobbyUser(ws,newName);
     }
   }
 

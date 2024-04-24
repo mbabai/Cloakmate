@@ -226,24 +226,38 @@ document.addEventListener('DOMContentLoaded', function() {
         if (myColor === 'black') {
             leftName.textContent = whitePlayer;
             rightName.textContent = blackPlayer;
-            leftClock.textContent = `${length}:00`;
-            rightClock.textContent = `${length}:00`;
+            rightClock.classList.add("black-clock");
+            leftClock.classList.add("white-clock");
         } else {
             leftName.textContent = blackPlayer;
             rightName.textContent = whitePlayer;
-            leftClock.textContent = `${length}:00`;
-            rightClock.textContent = `${length}:00`;
+            rightClock.classList.add("white-clock");
+            leftClock.classList.add("black-clock");
+
         }
+        leftClock.textContent = `${length}:00`;
+        rightClock.textContent = `${length}:00`;
     
         let myName = myColor == "white" ? whitePlayer : blackPlayer;
-        console.log(myName)
          // Send WebSocket message
          const message = {
             type: "entered-game",
             username: myName,
             gameNumber: params.get('gameNumber') // Ensure this parameter is used if required
         };
+        updatePieceImages(myColor);
         socket.send(JSON.stringify(message));
+    }
+
+    function updatePieceImages(myColor) {
+        const gamePieces = document.querySelectorAll('.game-piece');
+        gamePieces.forEach(piece => {
+            if (myColor === 'black') {
+                piece.src = piece.src.replace('White', 'Black');
+            } else {
+                piece.src = piece.src.replace('Black', 'White');
+            }
+        });
     }
 
     // Initialize the board state

@@ -18,7 +18,7 @@ html, body {
     height: 100vh;
     max-height: calc(100vw * 1.6);
     max-width: calc(100vh / 1.6);
-    background: #111; /* Dark background for the main div */
+    background: #444; /* Dark background for the main div */
 }
 
 .board {
@@ -148,24 +148,51 @@ html, body {
 #challenge-button {
     left: calc(50% + (100% / 5 * 0.6)); /* Recalculate the position to bring closer to center */
 }
-
+/* GAME CLOCK */
 .game-clock {
-    z-index: 10;
-    top:2%;
-    display: flex;
     position: absolute;
-    height:5%;
-    width:80%;
-    justify-content: center;
-    margin-bottom: 20px; /* Space between the clock and the board */
+    top: 0%;
+    /* left: 0; 
+    right: 0;  */
+    display: flex;
+    justify-content: space-between; /* Distributes space between children evenly */
+    align-items: center;
+    width: 98%; /* Matches the width to that of the main container */
+    padding: 0 2%; /* Adds padding to prevent touching the edges */
+}
+.clock-name{
+    color:white;
+    font-size: 2.5cqh;
+}
+
+.player-name {
+    color: white; /* Adjust the color to fit the background for visibility */
+    font-size: 2.5cqh;
+    text-align: center;
+}
+
+.clock-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center; /* Centers the clock and name vertically */
+    width: 33%; /* Divides the space evenly between the two clocks and the game type */
+}
+
+/* Ensuring that each clock container does not overflow the boundaries */
+.clock-container:first-child {
+    align-items: flex-start; /* Aligns the left clock to the left */
+}
+
+.clock-container:last-child {
+    align-items: flex-end; /* Aligns the right clock to the right */
 }
 
 .clock {
     font-family: 'LCD', 'Lucida Console', monospace; /* Styling for digital clock appearance */
     font-size: 3cqh;
-    padding: 1cqh 1cqh;
+    padding: 0.7cqh 1cqh;
     border: 1px solid grey; /* Thin grey border as specified */
-    margin: 0 18cqh;
+    margin: 0 0.5cqh;
 }
 
 .black-clock {
