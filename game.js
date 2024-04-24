@@ -13,18 +13,18 @@ class Lobby{
     this.Users = new Map() // get all player data (including WS) from username
     this.quickplayQueue = []
     this.anonID = 0
-    this.logState()
-    // this.heartbeat = setInterval(this.logState(),2000,this)
+    this.heartbeat = setInterval(this.logState,2000,this)
   }   
 
-  logState(){
+  logState(lobby){
     //TODO -------------------------------------------------FIX THIS FUNCTION!
-    const keysArray = Array.from(this.Users.keys());
+    const keysArray = Array.from(lobby.Users.keys());
     const lobbyNameList = keysArray.join(', ')
-    console.log(`Lobby (${this.Users.size} users): ${lobbyNameList}`)
-    const queueNameList = this.quickplayQueue.join(', ')
-    console.log(`Queue (${this.quickplayQueue.length} users): ${queueNameList}`)
+    console.log(`Lobby (${lobby.Users.size} users): ${lobbyNameList}`)
+    const queueNameList = lobby.quickplayQueue.map(user => user.username).join(', ')
+    console.log(`Queue (${lobby.quickplayQueue.length} users): ${queueNameList}`)
     wss.clients.size;
+    console.log("-----------------")
   }
 
   getLobbyUser(username){
@@ -38,12 +38,10 @@ class Lobby{
   tryAdduser(ws,username){
     if(this.isUserInLobby(username)){
       console.debug(`Name "${username}" already taken.`)
-      this.logState()
       return false;
     } else {
       console.log(`Adding player "${username}"`)
       this.addLobbyUser(ws,username)
-      this.logState()
       return true;
     }
   }
@@ -72,10 +70,10 @@ class Lobby{
 
   addToQueue(username) {
     if (!this.quickplayQueue.includes(username)) {
-      this.quickplayQueue.push(username);
+      const nowTime = Date.now()
+      this.quickplayQueue.push({username:username,timestamp:nowTime});
       console.log(`Added ${username} to quickplay queue.`);
     }
-    this.logState()
   }
 
   removeFromQueue(username) {
@@ -84,10 +82,8 @@ class Lobby{
       this.quickplayQueue.splice(index, 1);
       console.log(`Removed ${username} from quickplay queue.`);
     }
-    this.logState()
   }
   invitePlayer(username){
-    this.logState()
     if(!this.Users.has(username)) return "not-found";
     const thisPlayer = this.getLobbyUser(username)
     if (thisPlayer.inGame) return "in-game";
@@ -111,7 +107,6 @@ wss.on('connection', function connection(ws,req) {
   });
   ws.on('close', function close(){
     lobby.removeLobbyUser(ws)
-    lobby.logState()
   })
 });
 
