@@ -45,10 +45,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
                 break;
             case "game-invite":
-                receivedInvite(message.username,message.length)
+                receivedInvite(data.username,data.length)
                 break;
             case "cancel-game-invite":
                 closeInviteDialog();
+                break;
+            case "decline":
+                inviteDeclined(data.reason);
                 break;
             default:
                 break;
@@ -87,8 +90,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     socket.send(JSON.stringify(message));
                 } else {
                     stopAnimation();  // Stop the time tracking and reset
-                    playButton.textContent = "Go!";
-                    playButton.style.backgroundColor = '#007BFF'; // Default blue color
                     message.type = "cancel-opponent-search";
                     message.opponentName = opponentName;
                     socket.send(JSON.stringify(message));
@@ -103,11 +104,11 @@ document.addEventListener('DOMContentLoaded', function() {
                     socket.send(JSON.stringify(message));
                 } else {
                     stopAnimation();  // Stop the time tracking and reset
-                    playButton.textContent = "Go!";
-                    playButton.style.backgroundColor = '#007BFF'; // Default blue color
                     message.type = "quickplay-cancel";
                     socket.send(JSON.stringify(message));
                 }
+                break;
+            default:
                 break;
         }
     });
@@ -131,10 +132,12 @@ document.addEventListener('DOMContentLoaded', function() {
         return () => {
             clearInterval(interval);
             element.style.display = 'none';
+            revertMainDialogue()
         };
 }
 
 function receivedInvite(username, length) {
+    console.log(`Got an invite from ${username} for a ${length} minute game.`)
     const message = `You have gotten an invite from ${username} for a game of length ${length} minute(s)`;
     document.getElementById('invite-message').textContent = message;
     document.getElementById('invite-dialog').style.display = 'block';
@@ -158,7 +161,7 @@ function acceptInvite(opponentUsername) {
 function declineInvite(opponentUsername) {
     const socketMessage = {
         type: 'decline',
-        opponentUsername: opponentUsername
+        opponentUsername: opponentUsername,
     };
     socket.send(JSON.stringify(socketMessage));
     closeInviteDialog();
@@ -167,5 +170,44 @@ function declineInvite(opponentUsername) {
 function closeInviteDialog() {
     document.getElementById('invite-dialog').style.display = 'none';
 }
+
+function inviteDeclined(reason) {
+    let displayText;
+    switch(reason) {
+        case "not-found":
+            displayText = "Error: Player not found.";
+            break;
+        case "in-game":
+            displayText = "Player is in another match.";
+            break;
+        case "decline":
+            displayText = "Invitation Declined.";
+            break;
+        default:
+            displayText = "Error: Unknown reason";
+    }
+    stopAnimation();
+    alert(displayText);
+}
+
+function revertMainDialogue() {
+    const statusText = document.getElementById('status-text');
+    const inviteDialog = document.getElementById('invite-dialog');
+    playButton.textContent = "Go!";
+    playButton.style.backgroundColor = '#007BFF'; // Default blue color
+    // Assume there is an element that needs to be hidden when reverting the dialogue state
+    if (inviteDialog) {
+        inviteDialog.style.display = 'none';
+    }
+
+    // Resetting status text if used
+    if (statusText) {
+        statusText.textContent = '';
+    }
+
+    // Additional UI components that need to be reset can be handled here
+    // For example, resetting input fields, buttons, etc.
+}
+
 
 });

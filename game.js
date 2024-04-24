@@ -89,7 +89,7 @@ class Lobby{
   invitePlayer(username){
     this.logState()
     if(!this.Users.has(username)) return "not-found";
-    const thisPlayer = this.Users.get(username)
+    const thisPlayer = this.getLobbyUser(username)
     if (thisPlayer.inGame) return "in-game";
     return "found"
   }
@@ -153,15 +153,20 @@ function routeMessage(ws, message){ //TODO --------------------------------
       lobby.removeFromQueue(message.username)
       break;
     case "find-opponent":
-      let playerStatus = lobby.invitePlayer(message.username)
+      let playerStatus = lobby.invitePlayer(message.opponentName,message.length)
       if(playerStatus == "not-found"){
-        ws.send(JSON.stringify({type:"custom-status", status:"not-found", username:message.username}))
+        ws.send(JSON.stringify({type:"decline", reason:"not-found", username:message.opponentName}))
       } else if(playerStatus == "in-game") {
-        ws.send(JSON.stringify({type:"custom-status", status:"in-game", username:message.username}))
+        ws.send(JSON.stringify({type:"decline", reason:"in-game", username:message.opponentName}))
       }else if(playerStatus == "found") {
-        p2 = lobby.Users.get(message.username)
+        let p2 = lobby.getLobbyUser(message.opponentName)
         p2.ws.send(JSON.stringify({type:"game-invite", length:message.length, username:message.username}))
       }
+      break;
+    case "decline":
+      if (!lobby.isUserInLobby(message.opponentUsername)) break;
+      let p1 = lobby.getLobbyUser(message.opponentUsername)
+      p1.ws.send(JSON.stringify({type:"decline", reason:"decline"}))
       break;
     default:
       break;
