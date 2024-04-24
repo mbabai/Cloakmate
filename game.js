@@ -64,7 +64,7 @@ class Lobby{
       this.removeFromQueue(username); // Also remove from queue
       this.WStoUsername.delete(ws);
       this.Users.delete(username);
-      console.log(`Removed ${username} from lobby and queue.`);
+      console.log(`Removed ${username} from lobby.`);
     }
   }
 
@@ -77,11 +77,8 @@ class Lobby{
   }
 
   removeFromQueue(username) {
-    const index = this.quickplayQueue.indexOf(username);
-    if (index !== -1) {
-      this.quickplayQueue.splice(index, 1);
-      console.log(`Removed ${username} from quickplay queue.`);
-    }
+    this.quickplayQueue = this.quickplayQueue.filter(user => user.username !== username)
+    console.log(`Removed ${username} from quickplay queue.`);
   }
   invitePlayer(username){
     if(!this.Users.has(username)) return "not-found";
