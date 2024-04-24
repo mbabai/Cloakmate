@@ -23,7 +23,7 @@ class Lobby{
     console.log(`Lobby (${lobby.Users.size} users): ${lobbyNameList}`)
     const queueNameList = lobby.quickplayQueue.map(user => user.username).join(', ')
     console.log(`Queue (${lobby.quickplayQueue.length} users): ${queueNameList}`)
-    wss.clients.size;
+    // wss.clients.size;
     console.log("-----------------")
   }
 
