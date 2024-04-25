@@ -270,7 +270,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // console.log(`MyColor: ${myColor}, whitePlayer:${whitePlayer}, blackPlayer:${blackPlayer}, length:${length}, gameNumber:${gameNumber}`)
         let clock = length == 1 ? "Blitz" : length == 5 ? "Standard" : "Classic";
         if(stopAnimation) stopAnimation();
-        alert(`${whitePlayer} vs. ${blackPlayer} \n${clock} (${length}min) match starting!`)
+        // alert(`${whitePlayer} vs. ${blackPlayer} \n${clock} (${length}min) match starting!`)
         const baseUrl = 'play.html';
 
         // Construct query parameters

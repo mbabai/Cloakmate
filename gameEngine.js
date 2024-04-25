@@ -669,11 +669,18 @@ class Game {
         this.gameEndTime;
         this.gameNumber = gameNumber;
         this.playersTimeAvailable = [length*60000+500,length*60000+500] // The game time, plus half a second to account for lag time. 
+        this.playersSetupComplete = [false,false]
     };
     log(){
         let clock = this.length == 1 ? "Blitz" : this.length == 5 ? "Standard" : "Classic";
         let duration = utils.millisecondsToClock(Date.now() - this.gameStartTime);
         return (`White: ${this.players[0]} VS. Black: ${this.players[1]}, Style: ${clock}, Phase: ${this.phase}, Duration: ${duration}`)
+    }
+    completePlayerSetup(playerName){
+        this.playersSetupComplete[this.players.indexOf(playerName)] = true
+    }
+    isSetupComplete(){
+        return this.playersSetupComplete[0] == true && this.playersSetupComplete[1] == true
     }
     getPlayerColorIndex(playerName){
         return this.players.indexOf(playerName)

@@ -21,6 +21,22 @@ html, body {
     background: #444; /* Dark background for the main div */
 }
 
+.board-labels.left {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.board-labels.bottom {
+    display: flex;
+    justify-content: space-between;
+}
+
+.label {
+    padding: 5px; /* Adjust based on your cell size */
+}
+
 .board {
     width: 95%;
     height: calc(95% / 1.6); /* Maintain the aspect ratio of the main div */

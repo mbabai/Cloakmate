@@ -249,10 +249,22 @@ function routeMessage(ws, message){ //TODO --------------------------------
       break;
     case "ready-to-play":
       let playerName = lobby.getLobbyUsernameFromWS(ws)
-      let thisGame = lobby.games.get(lobby.getLobbyUser(playerName).inGame)
+      p1 = lobby.getLobbyUser(playerName)
+      let thisGame = lobby.games.get(p1.inGame)
+      thisGame.completePlayerSetup(playerName)
       let otherPlayer = thisGame.getOtherPlayer(playerName)
       let playerColorIndex = thisGame.getPlayerColorIndex(playerName)
-      lobby.getLobbyUser(otherPlayer).ws.send(JSON.stringify({type:"opponent-ready",opponentColor:playerColorIndex}))
+      console.log(message.pieces)
+      console.log(message.onDeckPiece)
+      p2 = lobby.getLobbyUser(otherPlayer)
+      p2.ws.send(JSON.stringify({type:"opponent-ready",opponentColor:playerColorIndex}))
+      if(thisGame.isSetupComplete()){
+        thisGame.phase = "play"
+        thisGame.playStartTime = Date.now()
+        let startMessage = JSON.stringify({type:"start-play"})
+        p1.ws.send(startMessage)
+        p2.ws.send(startMessage)
+      }
       break;
     default:
       break;

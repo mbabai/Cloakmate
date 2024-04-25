@@ -27,6 +27,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 stopClock(leftClockTimer);
                 document.getElementById('left-clock-time').classList.remove('clock-highlight');
                 break;
+            case "start-play":
+                startPlay()
+                break;
             default:
                 break;
         }
@@ -53,8 +56,10 @@ document.addEventListener('DOMContentLoaded', function() {
     toggleButtons();    
 
     let myName; //Will use this globally later
-    let gameLength; // Will use this globally later
-    let playerStatus = 'setup';
+    let myGameLength; // Will use this globally later
+    let myColor;
+    let myGameStart;
+    let myStatus = 'setup';
     const gamePieces = document.querySelectorAll('.game-piece');
     const dropTargets = document.querySelectorAll('.cell, .inventory-slot, .on-deck-cell');
     const bottomRowCells = document.querySelectorAll('.board .cell:nth-last-child(-n+5)'); // Correctly selecting the bottom row
@@ -101,7 +106,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function handleDrop(event) {
         event.preventDefault();
-        if (!(playerStatus == 'setup' || playerStatus == 'turn')) {
+        if (!(myStatus == 'setup' || myStatus == 'turn')) {
             return; // Do not allow any actions if not in the appropriate phase.
         }
     
@@ -166,6 +171,29 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
+    function nameCellsForColor(color) {
+        const rows = 5;
+        const columns = color == "white" ? ['A', 'B', 'C', 'D', 'E'] : ['E', 'D', 'C', 'B', 'A'];
+
+        const board = document.querySelector('.board');
+        const cells = board.querySelectorAll('.cell');
+    
+        for (let row = 0; row < rows; row++) {
+            for (let col = 0; col < columns.length; col++) {
+                // Calculate position index based on color
+                const rowIndex = color === 'white' ? rows - row : row + 1; // Fix the row index for proper order
+                const position = `${columns[col]}-${rowIndex}`;
+    
+                // Find the cell's index in the NodeList (row-major order)
+                const cellIndex = row * columns.length + col;
+                cells[cellIndex].setAttribute('data-position', position);
+            }
+        }
+    }
+    
+    
+    
+
     function setupOpponentPieces(opponentColor) {
         const topRowCells = document.querySelectorAll('.board .cell:nth-child(-n+5)'); // Assuming a 5x5 board for the top row
         const pieceFilename = opponentColor === 1 ? 'PawnBlackFront.svg' : 'PawnWhiteFront.svg';
@@ -179,9 +207,10 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function updateBoardState(){
-        if(playerStatus == "setup"){
+        if(myStatus == "setup"){
             updateBottomRowHighlight();
             updateOnDeckHighlight();
+            checkReadiness()
         }
         shiftInventory();
     }
@@ -247,39 +276,51 @@ document.addEventListener('DOMContentLoaded', function() {
         const isBottomRowFilled = Array.from(bottomRowCells).every(cell => cell.children.length > 0);
         const isOnDeckFilled = onDeckCell.children.length > 0;
 
-        readyButton.style.display = (isBottomRowFilled && isOnDeckFilled) ? 'block' : 'none';
+        readyButton.style.display = (isBottomRowFilled && isOnDeckFilled && myStatus == "setup") ? 'block' : 'none';
+    }
+    function startPlay(){ 
+        myStatus =  myColor == "white" ? "move" : "waiting";
+        myGameStart = Date.now()
+        let allClocks = document.querySelectorAll('.clock')
+        allClocks.forEach(clock => {
+            clock.textContent = `${myGameLength}:00`; // Setting the initial time
+        });        
+
     }
 
-    function disableAllMoving(){
-        // Disable moving pieces
-        gamePieces.forEach(piece => {
-            piece.removeEventListener('dragstart', handleDragStart);
-            piece.removeEventListener('click', selectPiece);
-        });
-    }
 
     readyButton.addEventListener('click', function() {
-        console.log("Setup Ready!")
+        console.log("Setup Ready!");
         stopClock(rightClockTimer);  // Stop the right clock
         document.getElementById('right-clock-time').classList.remove('clock-highlight');
         this.style.display = 'none'; // Hide the ready button
-
-        disableAllMoving()
-
-        // Send the game state to the server
-        const pieces = Array.from(document.querySelectorAll('.cell img')).map(img => ({
+    
+        myStatus = "ready";
+    
+        // Filter and send the game state to the server excluding pieces with 'front' in their image source
+        const pieces = Array.from(document.querySelectorAll('.cell img')).filter(img => !img.src.includes('front')).map(img => ({
             type: extractPieceName(img.src),
             position: img.parentElement.getAttribute('data-position')
         }));
+    
         const onDeckPiece = document.querySelector('.on-deck-cell img');
-        const message = {
-            type: "ready-to-play",
-            pieces: pieces,
-            onDeck: onDeckPiece ? extractPieceName(onDeckPiece.src) : null
-        };
-
-        socket.send(JSON.stringify(message));
+        if (onDeckPiece && !onDeckPiece.src.includes('front')) {
+            const message = {
+                type: "ready-to-play",
+                pieces: pieces,
+                onDeck: extractPieceName(onDeckPiece.src)
+            };
+            socket.send(JSON.stringify(message));
+        } else {
+            const message = {
+                type: "ready-to-play",
+                pieces: pieces,
+                onDeck: null
+            };
+            socket.send(JSON.stringify(message));
+        }
     });
+    
 
     // Start the game timers when the game phase changes to 'play'
 
@@ -298,9 +339,10 @@ document.addEventListener('DOMContentLoaded', function() {
         const params = new URLSearchParams(window.location.search);
         const blackPlayer = params.get('blackPlayer');
         const whitePlayer = params.get('whitePlayer');
-        const myColor = params.get('myColor');
+        myColor = params.get('myColor');
+        nameCellsForColor(myColor)
         const length = parseInt(params.get('length'));
-        gameLength = length;
+        myGameLength = length;
         const gameNumber = parseInt(params.get('gameNumber'));
         //check if this game is still live
         socket.send(JSON.stringify({type:"check-game-exists",gameNumber:gameNumber}))
