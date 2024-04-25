@@ -1,5 +1,5 @@
 document.addEventListener('DOMContentLoaded', function() {
-    let myName; 
+
     // Create a new WebSocket.
     const socket = new WebSocket('ws://localhost:3000');
 
@@ -21,6 +21,11 @@ document.addEventListener('DOMContentLoaded', function() {
             case "game-not-exist":
                 alert("Game does not exist or is over!")
                 returnToLobby()
+                break;
+            case "opponent-ready":
+                setupOpponentPieces(data.opponentColor);
+                stopClock(leftClockTimer);
+                document.getElementById('left-clock-time').classList.remove('clock-highlight');
                 break;
             default:
                 break;
@@ -47,14 +52,18 @@ document.addEventListener('DOMContentLoaded', function() {
     };
     toggleButtons();    
 
-    let gamePhase = 'setup'; // This will later be dynamic based on game state
+    let myName; //Will use this globally later
+    let gameLength; // Will use this globally later
+    let playerStatus = 'setup';
     const gamePieces = document.querySelectorAll('.game-piece');
     const dropTargets = document.querySelectorAll('.cell, .inventory-slot, .on-deck-cell');
     const bottomRowCells = document.querySelectorAll('.board .cell:nth-last-child(-n+5)'); // Correctly selecting the bottom row
     const onDeckCell = document.querySelector('.on-deck-cell');
     const inventorySlots = document.querySelectorAll('.inventory-slot'); // Ensure this selects all inventory slots
     let selectedPiece = null; // To keep track of the currently selected piece
-
+    
+    let leftClockTimer = startClock('left-clock-time', 30);
+    let rightClockTimer = startClock('right-clock-time', 30);
 
     gamePieces.forEach(piece => {
         piece.addEventListener('dragstart', handleDragStart);
@@ -79,7 +88,11 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function handleDragStart(event) {
-        event.dataTransfer.setData('text', event.target.id);
+        if (event.target.classList.contains('front')) {
+            event.preventDefault(); // Prevent drag for front pieces
+        } else {
+            event.dataTransfer.setData('text', event.target.id);
+        }
     }
 
     function handleDragOver(event) {
@@ -88,32 +101,48 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function handleDrop(event) {
         event.preventDefault();
-        if (gamePhase !== 'setup') {
-            return; // If not in setup phase, don't allow any drops (optional, based on your phase management)
+        if (!(playerStatus == 'setup' || playerStatus == 'turn')) {
+            return; // Do not allow any actions if not in the appropriate phase.
         }
     
         const data = event.dataTransfer.getData('text');
         const draggedElement = document.getElementById(data);
+        const targetCell = event.target.closest('.cell, .on-deck-cell, .inventory-slot');
     
-        // Check if dropping into allowed cells or the on-deck cell or back into inventory slots
-        const isDroppingToBottomRow = Array.from(bottomRowCells).includes(event.target) || Array.from(bottomRowCells).some(cell => cell.contains(event.target));
-        const isDroppingToOnDeck = event.target === onDeckCell || onDeckCell.contains(event.target);
-        const isDroppingToInventory = event.target.className.includes('inventory-slot') || (event.target.parentNode && event.target.parentNode.className.includes('inventory-slot'));
+        // Determine if the drop is allowed based on the target cell type
+        if (targetCell && targetCell.classList.contains('inventory-slot')) {
+            // Always allow dropping back into any inventory slot
+            placeElementInTarget(event.target, draggedElement);
+        } else if (canPlacePiece(targetCell, draggedElement)) {
+            placeElementInTarget(event.target, draggedElement);
+        }
+    }
     
-        // Ensure the drop is allowed in the current context
-        if ((isDroppingToBottomRow || isDroppingToOnDeck || isDroppingToInventory) && (event.target.className.includes('cell') || event.target.className.includes('inventory-slot') || event.target.className.includes('on-deck-cell'))) {
-            if (event.target.tagName.toLowerCase() === 'img') {
-                event.target.parentNode.appendChild(draggedElement);
-            } else {
-                event.target.appendChild(draggedElement);
-            }
+    function placeElementInTarget(target, element) {
+        // This helper function handles the actual placement of elements.
+        if (target.tagName.toLowerCase() === 'img') {
+            target.parentNode.appendChild(element);
+        } else {
+            target.appendChild(element);
+        }
+        updateBoardState();
+    }
+    
+    function canPlacePiece(target, piece) {
+        const targetCell = target.closest('.cell, .on-deck-cell');
+        if (!targetCell) return false; // Ensure we're dropping into a cell or on-deck area
+    
+        const existingPiece = targetCell.querySelector('img');
+        if (existingPiece && existingPiece.src.includes(extractColor(piece.src))) {
+            return false; // There's already a piece of the same color in this cell
         }
     
-        shiftInventory();
-        updateBottomRowHighlight();
-        updateOnDeckHighlight();
+        return true; // Valid move
     }
-
+    
+    function extractColor(src) {
+        return src.includes('Black') ? 'Black' : 'White';
+    }
 
     gamePieces.forEach(piece => {
         piece.addEventListener('click', selectPiece);
@@ -124,48 +153,66 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     function selectPiece(event) {
-        // Clear any previously selected piece
-        if (selectedPiece) {
-            selectedPiece.classList.remove('selected'); // Optional: Visual cue
+        if (event.target.classList.contains('front')) {
+            event.preventDefault(); // Prevent selection of front pieces
+        } else {
+            // Clear any previously selected piece
+            if (selectedPiece) {
+                selectedPiece.classList.remove('selected'); // Optional: Visual cue
+            }
+            selectedPiece = event.target;
+            selectedPiece.classList.add('selected'); // Optional: Visual cue
+            event.stopPropagation(); // Prevent this click from triggering placePiece
         }
-        
-        selectedPiece = event.target;
-        selectedPiece.classList.add('selected'); // Optional: Visual cue
-        event.stopPropagation(); // Prevent this click from triggering placePiece
     }
 
+    function setupOpponentPieces(opponentColor) {
+        const topRowCells = document.querySelectorAll('.board .cell:nth-child(-n+5)'); // Assuming a 5x5 board for the top row
+        const pieceFilename = opponentColor === 1 ? 'PawnBlackFront.svg' : 'PawnWhiteFront.svg';
+    
+        topRowCells.forEach(cell => {
+            const img = document.createElement('img');
+            img.src = `/images/${pieceFilename}`;
+            img.className = 'game-piece front'; // 'front' class to identify non-movable pieces
+            cell.appendChild(img);
+        });
+    }
+
+    function updateBoardState(){
+        if(playerStatus == "setup"){
+            updateBottomRowHighlight();
+            updateOnDeckHighlight();
+        }
+        shiftInventory();
+    }
 
     function placePiece(event) {
-        if (!selectedPiece) return; // No piece selected, exit the function
-
-        // Find the target cell or slot by climbing up to the closest relevant parent
+        if (!selectedPiece) return; // Exit if no piece selected
+    
         const target = event.target.closest('.cell, .inventory-slot, .on-deck-cell');
-
-        // Determine if the target is an allowed placement location
-        const isBottomRow = Array.from(bottomRowCells).includes(target);
-        const isOnDeck = target === onDeckCell;
-        const isInInventory = Array.from(inventorySlots).includes(target);
-
-        // Check if placement should proceed based on the game phase and target validity
-        if (gamePhase === 'setup' && (isBottomRow || isOnDeck || isInInventory)) {
-            if (target.classList.contains('cell') || target.classList.contains('inventory-slot') || target.classList.contains('on-deck-cell')) {
-                // If the target is another image, append to its parent (e.g., moving to a non-empty cell)
-                if (target.tagName.toLowerCase() === 'img') {
-                    target.parentNode.appendChild(selectedPiece);
-                } else {
-                    target.appendChild(selectedPiece);
-                }
-                selectedPiece.classList.remove('selected'); // Optional: Remove visual cue
-                selectedPiece = null; // Reset the selected piece
-            }
+        if (target.classList.contains('inventory-slot')) {
+            // Always allow placing back into inventory slots
+            placeSelectedPieceInTarget(target);
+        } else if (canPlacePiece(target, selectedPiece)) {
+            placeSelectedPieceInTarget(target);
         } else {
-            // Optionally handle illegal moves or provide feedback
-            console.log("Illegal move during setup phase.");
+            console.log("Cannot place piece here: another piece of the same color exists or invalid move.");
         }
-        updateBottomRowHighlight();
-        updateOnDeckHighlight();
-        shiftInventory()
-    }    
+    }
+    
+    function placeSelectedPieceInTarget(target) {
+        // Generalize placement handling by pulling it into its own function
+        if (target.tagName.toLowerCase() === 'img') {
+            target.parentNode.appendChild(selectedPiece);
+        } else {
+            target.appendChild(selectedPiece);
+        }
+        selectedPiece.classList.remove('selected');
+        selectedPiece = null;
+    
+        updateBoardState();
+    }
+    
 
     function shiftInventory() {
         const slots = document.querySelectorAll('.inventory-slot');
@@ -203,20 +250,38 @@ document.addEventListener('DOMContentLoaded', function() {
         readyButton.style.display = (isBottomRowFilled && isOnDeckFilled) ? 'block' : 'none';
     }
 
-    readyButton.addEventListener('click', function() {
-        const pieces = Array.from(bottomRowCells).map(cell => {
-            return cell.children.length > 0 ? extractPieceName(cell.children[0].getAttribute('src')) : '';
+    function disableAllMoving(){
+        // Disable moving pieces
+        gamePieces.forEach(piece => {
+            piece.removeEventListener('dragstart', handleDragStart);
+            piece.removeEventListener('click', selectPiece);
         });
-        const onDeckPiece = onDeckCell.children.length > 0 ? extractPieceName(onDeckCell.children[0].getAttribute('src')) : '';
+    }
 
+    readyButton.addEventListener('click', function() {
+        console.log("Setup Ready!")
+        stopClock(rightClockTimer);  // Stop the right clock
+        document.getElementById('right-clock-time').classList.remove('clock-highlight');
+        this.style.display = 'none'; // Hide the ready button
+
+        disableAllMoving()
+
+        // Send the game state to the server
+        const pieces = Array.from(document.querySelectorAll('.cell img')).map(img => ({
+            type: extractPieceName(img.src),
+            position: img.parentElement.getAttribute('data-position')
+        }));
+        const onDeckPiece = document.querySelector('.on-deck-cell img');
         const message = {
-            type: "ready",
+            type: "ready-to-play",
             pieces: pieces,
-            "on-deck": onDeckPiece
+            onDeck: onDeckPiece ? extractPieceName(onDeckPiece.src) : null
         };
 
         socket.send(JSON.stringify(message));
     });
+
+    // Start the game timers when the game phase changes to 'play'
 
     document.querySelectorAll('.cell, .inventory-slot, .on-deck-cell').forEach(target => {
         target.addEventListener('drop', checkReadiness);
@@ -226,7 +291,7 @@ document.addEventListener('DOMContentLoaded', function() {
     function extractPieceName(src) {
         const lastSlashIndex = src.lastIndexOf('/') + 1;
         const lastPeriodIndex = src.lastIndexOf('.');
-        return src.substring(lastSlashIndex, lastPeriodIndex).replace(/PawnWhite|PawnBlack/g, '').toLowerCase();
+        return src.substring(lastSlashIndex, lastPeriodIndex).replace(/PawnWhite|PawnBlack/g, '').toUpperCase();
     }
 
     function setupGameFromUrl() {
@@ -235,6 +300,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const whitePlayer = params.get('whitePlayer');
         const myColor = params.get('myColor');
         const length = parseInt(params.get('length'));
+        gameLength = length;
         const gameNumber = parseInt(params.get('gameNumber'));
         //check if this game is still live
         socket.send(JSON.stringify({type:"check-game-exists",gameNumber:gameNumber}))
@@ -287,9 +353,34 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // Initialize the board state
     
-    updateBottomRowHighlight();
-    updateOnDeckHighlight();
-    checkReadiness()
+
+    function startClock(clockId, duration) {
+        let remainingTime = duration;
+        const clockElement = document.getElementById(clockId);
+        clockElement.classList.add('clock-highlight');
+
+        function updateClock() {
+            const minutes = Math.floor(remainingTime / 60);
+            const seconds = remainingTime % 60;
+            clockElement.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+
+            if (remainingTime <= 0) {
+                clearInterval(clockElement.timer);
+                clockElement.classList.remove('clock-highlight');
+            }
+            remainingTime--;
+        }
+
+        updateClock(); // Initialize clock display
+        clockElement.timer = setInterval(updateClock, 1000);
+        return clockElement.timer;
+    }
+
+    function stopClock(timer) {
+        clearInterval(timer);
+    }
+
+    // Initialize the board state 
+    updateBoardState()
 });

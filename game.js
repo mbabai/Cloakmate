@@ -97,13 +97,15 @@ class Lobby{
     const username = this.WStoUsername.get(ws);
     if (username) {
       if(this.Users.get(username).inGame){ //Give the other player the win.
-        const gameNumber = this.Users.get(username).inGame;
-        let thisGame = this.games.get(gameNumber)
-        const otherPlayer = thisGame.getOtherPlayer(username)
-        if(otherPlayer){
+        try{
+          const gameNumber = this.Users.get(username).inGame;
+          let thisGame = this.games.get(gameNumber)
+          const otherPlayer = thisGame.getOtherPlayer(username)
           thisGame.declareWinner(otherPlayer)
           this.Users.get(username).inGame = false;
           this.Users.get(otherPlayer).ws.send(JSON.stringify({type:"opponent-disconnect"}))
+        } catch (error){
+          console.log("Cannot give opponent the win.")
         }
       }
       this.removeFromQueue(username); // Also remove from queue
@@ -244,6 +246,13 @@ function routeMessage(ws, message){ //TODO --------------------------------
       if(!lobby.games.has(gameNumber) || lobby.games.get(gameNumber).winner !== null){
         ws.send(JSON.stringify({type:"game-not-exist"}))
       }
+      break;
+    case "ready-to-play":
+      let playerName = lobby.getLobbyUsernameFromWS(ws)
+      let thisGame = lobby.games.get(lobby.getLobbyUser(playerName).inGame)
+      let otherPlayer = thisGame.getOtherPlayer(playerName)
+      let playerColorIndex = thisGame.getPlayerColorIndex(playerName)
+      lobby.getLobbyUser(otherPlayer).ws.send(JSON.stringify({type:"opponent-ready",opponentColor:playerColorIndex}))
       break;
     default:
       break;

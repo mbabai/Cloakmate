@@ -195,6 +195,10 @@ html, body {
     margin: 0 0.5cqh;
 }
 
+.clock-highlight {
+    box-shadow: 0 0 15px rgba(200, 170, 0, 0.9); /* Subtle glow effect */
+}
+
 .black-clock {
     background-color: black;
     color: white;

@@ -663,13 +663,20 @@ class Game {
         this.winner = null
         this.board = new Board(5,5) //default to 5x5 board.
         this.length = length;
-        this.startTime = Date.now()
+        this.gameStartTime = Date.now();
+        this.phase = "setup"
+        this.playStartTime;
+        this.gameEndTime;
         this.gameNumber = gameNumber;
+        this.playersTimeAvailable = [length*60000+500,length*60000+500] // The game time, plus half a second to account for lag time. 
     };
     log(){
         let clock = this.length == 1 ? "Blitz" : this.length == 5 ? "Standard" : "Classic";
-        let duration = utils.millisecondsToClock(Date.now() - this.startTime);
-        return (`White: ${this.players[0]} VS. Black: ${this.players[1]}, Style: ${clock}, Duration: ${duration}`)
+        let duration = utils.millisecondsToClock(Date.now() - this.gameStartTime);
+        return (`White: ${this.players[0]} VS. Black: ${this.players[1]}, Style: ${clock}, Phase: ${this.phase}, Duration: ${duration}`)
+    }
+    getPlayerColorIndex(playerName){
+        return this.players.indexOf(playerName)
     }
     getOtherPlayer(playerName){
         if((this.players.indexOf(playerName) === -1)){
