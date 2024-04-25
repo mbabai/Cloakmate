@@ -16,8 +16,14 @@ class Lobby{
     this.games = new Map()
     this.gameNumber = 0
 
-    this.heartbeat = setInterval(this.logState,2000,this)
+    this.heartbeat = setInterval(this.pulse,2000,this)
   }   
+
+
+  pulse(lobby){
+    lobby.logState(lobby)
+    lobby.matchQuickPlay(lobby)
+  }
 
   logState(lobby){
     //TODO -------------------------------------------------FIX THIS FUNCTION!
@@ -26,8 +32,33 @@ class Lobby{
     console.log(`Lobby (${lobby.Users.size} users): ${lobbyNameList}`)
     const queueNameList = lobby.quickplayQueue.map(user => user.username).join(', ')
     console.log(`Queue (${lobby.quickplayQueue.length} users): ${queueNameList}`)
+    console.log("Games:")
+    lobby.games.forEach((value, key) => {
+      if(value.winner == null) {console.log(`${value.gameNumber}. ${value.log()}`)};
+    });
     // wss.clients.size;
     console.log("-----------------")
+  }
+
+  matchQuickPlay(lobby){
+    while(lobby.quickplayQueue.length > 1){
+      let p1name = lobby.quickplayQueue[0].username
+      let p2name = lobby.quickplayQueue[1].username
+      lobby.connectMatch(p1name,p2name,5)
+      lobby.removeFromQueue(p1name)
+      lobby.removeFromQueue(p2name)
+    }
+  }
+
+  getPlayerList(){
+    const userList = [];
+    this.Users.forEach((value, key) => {
+        userList.push({
+            username: key,
+            inGame: value.inGame // Assuming 'inGame' is a property of the map's values
+        });
+    });
+    return userList;
   }
 
   getLobbyUser(username){
@@ -65,6 +96,16 @@ class Lobby{
   removeLobbyUser(ws) {
     const username = this.WStoUsername.get(ws);
     if (username) {
+      if(this.Users.get(username).inGame){ //Give the other player the win.
+        const gameNumber = this.Users.get(username).inGame;
+        let thisGame = this.games.get(gameNumber)
+        const otherPlayer = thisGame.getOtherPlayer(username)
+        if(otherPlayer){
+          thisGame.declareWinner(otherPlayer)
+          this.Users.get(username).inGame = false;
+          this.Users.get(otherPlayer).ws.send(JSON.stringify({type:"opponent-disconnect"}))
+        }
+      }
       this.removeFromQueue(username); // Also remove from queue
       this.WStoUsername.delete(ws);
       this.Users.delete(username);
@@ -92,9 +133,18 @@ class Lobby{
   }
 
   startMatch(p1username,p2username,length){
-    this.games.set(++this.gameNumber,new game.Game(p1username,p2username,length))
+    this.gameNumber++
+    this.games.set(this.gameNumber,new game.Game(p1username,p2username,length,this.gameNumber))
     this.games.get(this.gameNumber).randomizePlayerColor()
     return {gameNumber:this.gameNumber,white:this.games.get(this.gameNumber).players[0],black:this.games.get(this.gameNumber).players[1]}
+  }
+
+  connectMatch(p1name,p2name,length){
+    let game = lobby.startMatch(p1name,p2name,length)
+    let p1 = lobby.getLobbyUser(game.white)
+    let p2 = lobby.getLobbyUser(game.black)
+    p1.ws.send(JSON.stringify({type:"match",myColor:"white",whitePlayer:game.white, blackPlayer:game.black, length:length,gameNumber:game.gameNumber}))
+    p2.ws.send(JSON.stringify({type:"match",myColor:"black",whitePlayer:game.white, blackPlayer:game.black, length:length,gameNumber:game.gameNumber}))
   }
 }
 
@@ -151,6 +201,10 @@ function routeMessage(ws, message){ //TODO --------------------------------
         ws.send(JSON.stringify({type:"username-status", status:"taken"}));
       }
       break;
+    case "request-players":
+      const playerList = lobby.getPlayerList()
+      ws.send(JSON.stringify({type:"players-list", players:playerList}))
+      break;
     case "quickplay-queue":
       lobby.addToQueue(message.username)
       break;
@@ -179,15 +233,17 @@ function routeMessage(ws, message){ //TODO --------------------------------
         break;
       } 
       p2username = lobby.getLobbyUsernameFromWS(ws)
-      let game = lobby.startMatch(message.opponentUsername,p2username,message.length)
-      p1 = lobby.getLobbyUser(game.white)
-      p2 = lobby.getLobbyUser(game.black)
-      p1.ws.send(JSON.stringify({type:"match",myColor:"white",whitePlayer:game.white, blackPlayer:game.black, length:message.length,gameNumber:game.gameNumber}))
-      p2.ws.send(JSON.stringify({type:"match",myColor:"black",whitePlayer:game.white, blackPlayer:game.black, length:message.length,gameNumber:game.gameNumber}))
+      lobby.connectMatch(message.opponentUsername,p2username,message.length)
       break;
     case "entered-game":
-      lobby.addLobbyUser(ws,message.username,true) // this will overwrite others with the same name, but no one else should have it. 
+      lobby.addLobbyUser(ws,message.username,parseInt(message.gameNumber)) // this will overwrite others with the same name, but no one else should have it. 
       console.log(`${message.username} has entered a game!`)
+      break;
+    case "check-game-exists":
+      const gameNumber = message.gameNumber;
+      if(!lobby.games.has(gameNumber) || lobby.games.get(gameNumber).winner !== null){
+        ws.send(JSON.stringify({type:"game-not-exist"}))
+      }
       break;
     default:
       break;

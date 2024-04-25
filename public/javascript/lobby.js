@@ -7,7 +7,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const aiDifficulty = document.getElementById('ai-difficulty');
     const customOptions = document.getElementById('custom-options');
     const playButton = document.getElementById('play-button');
-    const opponentNameInput = document.getElementById('opponent-name');
+    const opponentNameInput = document.getElementById('opponent-name-input');
     const gameLengthInput = document.getElementById('game-length');
     const statusText = document.getElementById('status-text');
     const socket = new WebSocket('ws://localhost:3000');
@@ -15,6 +15,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
     socket.onopen = function() {
         console.log('WebSocket connection established');
+        const params = new URLSearchParams(window.location.search);
+        if(params.has("username")){
+            socket.send(JSON.stringify({ type: "check-username", username: params.get("username") }));
+        }
     };
 
     socket.onmessage = function(event) {
@@ -48,6 +52,9 @@ document.addEventListener('DOMContentLoaded', function() {
                     usernameInput.focus();
                 }
                 break;
+            case "players-list":
+                populateOpponentDropdown(data.players);
+                break;
             case "game-invite":
                 receivedInvite(data.username,data.length)
                 break;
@@ -64,6 +71,46 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
     });
+
+    document.getElementById('opponent-name-input').addEventListener('focus', function() {
+        socket.send(JSON.stringify({type: "request-players"}));
+    });
+    
+    function populateOpponentDropdown(players) {
+        const dropdown = document.getElementById('opponent-name-dropdown');
+        dropdown.innerHTML = ''; // Clear previous options
+    
+        // Get the current player's username from the displayed span
+        const currentUsername = document.querySelector('.username-inline').textContent;
+    
+        if (players.length === 0) {
+            const option = document.createElement('option');
+            option.value = "No one online";
+            dropdown.appendChild(option);
+        } else {
+            players.forEach(player => {
+                if (player.username !== currentUsername) { // Filter out the current player
+                    const option = document.createElement('option');
+                    option.value = player.username + (player.inGame ? " *" : "");
+                    dropdown.appendChild(option);
+                }
+            });
+        }
+    }
+    
+    document.getElementById('opponent-name-input').addEventListener('input', function() {
+        const input = this.value.toLowerCase();
+        const options = document.querySelectorAll('#opponent-name-dropdown option');
+        options.forEach(option => {
+            const text = option.textContent.toLowerCase();
+            if (text.indexOf(input) === -1) {
+                option.style.display = 'none';
+            } else {
+                option.style.display = 'block';
+            }
+        });
+    });
+    
 
     gameSelection.addEventListener('change', function() {
         aiDifficulty.style.display = this.value === 'AI' ? 'block' : 'none';
@@ -84,6 +131,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 alert("Sorry, AI play is not yet available. Please stay tuned!");
                 break;
             case "custom":
+                console.log(gameLengthInput)
+                console.log(opponentNameInput)
                 const opponentName = opponentNameInput.value.trim();
                 const gameLength = parseInt(gameLengthInput.value.trim())
                 console.log(gameLength)

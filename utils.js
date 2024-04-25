@@ -14,7 +14,15 @@ function getXYFromBitIndex(bitIndex,height=5,width=5){
     return {x,y}
 }
 
+function millisecondsToClock(duration){
+    let minutes = Math.floor(duration / 60000);
+    let seconds = Math.floor((duration % 60000) / 1000);
+    // Format minutes and seconds to always display two digits
+    return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+}
+
 module.exports = { 
     getBitIndexFromXY, 
-    getXYFromBitIndex 
+    getXYFromBitIndex,
+    millisecondsToClock
 };

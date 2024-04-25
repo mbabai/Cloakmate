@@ -1,5 +1,5 @@
 document.addEventListener('DOMContentLoaded', function() {
-
+    let myName; 
     // Create a new WebSocket.
     const socket = new WebSocket('ws://localhost:3000');
 
@@ -12,6 +12,19 @@ document.addEventListener('DOMContentLoaded', function() {
     // Listen for messages
     socket.addEventListener('message', function (event) {
         console.log('Message from server ', event.data);
+        const data = JSON.parse(event.data);
+        switch (data.type){
+            case "opponent-disconnect":
+                alert("Opponent Disconnected. \nYou win!")
+                returnToLobby()
+                break;
+            case "game-not-exist":
+                alert("Game does not exist or is over!")
+                returnToLobby()
+                break;
+            default:
+                break;
+        }
     });
 
     // Listen for possible errors
@@ -51,6 +64,19 @@ document.addEventListener('DOMContentLoaded', function() {
         target.addEventListener('dragover', handleDragOver);
         target.addEventListener('drop', handleDrop);
     });
+
+    function returnToLobby(){
+        const baseUrl = 'lobby.html';
+
+        // Construct query parameters
+        const params = new URLSearchParams({
+            username: myName
+        });
+        // Create the full URL with parameters
+        const fullUrl = `${baseUrl}?${params.toString()}`;
+        // Redirect to the constructed URL
+        window.location.href = fullUrl;
+    }
 
     function handleDragStart(event) {
         event.dataTransfer.setData('text', event.target.id);
@@ -210,7 +236,8 @@ document.addEventListener('DOMContentLoaded', function() {
         const myColor = params.get('myColor');
         const length = parseInt(params.get('length'));
         const gameNumber = parseInt(params.get('gameNumber'));
-    
+        //check if this game is still live
+        socket.send(JSON.stringify({type:"check-game-exists",gameNumber:gameNumber}))
         // Set player names and times
         const leftName = document.getElementById('left-player-name');
         const rightName = document.getElementById('right-player-name');
@@ -238,7 +265,7 @@ document.addEventListener('DOMContentLoaded', function() {
         leftClock.textContent = `${length}:00`;
         rightClock.textContent = `${length}:00`;
     
-        let myName = myColor == "white" ? whitePlayer : blackPlayer;
+        myName = myColor == "white" ? whitePlayer : blackPlayer;
          // Send WebSocket message
          const message = {
             type: "entered-game",

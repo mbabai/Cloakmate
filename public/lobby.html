@@ -50,7 +50,9 @@
                 </select>
 
                 <div id="custom-options" style="display: none;">
-                    <input type="text" id="opponent-name" placeholder="Opponent's username">
+                    <!-- <select id="opponent-name-dropdown" style="display: none;"></select> -->
+                    <input type="text" id="opponent-name-input" placeholder="Opponent's username" list="opponent-name-dropdown">
+                    <datalist id="opponent-name-dropdown"></datalist>
                     <select id="game-length">
                         <option value="1">Blitz (1 minute +2s)</option>
                         <option value="5">Standard (5 minutes +5s)</option>

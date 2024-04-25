@@ -216,6 +216,14 @@ html, body {
     color: white;
 }
 
+#opponent-name-input {
+    width: 100%;  
+    padding: 10px;  
+    border: 1px solid #ccc;
+    border-radius: 4px;
+}
+
+
 .username-bar {
     width: 100%;
     text-align: center;

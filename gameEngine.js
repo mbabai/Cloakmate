@@ -658,12 +658,28 @@ class Board {
 
 
 class Game {
-    constructor(p1,p2,length) {
+    constructor(p1,p2,length,gameNumber) {
         this.players = [p1,p2] //0-index white, 1-index black
         this.winner = null
         this.board = new Board(5,5) //default to 5x5 board.
         this.length = length;
+        this.startTime = Date.now()
+        this.gameNumber = gameNumber;
     };
+    log(){
+        let clock = this.length == 1 ? "Blitz" : this.length == 5 ? "Standard" : "Classic";
+        let duration = utils.millisecondsToClock(Date.now() - this.startTime);
+        return (`White: ${this.players[0]} VS. Black: ${this.players[1]}, Style: ${clock}, Duration: ${duration}`)
+    }
+    getOtherPlayer(playerName){
+        if((this.players.indexOf(playerName) === -1)){
+            return false
+        }
+        return this.players[1 - this.players.indexOf(playerName)] // gets the other index player name.
+    }
+    declareWinner(playerName){
+        this.winner = playerName;
+    }
     randomizePlayerColor(){
         let i = 2;
         while (i !=0){
