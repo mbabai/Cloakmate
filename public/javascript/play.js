@@ -83,6 +83,23 @@ document.addEventListener('DOMContentLoaded', function() {
         target.addEventListener('drop', handleDrop);
     });
 
+    const nameToCoordinate = {
+        'A-1': {x: 0, y: 0}, 'B-1': {x: 1, y: 0}, 'C-1': {x: 2, y: 0}, 'D-1': {x: 3, y: 0}, 'E-1': {x: 4, y: 0},
+        'A-2': {x: 0, y: 1}, 'B-2': {x: 1, y: 1}, 'C-2': {x: 2, y: 1}, 'D-2': {x: 3, y: 1}, 'E-2': {x: 4, y: 1},
+        'A-3': {x: 0, y: 2}, 'B-3': {x: 1, y: 2}, 'C-3': {x: 2, y: 2}, 'D-3': {x: 3, y: 2}, 'E-3': {x: 4, y: 2},
+        'A-4': {x: 0, y: 3}, 'B-4': {x: 1, y: 3}, 'C-4': {x: 2, y: 3}, 'D-4': {x: 3, y: 3}, 'E-4': {x: 4, y: 3},
+        'A-5': {x: 0, y: 4}, 'B-5': {x: 1, y: 4}, 'C-5': {x: 2, y: 4}, 'D-5': {x: 3, y: 4}, 'E-5': {x: 4, y: 4}
+    };
+    
+    const coordinateToName = {
+        '00': 'A-1', '10': 'B-1', '20': 'C-1', '30': 'D-1', '40': 'E-1',
+        '01': 'A-2', '11': 'B-2', '21': 'C-2', '31': 'D-2', '41': 'E-2',
+        '02': 'A-3', '12': 'B-3', '22': 'C-3', '32': 'D-3', '42': 'E-3',
+        '03': 'A-4', '13': 'B-4', '23': 'C-4', '33': 'D-4', '43': 'E-4',
+        '04': 'A-5', '14': 'B-5', '24': 'C-5', '34': 'D-5', '44': 'E-5'
+    };
+    
+
     function updateBoardWithState(gameState) {
         const boardCells = document.querySelectorAll('.board .cell');
         const onDeckCell = document.querySelector('.on-deck-cell');
@@ -94,10 +111,11 @@ document.addEventListener('DOMContentLoaded', function() {
         stashSlots.forEach(slot => slot.innerHTML = ''); // Clear all stash slots
     
         // Place new pieces on the board based on the state
+        //TODO--------------------------------
         gameState.board.forEach((row, rowIndex) => {
             row.forEach((piece, colIndex) => {
                 if (piece) {
-                    const cell = boardCells[rowIndex * 5 + colIndex]; // Convert 2D position to 1D index, assuming 5 columns per row
+                    const cell = document.querySelector(`[data-position="${coordinateToName[colIndex.toString()+rowIndex.toString()]}"]`);
                     const img = document.createElement('img');
                     img.src = `/images/Pawn${piece}.svg`; // Adjust the path if your images are named differently
                     img.className = 'game-piece';
@@ -135,6 +153,7 @@ document.addEventListener('DOMContentLoaded', function() {
             disableUI();
         }
     }
+    
     
     
 
@@ -211,13 +230,13 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     
         // Start counting down the player's clock and freeze the opponent's
-        if (myColor == 'white') {
-            startClock('left-clock-time', myGameLength * 60); // Assuming game length is in minutes
-            stopClock(rightClockTimer);
-        } else {
-            startClock('right-clock-time', myGameLength * 60); // Assuming game length is in minutes
-            stopClock(leftClockTimer);
-        }
+        // if (myColor == 'white') {
+        //     startClock('left-clock-time', myGameLength * 60); // Assuming game length is in minutes
+        //     stopClock(rightClockTimer);
+        // } else {
+        //     startClock('right-clock-time', myGameLength * 60); // Assuming game length is in minutes
+        //     stopClock(leftClockTimer);
+        // }
     }
     
     function handleInventoryClick(event) {
@@ -287,7 +306,7 @@ document.addEventListener('DOMContentLoaded', function() {
         } else {
             target.appendChild(element);
         }
-        updategameState();
+        updategameUIState();
     }
     
     function canPlacePiece(target, piece) {
@@ -363,7 +382,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    function updategameState(){
+    function updategameUIState(){
         if(myStatus == "setup"){
             updateBottomRowHighlight();
             updateOnDeckHighlight();
@@ -396,7 +415,7 @@ document.addEventListener('DOMContentLoaded', function() {
         selectedPiece.classList.remove('selected');
         selectedPiece = null;
     
-        updategameState();
+        updategameUIState();
     }
     
 
@@ -436,7 +455,7 @@ document.addEventListener('DOMContentLoaded', function() {
         readyButton.style.display = (isBottomRowFilled && isOnDeckFilled && myStatus == "setup") ? 'block' : 'none';
     }
     function startPlay(){ 
-        myStatus =  myColor == "white" ? "move" : "waiting";
+        myStatus =  myColor == "white" ? "turn" : "waiting";
         myGameStart = Date.now()
         let allClocks = document.querySelectorAll('.clock')
         allClocks.forEach(clock => {
@@ -581,5 +600,5 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // Initialize the board state 
-    updategameState()
+    updategameUIState()
 });
