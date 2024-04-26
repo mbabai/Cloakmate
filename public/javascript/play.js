@@ -28,10 +28,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 document.getElementById('left-clock-time').classList.remove('clock-highlight');
                 break;
             case "start-play":
+                updateBoardWithState(data.gameState);
                 startPlay()
                 break;
-            case "turn":
-                takeTurn(data.options)
+            case "state-update":
+                updateBoardWithState(data.gameState);
                 break;
             default:
                 break;
@@ -82,10 +83,158 @@ document.addEventListener('DOMContentLoaded', function() {
         target.addEventListener('drop', handleDrop);
     });
 
-
-    function takeTurn(options){
-        console.log("My Turn!")
+    function updateBoardWithState(gameState) {
+        const boardCells = document.querySelectorAll('.board .cell');
+        const onDeckCell = document.querySelector('.on-deck-cell');
+        const stashSlots = document.querySelectorAll('.inventory-slot'); // Assuming there are designated slots in the HTML for stash
+    
+        // Clear existing pieces from the board, on-deck, and stash
+        boardCells.forEach(cell => cell.innerHTML = '');
+        onDeckCell.innerHTML = '';
+        stashSlots.forEach(slot => slot.innerHTML = ''); // Clear all stash slots
+    
+        // Place new pieces on the board based on the state
+        gameState.board.forEach((row, rowIndex) => {
+            row.forEach((piece, colIndex) => {
+                if (piece) {
+                    const cell = boardCells[rowIndex * 5 + colIndex]; // Convert 2D position to 1D index, assuming 5 columns per row
+                    const img = document.createElement('img');
+                    img.src = `/images/Pawn${piece}.svg`; // Adjust the path if your images are named differently
+                    img.className = 'game-piece';
+                    cell.appendChild(img);
+                }
+            });
+        });
+    
+        // Handle on-deck piece
+        if (gameState.onDeck) {
+            const img = document.createElement('img');
+            img.src = `/images/Pawn${gameState.onDeck}.svg`;
+            img.className = 'game-piece';
+            onDeckCell.appendChild(img);
+        }
+    
+        // Populate stash based on gameState.stash
+        let stashIndex = 0; // Start at the first slot
+        gameState.stash.forEach(item => {
+            for (let i = 0; i < item.count; i++) {
+                if (stashIndex < stashSlots.length) { // Ensure there's a corresponding slot
+                    const img = document.createElement('img');
+                    img.src = `/images/Pawn${item.piece}.svg`;
+                    img.className = 'game-piece';
+                    stashSlots[stashIndex].appendChild(img);
+                    stashIndex++; // Move to the next slot for the next piece
+                }
+            }
+        });
+    
+        // UI handling based on turn
+        if (gameState.myTurn) {
+            takeTurn(gameState.legalActions);
+        } else {
+            disableUI();
+        }
     }
+    
+    
+
+    function disableUI(){
+        // Disable all interactions initially
+        gamePieces.forEach(piece => {
+            piece.removeEventListener('dragstart', handleDragStart);
+            piece.removeEventListener('click', selectPiece);
+            piece.classList.remove('glow-red', 'movable');
+        });
+
+        // Disable buttons
+        document.getElementById('bomb-button').style.display = 'none';
+        document.getElementById('challenge-button').style.display = 'none';
+
+        // Reset on-deck and inventory interactions
+        onDeckCell.classList.remove('highlight-gold');
+        inventorySlots.forEach(slot => {
+            slot.removeEventListener('click', handleInventoryClick);
+            slot.removeEventListener('dragover', handleDragOver);
+            slot.removeEventListener('drop', handleDrop);
+        });
+    }
+    
+    function takeTurn(legalActions) {
+        disableUI() // Disable anything that was there. 
+        // Action-specific setups
+        legalActions.forEach(action => {
+            switch (action) {
+                case "sacrifice":
+                    // Highlight all player's pieces with a red glow
+                    gamePieces.forEach(piece => {
+                        if (piece.src.includes(myColor)) {
+                            piece.classList.add('glow-red');
+                        }
+                    });
+                    break;
+    
+                case "on-deck":
+                    // Highlight the on-deck cell and allow interaction with stash
+                    onDeckCell.classList.add('highlight-gold');
+                    inventorySlots.forEach(slot => {
+                        slot.addEventListener('click', handleInventoryClick);
+                        slot.addEventListener('dragover', handleDragOver);
+                        slot.addEventListener('drop', handleDrop);
+                    });
+                    break;
+    
+                case "challenge":
+                    // Show and setup the challenge button
+                    let challengeButton = document.getElementById('challenge-button');
+                    challengeButton.style.display = 'block';
+                    challengeButton.onclick = declareChallenge;
+                    break;
+    
+                case "bomb":
+                    // Show and setup the bomb button
+                    let bombButton = document.getElementById('bomb-button');
+                    bombButton.style.display = 'block';
+                    bombButton.onclick = declareBomb;
+                    break;
+    
+                case "move":
+                    // Allow moves of player's pieces on the board
+                    gamePieces.forEach(piece => {
+                        if (piece.src.includes(myColor) && !piece.classList.contains('front')) {
+                            piece.addEventListener('dragstart', handleDragStart);
+                            piece.addEventListener('click', selectPiece);
+                            piece.classList.add('movable');
+                        }
+                    });
+                    break;
+            }
+        });
+    
+        // Start counting down the player's clock and freeze the opponent's
+        if (myColor == 'white') {
+            startClock('left-clock-time', myGameLength * 60); // Assuming game length is in minutes
+            stopClock(rightClockTimer);
+        } else {
+            startClock('right-clock-time', myGameLength * 60); // Assuming game length is in minutes
+            stopClock(leftClockTimer);
+        }
+    }
+    
+    function handleInventoryClick(event) {
+        // Logic to handle clicks on inventory slots during the on-deck phase
+        placeElementInTarget(onDeckCell, event.target);
+    }
+    
+    function declareChallenge() {
+        console.log("Challenge declared!");
+        // Additional logic to handle challenge
+    }
+    
+    function declareBomb() {
+        console.log("Bomb declared!");
+        // Additional logic to handle bomb
+    }
+    
 
     function returnToLobby(){
         const baseUrl = 'lobby.html';
@@ -138,7 +287,7 @@ document.addEventListener('DOMContentLoaded', function() {
         } else {
             target.appendChild(element);
         }
-        updateBoardState();
+        updategameState();
     }
     
     function canPlacePiece(target, piece) {
@@ -214,7 +363,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    function updateBoardState(){
+    function updategameState(){
         if(myStatus == "setup"){
             updateBottomRowHighlight();
             updateOnDeckHighlight();
@@ -247,7 +396,7 @@ document.addEventListener('DOMContentLoaded', function() {
         selectedPiece.classList.remove('selected');
         selectedPiece = null;
     
-        updateBoardState();
+        updategameState();
     }
     
 
@@ -306,13 +455,13 @@ document.addEventListener('DOMContentLoaded', function() {
         myStatus = "ready";
     
         // Filter and send the game state to the server excluding pieces with 'front' in their image source
-        const pieces = Array.from(document.querySelectorAll('.cell img')).filter(img => !img.src.includes('front')).map(img => ({
+        const pieces = Array.from(document.querySelectorAll('.cell img')).filter(img => !img.src.includes('Front')).map(img => ({
             type: extractPieceName(img.src),
             position: img.parentElement.getAttribute('data-position')
         }));
     
         const onDeckPiece = document.querySelector('.on-deck-cell img');
-        if (onDeckPiece && !onDeckPiece.src.includes('front')) {
+        if (onDeckPiece && !onDeckPiece.src.includes('Front')) {
             const message = {
                 type: "ready-to-play",
                 pieces: pieces,
@@ -432,5 +581,5 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // Initialize the board state 
-    updateBoardState()
+    updategameState()
 });

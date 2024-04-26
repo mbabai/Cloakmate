@@ -48,13 +48,13 @@ class Lobby{
     });
   }
 
-  beginGamePlay(p1,p2,thisGame){
+  beginGamePlay(whitePlayer,blackPlayer,thisGame){
     thisGame.board.phase = "play"
     thisGame.playStartTime = Date.now()
-    let startMessage = JSON.stringify({type:"start-play"})
-    p1.ws.send(startMessage)
-    p2.ws.send(startMessage)
-    lobby.getGameTurnPlayer(thisGame).ws.send(JSON.stringify({type:"turn",options:["move"]}))
+    let whiteState = thisGame.getColorState(0)
+    let blackState = thisGame.getColorState(1)
+    whitePlayer.ws.send(JSON.stringify({type:"start-play",gameState:whiteState}))
+    blackPlayer.ws.send(JSON.stringify({type:"start-play",gameState:blackState}))
   }
         
 
@@ -68,6 +68,7 @@ class Lobby{
     console.log("Games:")
     lobby.games.forEach((value, key) => {
       if(value.winner == null) {console.log(`${value.gameNumber}. ${value.log()}`)};
+      value.board.printBoard();
     });
     // wss.clients.size;
     console.log("-----------------")
@@ -285,13 +286,15 @@ function routeMessage(ws, message){ //TODO --------------------------------
       break;
     case "ready-to-play":
       let playerName = lobby.getLobbyUsernameFromWS(ws)
+      // console.log(message.pieces)
+      // console.log(message.onDeckPiece)
       p1 = lobby.getLobbyUser(playerName)
       let thisGame = lobby.games.get(p1.inGame)
+      thisGame.placePieces(playerName,message.pieces,message.onDeckPiece)
       thisGame.completePlayerSetup(playerName)
       let otherPlayer = thisGame.getOtherPlayer(playerName)
       let playerColorIndex = thisGame.getPlayerColorIndex(playerName)
-      console.log(message.pieces)
-      console.log(message.onDeckPiece)
+      
       p2 = lobby.getLobbyUser(otherPlayer)
       p2.ws.send(JSON.stringify({type:"opponent-ready",opponentColor:playerColorIndex}))
       if(thisGame.isSetupComplete()){

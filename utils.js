@@ -24,5 +24,4 @@ function millisecondsToClock(duration){
 module.exports = { 
     getBitIndexFromXY, 
     getXYFromBitIndex,
-    millisecondsToClock
-};
+    millisecondsToClock};

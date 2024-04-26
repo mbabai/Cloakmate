@@ -15,6 +15,10 @@ const pieces = { //Piece constants
     BISHOP:3,
     ROOK:4
 }
+const pieceStringNames = {
+    [colors.WHITE]: ['WhiteBomb', 'WhiteKing', 'WhiteKnight', 'WhiteBishop', 'WhiteRook'],
+    [colors.BLACK]: ['BlackBomb', 'BlackKing', 'BlackKnight', 'BlackBishop', 'BlackRook']   
+};
 const pieceSymbols = { //queen is BOMB
     [colors.WHITE]: ['♛', '♚', '♞', '♝', '♜'],
     [colors.BLACK]: ['♕', '♔', '♘', '♗', '♖'] 
@@ -676,7 +680,85 @@ class Game {
         let duration = utils.millisecondsToClock(Date.now() - this.gameStartTime);
         return (`White: ${this.players[0]} VS. Black: ${this.players[1]}, Style: ${clock}, Phase: ${this.board.phase}, Duration: ${duration}`)
     }
+    getColorState(color) {
+        // returns a version of the board state that obfuscates the other side's information.
+        const otherColor = color == colors.WHITE ? "Black" : "White"; 
+        const boardState = {
+            board: Array.from(Array(this.board.height), () => Array(this.board.width).fill(null)),
+            onDeck: null,
+            captured: [],
+            stash: [],
+            myTurn: (this.board.playerTurn === color),
+            legalActions: []
+        };
 
+        // Iterate over each cell on the board
+        for (let y = 0; y < this.board.height; y++) {
+            for (let x = 0; x < this.board.width; x++) {
+                const pieceInfo = this.board.getPieceAt(x, y);
+                if (pieceInfo) {
+                    if (pieceInfo.player === color) {
+                        boardState.board[y][x] = pieceStringNames[pieceInfo.player][pieceInfo.type];
+                    } else {
+                        boardState.board[y][x] = `${otherColor}Front`;
+                    }
+                }
+            }
+        }
+        // Check available actions
+        if (boardState.myTurn) {//Only matters if it is our turn.
+            if (this.board.playerToSacrifice === color) { //If we must sacrifice, nothing else matters
+                boardState.legalActions.push("sacrifice");
+            } else if (this.board.playerToOnDeck === color) { //If we have to on-deck, nothing else matters.
+                boardState.legalActions.push("on-deck");
+            } else { //If it's neither of those two, we can move and perhaps challenge and/or bomb
+                boardState.legalActions.push("move");
+                 // Check if challenge or bomb can be declared based on last action
+                const lastAction = this.board.actions[this.board.actions.length - 1];
+                if (lastAction && lastAction.type === actions.MOVE && lastAction.player !== color) {
+                    boardState.legalActions.push("challenge");
+                }
+                if (lastAction && lastAction.wasCapture && lastAction.player !== color) {
+                    boardState.legalActions.push("bomb");
+                }
+            } 
+        }
+        // Handle on-deck piece for the current player
+        const onDeckType = this.board.getOnDeckPieceforPlayer(color);
+        if (onDeckType !== null) {
+            boardState.onDeck = pieceStringNames[color][onDeckType];
+        }
+
+        // Handle captured pieces
+        for (let player of [colors.WHITE, colors.BLACK]) {
+            for (let type = 0; type < this.board.bitboards[player].length; type++) {
+                const capturedCount = Number((this.board.bitboards[player][type] & (0b11000)) >> 3);
+                if (capturedCount > 0) {
+                    const pieceName = pieceStringNames[player][type];
+                    for (let i = 0; i < capturedCount; i++) {
+                        if (this.board.lastCapturedPiece && this.board.lastCapturedPiece.player === player && this.board.lastCapturedPiece.type === type && i === 0) {
+                            boardState.captured.push( `${otherColor}Front`); // Last captured piece shown as 'Front'
+                        } else {
+                            boardState.captured.push(pieceName);
+                        }
+                    }
+                }
+            }
+        }
+
+        // Handle stash for the current player
+        for (let type = 0; type < this.board.bitboards[color].length; type++) {
+            const stashCount = Number((this.board.bitboards[color][type] & (0b11 << 1)) >> 1);
+            if (stashCount > 0) {
+                boardState.stash.push({
+                    piece: pieceStringNames[color][type],
+                    count: stashCount
+                });
+            }
+        }
+
+        return boardState;
+    }
     selectRandomSetup(){
         let selection = [pieces.BISHOP, pieces.BISHOP, pieces.KING, pieces.KING, pieces.ROOK, pieces.ROOK, pieces.KNIGHT, pieces.KNIGHT, pieces.BOMB]
         for (let i = selection.length - 1; i > 0;i--){
@@ -689,7 +771,7 @@ class Game {
     }
     randomSetup(playerNumber){
         const pick = this.selectRandomSetup()
-        for (let x = pick.length - 1; x > 0;x--){
+        for (let x = pick.length - 1; x >= 0;x--){
             if (x==5){
                 this.board.moveStashPieceToOnDeck(playerNumber, pick[x])
             }else{
@@ -697,6 +779,22 @@ class Game {
                 this.board.moveStashPieceToBoard(playerNumber, pick[x], x, y)
             }
         }
+        this.playersSetupComplete[playerNumber]
+    }
+    placePieces(playerName,pieceList,onDeck){
+        const playerColor = this.getPlayerColorIndex(playerName)
+        let y = playerColor == colors.WHITE ? 0: 4;
+        console.log(pieceList)
+        console.log(onDeck)
+        this.board.moveStashPieceToOnDeck(playerColor, pieces[onDeck])
+        for(let i=0;i<pieceList.length;i++){
+            let thisPiece = pieceList[i]
+            let x = playerColor == colors.WHITE ? i: 4-i;
+            this.board.moveStashPieceToBoard(playerColor, pieces[thisPiece.type], x, y)
+        }
+
+        
+           
         
     }
     completePlayerSetup(playerName){
