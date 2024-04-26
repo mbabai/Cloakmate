@@ -27,7 +27,7 @@ class Lobby{
   }
 
   forceStartGames(lobby){
-    const prepTime = 3000 //TEST AT 3 SECONDS //30 seconds setup time allotted
+    const prepTime = 30000 //30 seconds setup time allotted
     lobby.games.forEach((value, key) => {
       let game = value;
       if(Date.now() - game.gameStartTime > prepTime && game.board.phase == "setup"){
