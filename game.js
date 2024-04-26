@@ -23,7 +23,40 @@ class Lobby{
   pulse(lobby){
     lobby.logState(lobby)
     lobby.matchQuickPlay(lobby)
+    lobby.forceStartGames(lobby)
   }
+
+  forceStartGames(lobby){
+    const prepTime = 3000 //TEST AT 3 SECONDS //30 seconds setup time allotted
+    lobby.games.forEach((value, key) => {
+      let game = value;
+      if(Date.now() - game.gameStartTime > prepTime && game.board.phase == "setup"){
+        console.log(`Forcing Game #${key} to start!`)
+        for(let i=0; i <= game.playersSetupComplete.length-1;i++){
+          if (!game.playersSetupComplete[i]){
+            game.board.printBoard()
+            game.randomSetup(i)
+            let otherPLayer = lobby.getLobbyUser(game.players[1-i])
+            otherPLayer.ws.send(JSON.stringify({type:"opponent-ready",opponentColor:i}))
+          }
+        }
+        let p1 = lobby.getLobbyUser(game.players[0])
+        let p2 = lobby.getLobbyUser(game.players[1])
+        lobby.beginGamePlay(p1,p2,game)
+      }
+
+    });
+  }
+
+  beginGamePlay(p1,p2,thisGame){
+    thisGame.board.phase = "play"
+    thisGame.playStartTime = Date.now()
+    let startMessage = JSON.stringify({type:"start-play"})
+    p1.ws.send(startMessage)
+    p2.ws.send(startMessage)
+    lobby.getGameTurnPlayer(thisGame).ws.send(JSON.stringify({type:"turn",options:["move"]}))
+  }
+        
 
   logState(lobby){
     //TODO -------------------------------------------------FIX THIS FUNCTION!
@@ -67,6 +100,9 @@ class Lobby{
   
   getLobbyUsernameFromWS(ws){
     return this.WStoUsername.get(ws)
+  }
+  getGameTurnPlayer(game){
+    return this.getLobbyUser(game.players[game.board.playerTurn])
   }
   
   tryAdduser(ws,username){
@@ -259,12 +295,11 @@ function routeMessage(ws, message){ //TODO --------------------------------
       p2 = lobby.getLobbyUser(otherPlayer)
       p2.ws.send(JSON.stringify({type:"opponent-ready",opponentColor:playerColorIndex}))
       if(thisGame.isSetupComplete()){
-        thisGame.phase = "play"
-        thisGame.playStartTime = Date.now()
-        let startMessage = JSON.stringify({type:"start-play"})
-        p1.ws.send(startMessage)
-        p2.ws.send(startMessage)
+        lobby.beginGamePlay(p1,p2,thisGame)
       }
+      break;
+    case "turn-complete":
+      //TODO ----
       break;
     default:
       break;

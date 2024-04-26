@@ -179,6 +179,7 @@ class Board {
 		this.height = height
 		this.width = width
 		this.game = null
+        this.phase = 'setup'
 
 		this.playerTurn = colors.WHITE //0 for white, 1 for black
 		this.turnNumber = 0 // First turn as white is turn 0
@@ -220,7 +221,7 @@ class Board {
     }
 
     isGameOver(){
-        return this.countColorPiecesOnBoard(1 - this.playerTurn) == 0 && this.countColorPiecesOnBoard(this.playerTurn) > 0;
+        return this.countColorPiecesOnBoard(1 - this.playerTurn) == 0 && this.countColorPiecesOnBoard(this.playerTurn) > 0 && this.phase != "setup";
     }
 
     movePiece(x1, y1, x2, y2) {
@@ -664,7 +665,6 @@ class Game {
         this.board = new Board(5,5) //default to 5x5 board.
         this.length = length;
         this.gameStartTime = Date.now();
-        this.phase = "setup"
         this.playStartTime;
         this.gameEndTime;
         this.gameNumber = gameNumber;
@@ -674,7 +674,30 @@ class Game {
     log(){
         let clock = this.length == 1 ? "Blitz" : this.length == 5 ? "Standard" : "Classic";
         let duration = utils.millisecondsToClock(Date.now() - this.gameStartTime);
-        return (`White: ${this.players[0]} VS. Black: ${this.players[1]}, Style: ${clock}, Phase: ${this.phase}, Duration: ${duration}`)
+        return (`White: ${this.players[0]} VS. Black: ${this.players[1]}, Style: ${clock}, Phase: ${this.board.phase}, Duration: ${duration}`)
+    }
+
+    selectRandomSetup(){
+        let selection = [pieces.BISHOP, pieces.BISHOP, pieces.KING, pieces.KING, pieces.ROOK, pieces.ROOK, pieces.KNIGHT, pieces.KNIGHT, pieces.BOMB]
+        for (let i = selection.length - 1; i > 0;i--){
+            const j = Math.floor(Math.random() * (i + 1));
+            [selection[i], selection[j]] = [selection[j], selection[i]]; // Swap elements
+        }
+        // Select the first 6 elements from the shuffled array
+        
+        return selection.slice(0, 6);;
+    }
+    randomSetup(playerNumber){
+        const pick = this.selectRandomSetup()
+        for (let x = pick.length - 1; x > 0;x--){
+            if (x==5){
+                this.board.moveStashPieceToOnDeck(playerNumber, pick[x])
+            }else{
+                let y = playerNumber == 0 ? 0: 4;
+                this.board.moveStashPieceToBoard(playerNumber, pick[x], x, y)
+            }
+        }
+        
     }
     completePlayerSetup(playerName){
         this.playersSetupComplete[this.players.indexOf(playerName)] = true

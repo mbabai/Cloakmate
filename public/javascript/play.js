@@ -30,6 +30,9 @@ document.addEventListener('DOMContentLoaded', function() {
             case "start-play":
                 startPlay()
                 break;
+            case "turn":
+                takeTurn(data.options)
+                break;
             default:
                 break;
         }
@@ -78,6 +81,11 @@ document.addEventListener('DOMContentLoaded', function() {
         target.addEventListener('dragover', handleDragOver);
         target.addEventListener('drop', handleDrop);
     });
+
+
+    function takeTurn(options){
+        console.log("My Turn!")
+    }
 
     function returnToLobby(){
         const baseUrl = 'lobby.html';
@@ -308,14 +316,14 @@ document.addEventListener('DOMContentLoaded', function() {
             const message = {
                 type: "ready-to-play",
                 pieces: pieces,
-                onDeck: extractPieceName(onDeckPiece.src)
+                onDeckPiece: extractPieceName(onDeckPiece.src)
             };
             socket.send(JSON.stringify(message));
         } else {
             const message = {
                 type: "ready-to-play",
                 pieces: pieces,
-                onDeck: null
+                onDeckPiece: null
             };
             socket.send(JSON.stringify(message));
         }
