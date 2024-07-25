@@ -49,6 +49,7 @@ class Lobby{
   }
 
   beginGamePlay(whitePlayer,blackPlayer,thisGame){
+    //Run once the game has started (quick play or vs)
     thisGame.board.phase = "play"
     thisGame.playStartTime = Date.now()
     let whiteState = thisGame.getColorState(0)
@@ -298,7 +299,10 @@ function routeMessage(ws, message){ //TODO --------------------------------
       p2 = lobby.getLobbyUser(otherPlayer)
       p2.ws.send(JSON.stringify({type:"opponent-ready",opponentColor:playerColorIndex}))
       if(thisGame.isSetupComplete()){
-        lobby.beginGamePlay(p1,p2,thisGame)
+        //Need to send the right board to the right player.
+        let whitePlayer = lobby.getLobbyUser(thisGame.players[0])
+        let blackPlayer = lobby.getLobbyUser(thisGame.players[1])
+        lobby.beginGamePlay(whitePlayer,blackPlayer,thisGame)
       }
       break;
     case "turn-complete":
