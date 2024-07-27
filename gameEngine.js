@@ -689,7 +689,8 @@ class Game {
             captured: [],
             stash: [],
             myTurn: (this.board.playerTurn === color),
-            legalActions: []
+            legalActions: [],
+            clocks:[this.playersTimeAvailable[0]-500,this.playersTimeAvailable[1]-500] // Not showing the extra half second.
         };
 
         // Iterate over each cell on the board

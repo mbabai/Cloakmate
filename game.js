@@ -54,8 +54,8 @@ class Lobby{
     thisGame.playStartTime = Date.now()
     let whiteState = thisGame.getColorState(0)
     let blackState = thisGame.getColorState(1)
-    whitePlayer.ws.send(JSON.stringify({type:"start-play",gameState:whiteState}))
-    blackPlayer.ws.send(JSON.stringify({type:"start-play",gameState:blackState}))
+    whitePlayer.ws.send(JSON.stringify({type:"game-state",gameState:whiteState}))
+    blackPlayer.ws.send(JSON.stringify({type:"game-state",gameState:blackState}))
   }
         
 
