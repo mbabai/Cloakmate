@@ -13,7 +13,8 @@ class Lobby{
     this.Users = new Map() // get all player data (including WS) from username
     this.quickplayQueue = []
     this.anonID = 0
-    this.games = new Map()
+    this.games = new Map() // Game Numer -> game
+    this.playersToGame = new Map() // Player Name -> Game
     this.gameNumber = 0
 
     this.heartbeat = setInterval(this.pulse,2000,this)
@@ -54,8 +55,8 @@ class Lobby{
     thisGame.playStartTime = Date.now()
     let whiteState = thisGame.getColorState(0)
     let blackState = thisGame.getColorState(1)
-    whitePlayer.ws.send(JSON.stringify({type:"game-state",gameState:whiteState}))
-    blackPlayer.ws.send(JSON.stringify({type:"game-state",gameState:blackState}))
+    whitePlayer.ws.send(JSON.stringify({type:"board-state",boardState:whiteState}))
+    blackPlayer.ws.send(JSON.stringify({type:"board-state",boardState:blackState}))
   }
         
 
@@ -174,9 +175,12 @@ class Lobby{
 
   startMatch(p1username,p2username,length){
     this.gameNumber++
-    this.games.set(this.gameNumber,new game.Game(p1username,p2username,length,this.gameNumber))
-    this.games.get(this.gameNumber).randomizePlayerColor()
-    return {gameNumber:this.gameNumber,white:this.games.get(this.gameNumber).players[0],black:this.games.get(this.gameNumber).players[1]}
+    let newGame = new game.Game(p1username,p2username,length,this.gameNumber)
+    this.games.set(this.gameNumber,newGame)
+    newGame.randomizePlayerColor()
+    this.playersToGame.set(p1username,newGame)
+    this.playersToGame.set(p2username,newGame)
+    return {gameNumber:this.gameNumber,white:newGame.players[0],black:newGame.players[1]}
   }
 
   connectMatch(p1name,p2name,length){
@@ -232,11 +236,13 @@ socket.on('close', function close() {
 function routeMessage(ws, message){ //TODO --------------------------------
   let p1 = null;
   let p2 = null;
+  let playerName = null;
+  let thisGame = null;
   switch(message.type){
     case "check-username":
-      let newName = lobby.tryAdduser(ws, message.username)
-      if(newName){
-        ws.send(JSON.stringify({type:"username-status", status:"accepted",username:newName}))
+      playerName = lobby.tryAdduser(ws, message.username)
+      if(playerName){
+        ws.send(JSON.stringify({type:"username-status", status:"accepted",username:playerName}))
       } else {
         ws.send(JSON.stringify({type:"username-status", status:"taken"}));
       }
@@ -276,8 +282,16 @@ function routeMessage(ws, message){ //TODO --------------------------------
       lobby.connectMatch(message.opponentUsername,p2username,message.length)
       break;
     case "entered-game":
-      lobby.addLobbyUser(ws,message.username,parseInt(message.gameNumber)) // this will overwrite others with the same name, but no one else should have it. 
-      console.log(`${message.username} has entered a game!`)
+      lobby.addLobbyUser(ws,message.playerName,parseInt(message.gameNumber)) // this will overwrite others with the same name, but no one else should have it. 
+      console.log(`${message.playerName} has entered a game!`)
+      ///////
+      playerName = lobby.getLobbyUsernameFromWS(ws)
+      p1 = lobby.getLobbyUser(playerName)
+      thisGame = lobby.playersToGame.get(playerName)
+      thisGame.board.phase = "setup"
+      let playerState = thisGame.getColorState(thisGame.getPlayerColorIndex(playerName))
+      p1.ws.send(JSON.stringify({type:"board-state",boardState:playerState}))
+      ///////
       break;
     case "check-game-exists":
       const gameNumber = message.gameNumber;
@@ -286,11 +300,9 @@ function routeMessage(ws, message){ //TODO --------------------------------
       }
       break;
     case "ready-to-play":
-      let playerName = lobby.getLobbyUsernameFromWS(ws)
-      // console.log(message.pieces)
-      // console.log(message.onDeckPiece)
+      playerName = lobby.getLobbyUsernameFromWS(ws)
       p1 = lobby.getLobbyUser(playerName)
-      let thisGame = lobby.games.get(p1.inGame)
+      thisGame = lobby.playersToGame.get(playerName)
       thisGame.placePieces(playerName,message.pieces,message.onDeckPiece)
       thisGame.completePlayerSetup(playerName)
       let otherPlayer = thisGame.getOtherPlayer(playerName)

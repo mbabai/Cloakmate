@@ -75,6 +75,9 @@ class Action {
                 break;
         }
     }
+    copy(){
+        return new Action(this.type, this.player, this.x1, this.y1, this.declaration, this.x2, this.y2);
+    }
     isCapture(){
         //must be called BEFORE the move is complete to be accurate
         if(this.type == actions.BOMB) {return true;} //Bombs are always capturing
@@ -672,7 +675,7 @@ class Game {
         this.playStartTime;
         this.gameEndTime;
         this.gameNumber = gameNumber;
-        this.playersTimeAvailable = [length*60000+500,length*60000+500] // The game time, plus half a second to account for lag time. 
+        this.playersTimeAvailable = [30*1000+500,30*1000+500] // Setup time, plus half a second to account for lag time. 
         this.playersSetupComplete = [false,false]
     };
     log(){
@@ -684,13 +687,16 @@ class Game {
         // returns a version of the board state that obfuscates the other side's information.
         const otherColor = color == colors.WHITE ? "Black" : "White"; 
         const boardState = {
+            color: color,
+            phase: this.board.phase,
             board: Array.from(Array(this.board.height), () => Array(this.board.width).fill(null)),
             onDeck: null,
             captured: [],
             stash: [],
             myTurn: (this.board.playerTurn === color),
             legalActions: [],
-            clocks:[this.playersTimeAvailable[0]-500,this.playersTimeAvailable[1]-500] // Not showing the extra half second.
+            clocks:[this.playersTimeAvailable[0]-500,this.playersTimeAvailable[1]-500], // Not showing the extra half second.
+            actionHistory: this.board.actions.map(action => action.copy()) //Copying the action history to avoid showing if it was a bluff or not
         };
 
         // Iterate over each cell on the board

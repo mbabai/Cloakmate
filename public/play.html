@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Cloakmate</title>
     <link rel="stylesheet" href="/css/style.css"> <!-- Linking the CSS file -->
+    <script type="text/javascript" src="/javascript/UIManager.js"></script>
+    <script type="text/javascript" src="/javascript/BoardStateControllerObject.js"></script>
     <script type="text/javascript" src="/javascript/play.js"></script>
 </head>
 <body>
@@ -34,6 +36,20 @@
 
         <div class="inventory">
             <div class="inventory-row top-row">
+                <div class="inventory-slot"></div>
+                <div class="inventory-slot"></div>
+                <div class="on-deck-cell"></div>
+                <div class="inventory-slot"></div>
+                <div class="inventory-slot"></div>
+            </div>
+            <div class="inventory-row bottom-row">
+                <div class="inventory-slot"></div>
+                <div class="inventory-slot"></div>
+                <div class="inventory-slot"></div>
+                <div class="inventory-slot"></div>
+                <div class="inventory-slot"></div>
+            </div>
+            <!-- <div class="inventory-row top-row">
                 <div class="inventory-slot"><img src="/images/PawnWhiteKing.svg" draggable="true" id="piece1" class="game-piece"></div>
                 <div class="inventory-slot"><img src="/images/PawnWhiteBishop.svg" draggable="true" id="piece2" class="game-piece"></div>
                 <div class="on-deck-cell"></div>
@@ -46,7 +62,7 @@
                 <div class="inventory-slot"><img src="/images/PawnWhiteBomb.svg" draggable="true" id="piece7" class="game-piece"></div>
                 <div class="inventory-slot"><img src="/images/PawnWhiteKnight.svg" draggable="true" id="piece8" class="game-piece"></div>
                 <div class="inventory-slot"><img src="/images/PawnWhiteRook.svg" draggable="true" id="piece9" class="game-piece"></div>
-            </div>
+            </div> -->
         </div>
         <button id="bomb-button" class="game-button">Bomb!</button>
         <button id="challenge-button" class="game-button">Challenge</button>
