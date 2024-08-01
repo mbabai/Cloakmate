@@ -1,4 +1,3 @@
-
 const precalcs = require('./precalcs');
 const utils = require('./utils');
 //////////////////////////////////////////////////////////
