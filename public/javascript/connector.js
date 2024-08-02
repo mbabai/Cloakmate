@@ -2,7 +2,7 @@ class WebSocketManager {
     constructor() {
         this.typeListeners = {};
         this.messageQueue = [];
-        this.sessionToken = this.getCookie('sessionID');
+        this.sessionID = this.getCookie('sessionID');
         this.initializeWebSocket();
     }
 
@@ -21,9 +21,9 @@ class WebSocketManager {
     }
 
     sendInitialMessage() {
-        console.log(this.sessionToken)
-        if (this.sessionToken) {
-            this.sendMessage({type: "session", token: this.sessionToken});
+        console.log(this.sessionID)
+        if (this.sessionID) {
+            this.sendMessage({type: "session", sessionID: this.sessionID});
         } else {
             this.sendMessage({type: "Server", message: "Server Open"});
         }
@@ -47,10 +47,10 @@ class WebSocketManager {
     }
 
     handleSessionMessage(data) {
-        this.sessionToken = data.token;
-        console.log('Received session token:', this.sessionToken);
-        // Set the session token as a cookie
-        document.cookie = `sessionID=${this.sessionToken}; path=/; max-age=86400`; // Set cookie to expire in 24 hours
+        this.sessionID = data.sessionID;
+        console.log('Received sessionID:', this.sessionID);
+        // Set the sessionID as a cookie
+        document.cookie = `sessionID=${this.sessionID}; path=/; max-age=86400`; // Set cookie to expire in 24 hours
     }
 
     notifyListeners(data) {
@@ -72,8 +72,8 @@ class WebSocketManager {
         this.sendMessage(message)
     }
     sendMessage(message) {
-        if (this.sessionToken) {
-            message.sessionToken = this.sessionToken;
+        if (this.sessionID) {
+            message.sessionID = this.sessionID;
         }        
         if (this.socket.readyState === WebSocket.OPEN) {
             this.socket.send(JSON.stringify(message));

@@ -7,7 +7,6 @@ const cookieParser = require('cookie-parser');
 const cookie = require('cookie'); 
 const LobbyManager = require('./lobbyManager');
 
-
 // Define the gameServer class
 class GameServer {
     constructor() {
@@ -15,7 +14,6 @@ class GameServer {
         this.initializeWebSocket();
         this.setupMessageHandling();
         this.setupMiddleware();
-        this.startPulse();
     }
 
     initializeServer() {
@@ -23,7 +21,6 @@ class GameServer {
         this.server = http.createServer(this.app);
         this.port = process.env.PORT || 3000;
         this.app.use(express.static('public'));
-
     }
 
     initializeWebSocket() {
@@ -38,38 +35,32 @@ class GameServer {
             const ip = req.socket.remoteAddress;
             console.log(`New connection from: ${ip}`);
             
-            const sessionId = this.handleSessionSetup(ws, req);
+            const sessionID = this.handleSessionSetup(ws, req);
             this.activeConnections.add(ws);
 
-            ws.on('message', (message) => this.handleIncomingMessage(sessionId, message));
-            ws.on('close', () => this.handleConnectionClose(sessionId,ws));
+            ws.on('message', (message) => this.handleIncomingMessage(sessionID, message));
+            ws.on('close', () => this.handleConnectionClose(sessionID,ws));
         });
     }
 
     handleSessionSetup(ws, req) {
         const cookies = cookie.parse(req.headers.cookie || '');
-        const sessionId = cookies.sessionId || this.generateNewSessionID();
-        
-        this.updateSession(sessionId, ws, req.socket.remoteAddress);
-        
-        const response = { type: 'session', token: sessionId };
-        
+        const sessionID = cookies.sessionID || this.generateNewsessionID();
+        this.updateSession(sessionID, ws, req.socket.remoteAddress);
+        const response = { type: 'session', sessionID: sessionID };
         ws.send(JSON.stringify(response));
-        
-        return sessionId;
+        return sessionID;
     }
 
-    updateSession(sessionId, ws, ip) {
-        if (this.sessions.has(sessionId)) {
-            const session = this.sessions.get(sessionId);
+    updateSession(sessionID, ws, ip) {
+        if (this.sessions.has(sessionID)) {
+            const session = this.sessions.get(sessionID);
             session.ws = ws;
             session.ip = ip;
         } else {
-            this.sessions.set(sessionId, { ip, ws });
+            this.sessions.set(sessionID, { ip, ws });
         }
     }
-
-
 
     handleIncomingMessage(sessionID, message) {
         console.log('received: %s', message);
@@ -77,7 +68,7 @@ class GameServer {
         // Get the session ID based on the WebSocket connection
         if (sessionID) {
             console.log(`Received message from session: ${sessionID}`);
-            // Add the sessionId to the json object for use in listeners
+            // Add the sessionID to the json object for use in listeners
             json.sessionID = sessionID;
         } else {
             console.log('Received message from unknown session!!!');
@@ -89,13 +80,12 @@ class GameServer {
     handleConnectionClose(sessionID,ws) {
         console.log(`Connection closed for session: ${sessionID}`);
         this.activeConnections.delete(ws);
+        let json = {type:"disconnect", sessionID}
+        this.handleMessage(json)
     }
 
     setupMessageHandling() {
         this.typeListeners = {};
-        this.messageQueue = [];
-        this.messageQueueTimeout = 2000;
-        this.pulseInterval = 500;
     }
 
     setupMiddleware() {
@@ -104,8 +94,8 @@ class GameServer {
     }
 
     sessionMiddleware(req, res, next) {
-        const sessionId = req.cookies.sessionId || this.generateNewSessionID();
-        res.cookie('sessionId', sessionId, {
+        const sessionID = req.cookies.sessionID || this.generateNewsessionID();
+        res.cookie('sessionID', sessionID, {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
             sameSite: 'Strict',
@@ -114,55 +104,21 @@ class GameServer {
         next();
     }
 
-    generateNewSessionID() {
+    generateNewsessionID() {
         return crypto.randomBytes(16).toString('hex');
     }
-
-    // Method to start the pulse
-    startPulse() {
-        setInterval(() => this.pulse(), this.pulseInterval);
-    }
-
-    // Method to pulse and retry sending queued messages
-    pulse() {
-        const currentTime = Date.now();
-        const remainingMessages = [];
-        // debug display info:
-        // console.log(`Remaining Messages: ${remainingMessages}`)
-        // console.log(`# sessions: ${this.sessions.size}`);
-        // console.log(`# active connections: ${this.activeConnections.size}`);
-        // Process all messages in the queue
-        while (this.messageQueue.length > 0) {
-            // Remove and get the first message from the queue
-            const messageData = this.messageQueue.shift();
-            // Check if the message is still within the timeout period
-            if (currentTime - messageData.originTime <= this.messageQueueTimeout) {
-                this.sendMessage(messageData);
-                // If the message is still in the queue (send failed), add it to remainingMessages
-                if (this.messageQueue.includes(messageData)) {
-                    remainingMessages.push(messageData);
-                }
-            }
-        }
-
-        // Update the message queue with only the messages that need to be retried
-        this.messageQueue = remainingMessages;
-    }
-
-    sendMessage({ws, message, originTime}) {
-        // When trying to send a message, we put a timestamp on the first attempt
-        if(!originTime) originTime = Date.now();
-        // If the connection is active, we send the message
-        if (this.activeConnections.has(ws)) {
-            ws.send(JSON.stringify(message));
-        } else if (Date.now() - originTime <= this.messageQueueTimeout) {
-            this.messageQueue.push({ws, message, originTime});
-        }
+    sendMessage({ws, message}) {
+        ws.send(JSON.stringify(message));
     }
 
     routeMessage(sessionID, message){
         let ws = this.sessions.get(sessionID).ws
-        this.sendMessage({ws, message});
+        if(ws) {
+            this.sendMessage({ws, message});
+        } else {
+            console.log(`No WebSocket connection found for session: ${sessionID}`);
+            this.handleMessage({type: 'disconnect', sessionID})
+        }
     }
 
     // Method to add a listener for a specific message type
@@ -200,5 +156,6 @@ myGameServer.server.listen(myGameServer.port, () => {
 const myLobbyManager = new LobbyManager(myGameServer);
 myGameServer.addTypeListener('submit-name', (data)=>{myLobbyManager.receiveUsername(data)});
 myGameServer.addTypeListener('session', (data)=>{myLobbyManager.attemptReconnect(data)});
-myGameServer.addTypeListener('enter-queue', (data)=>{myLobbyManager.enterQueue(data)});
-myGameServer.addTypeListener('exit-queue', (data)=>{myLobbyManager.exitQueue(data)});
+myGameServer.addTypeListener('disconnect', (data)=>{myLobbyManager.disconnect(data)});
+// myGameServer.addTypeListener('enter-queue', (data)=>{myLobbyManager.enterQueue(data)});
+// myGameServer.addTypeListener('exit-queue', (data)=>{myLobbyManager.exitQueue(data)});
