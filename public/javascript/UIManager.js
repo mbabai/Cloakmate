@@ -1,10 +1,11 @@
 class UIManager {
-    constructor(playerColor, playerName,opponentName) {
+    constructor(playerColor, playerName,opponentName,webSocketManager) {
         this.playerColor = playerColor;
         this.nameCellsForColor(this.playerColor);
         this.playerName = playerName;
         this.opponentName = opponentName;
         this.legalActions = ['setup'];
+        this.webSocketManager = webSocketManager;
         
         this.nameToCoordinate = {
             'A-1': {x: 0, y: 0}, 'B-1': {x: 1, y: 0}, 'C-1': {x: 2, y: 0}, 'D-1': {x: 3, y: 0}, 'E-1': {x: 4, y: 0},

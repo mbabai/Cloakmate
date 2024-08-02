@@ -1,7 +1,8 @@
 class BoardStateControllerObject {
-    constructor() {
+    constructor(webSocketManager) {
         this.board = null;
         this.listeners = []
+        this.webSocketManager = webSocketManager;
     }
     updateBoardState(data){
         this.board = {...data.board};

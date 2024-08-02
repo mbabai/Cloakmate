@@ -1,5 +1,7 @@
 //Game Arena - coordinates games between players
-class gameCoordinator {
+class GameCoordinator {
     constructor() {
     }
 }
+
+module.exports = GameCoordinator;

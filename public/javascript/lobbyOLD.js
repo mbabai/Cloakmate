@@ -25,14 +25,6 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log('Message from server:', event.data);
     };
 
-    enterLobbyButton.addEventListener('click', function() {
-        const username = usernameInput.value.trim();
-        if(username.length > 18){
-            alert("Name must be 18 characters or fewer!")
-        } else {
-            socket.send(JSON.stringify({ type: "check-username", username: username }));
-        }
-    });
 
     socket.addEventListener('message', function(event) {
         const data = JSON.parse(event.data);

@@ -4,9 +4,12 @@ const WebSocket = require('ws');
 const http = require('http');
 const crypto = require('crypto');
 const cookieParser = require('cookie-parser');
+const cookie = require('cookie'); 
+const LobbyManager = require('./lobbyManager');
+
 
 // Define the gameServer class
-class gameServer {
+class GameServer {
     constructor() {
         this.initializeServer();
         this.initializeWebSocket();
@@ -20,12 +23,13 @@ class gameServer {
         this.server = http.createServer(this.app);
         this.port = process.env.PORT || 3000;
         this.app.use(express.static('public'));
+
     }
 
     initializeWebSocket() {
         this.wss = new WebSocket.Server({ server: this.server });
         this.activeConnections = new Set();
-        this.sessions = new Map();
+        this.sessions = new Map(); //sessionID, {ws, ip}
         this.setupWebSocketHandlers();
     }
 
@@ -37,17 +41,20 @@ class gameServer {
             const sessionId = this.handleSessionSetup(ws, req);
             this.activeConnections.add(ws);
 
-            ws.on('message', (message) => this.handleIncomingMessage(ws, message));
-            ws.on('close', () => this.handleConnectionClose(ws));
+            ws.on('message', (message) => this.handleIncomingMessage(sessionId, message));
+            ws.on('close', () => this.handleConnectionClose(sessionId,ws));
         });
     }
 
     handleSessionSetup(ws, req) {
-        const cookies = cookieParser.parse(req.headers.cookie || '');
+        const cookies = cookie.parse(req.headers.cookie || '');
         const sessionId = cookies.sessionId || this.generateNewSessionID();
         
         this.updateSession(sessionId, ws, req.socket.remoteAddress);
-        ws.send(JSON.stringify({ type: 'session', token: sessionId }));
+        
+        const response = { type: 'session', token: sessionId };
+        
+        ws.send(JSON.stringify(response));
         
         return sessionId;
     }
@@ -62,14 +69,25 @@ class gameServer {
         }
     }
 
-    handleIncomingMessage(ws, message) {
+
+
+    handleIncomingMessage(sessionID, message) {
         console.log('received: %s', message);
         const json = JSON.parse(message);
-        this.handleMessage(ws, json);
+        // Get the session ID based on the WebSocket connection
+        if (sessionID) {
+            console.log(`Received message from session: ${sessionID}`);
+            // Add the sessionId to the json object for use in listeners
+            json.sessionID = sessionID;
+        } else {
+            console.log('Received message from unknown session!!!');
+            return;
+        }
+        this.handleMessage(json);
     }
 
-    handleConnectionClose(ws) {
-        console.log('Connection closed');
+    handleConnectionClose(sessionID,ws) {
+        console.log(`Connection closed for session: ${sessionID}`);
         this.activeConnections.delete(ws);
     }
 
@@ -109,6 +127,10 @@ class gameServer {
     pulse() {
         const currentTime = Date.now();
         const remainingMessages = [];
+        // debug display info:
+        // console.log(`Remaining Messages: ${remainingMessages}`)
+        // console.log(`# sessions: ${this.sessions.size}`);
+        // console.log(`# active connections: ${this.activeConnections.size}`);
         // Process all messages in the queue
         while (this.messageQueue.length > 0) {
             // Remove and get the first message from the queue
@@ -127,17 +149,20 @@ class gameServer {
         this.messageQueue = remainingMessages;
     }
 
-    // Method to send messages with retry logic
     sendMessage({ws, message, originTime}) {
         // When trying to send a message, we put a timestamp on the first attempt
         if(!originTime) originTime = Date.now();
-
         // If the connection is active, we send the message
         if (this.activeConnections.has(ws)) {
             ws.send(JSON.stringify(message));
         } else if (Date.now() - originTime <= this.messageQueueTimeout) {
             this.messageQueue.push({ws, message, originTime});
         }
+    }
+
+    routeMessage(sessionID, message){
+        let ws = this.sessions.get(sessionID).ws
+        this.sendMessage({ws, message});
     }
 
     // Method to add a listener for a specific message type
@@ -153,9 +178,7 @@ class gameServer {
         this.typeListeners[type] = this.typeListeners[type].filter(l => l !== listener);
     }
 
-    // Method to handle incoming messages
-    handleMessage(ws, json) {
-        console.log(json);
+    handleMessage(json) {
         // Handle the message based on its content
         if (this.typeListeners[json.type]) {
             this.typeListeners[json.type].forEach(listener => listener(json));
@@ -170,14 +193,12 @@ class gameServer {
 
 // STARTUP CODE
 // Create an instance of the gameServer and start listening
-document.addEventListener('DOMContentLoaded', function() {
-    const myGameServer = new gameServer();
-    myGameServer.server.listen(myGameServer.port, () => {
-        console.log(`GameServer is listening on port ${serverInstance.port}`);
-    });
-    const myLobbyManager = new lobbyManager(myGameServer);
-    myGameServer.addTypeListener('add-player', (data)=>{myLobbyManager.addPlayer(data.playerData)});
-    myGameServer.addTypeListener('enter-queue', (data)=>{myLobbyManager.enterQueue(data.playerData)});
-    myGameServer.addTypeListener('exit-queue', (data)=>{myLobbyManager.exitQueue(data.playerData)});
-
+const myGameServer = new GameServer();
+myGameServer.server.listen(myGameServer.port, () => {
+    console.log(`GameServer is listening on port ${myGameServer.port}`);
 });
+const myLobbyManager = new LobbyManager(myGameServer);
+myGameServer.addTypeListener('submit-name', (data)=>{myLobbyManager.receiveUsername(data)});
+myGameServer.addTypeListener('session', (data)=>{myLobbyManager.attemptReconnect(data)});
+myGameServer.addTypeListener('enter-queue', (data)=>{myLobbyManager.enterQueue(data)});
+myGameServer.addTypeListener('exit-queue', (data)=>{myLobbyManager.exitQueue(data)});

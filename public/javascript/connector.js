@@ -2,7 +2,7 @@ class WebSocketManager {
     constructor() {
         this.typeListeners = {};
         this.messageQueue = [];
-        this.sessionToken = this.getCookie('sessionId');
+        this.sessionToken = this.getCookie('sessionID');
         this.initializeWebSocket();
     }
 
@@ -21,6 +21,7 @@ class WebSocketManager {
     }
 
     sendInitialMessage() {
+        console.log(this.sessionToken)
         if (this.sessionToken) {
             this.sendMessage({type: "session", token: this.sessionToken});
         } else {
@@ -48,6 +49,8 @@ class WebSocketManager {
     handleSessionMessage(data) {
         this.sessionToken = data.token;
         console.log('Received session token:', this.sessionToken);
+        // Set the session token as a cookie
+        document.cookie = `sessionID=${this.sessionToken}; path=/; max-age=86400`; // Set cookie to expire in 24 hours
     }
 
     notifyListeners(data) {
@@ -63,6 +66,11 @@ class WebSocketManager {
         console.log('WebSocket connection closed');
     }
 
+    routeMessage(message) {
+        //abstraction on top of send message to be used by other classes
+        console.log(`Sending message: ${JSON.stringify(message)}`);
+        this.sendMessage(message)
+    }
     sendMessage(message) {
         if (this.sessionToken) {
             message.sessionToken = this.sessionToken;
@@ -101,10 +109,20 @@ class WebSocketManager {
 document.addEventListener('DOMContentLoaded', function() {
     //Main function that actually runs on setup.
     let myWebSocketManager = new WebSocketManager();
-    let myBoardStateControllerObject = new BoardStateControllerObject();
-    myWebSocketManager.addTypeListener('board-state', (data)=>{myBoardStateControllerObject.updateBoardState(data)});
-    let params = parseURLForPlayer();
-    let myUIManager = new UIManager(params.myColor, params.playerName, params.opponentName);
-    myBoardStateControllerObject.addListener((data)=>{myUIManager.updateBoardUI(data)});
-    myWebSocketManager.sendMessage({type:"entered-game",message:{gameNumber:params.gameNumber, myColor:params.myColor,playerName:params.playerName, opponentName:params.opponentName}})
+
+    // Check if we are on the lobby page
+    if (window.location.pathname.includes('lobby.html')) {
+        let myLobbyUI = new LobbyUI(myWebSocketManager);
+        myWebSocketManager.addTypeListener('welcome', (data) => { myLobbyUI.welcome(data) });
+        myWebSocketManager.addTypeListener('reconnect', (data) => { myLobbyUI.reconnect(data) });
+        myWebSocketManager.addTypeListener('username-taken', (data) => { myLobbyUI.usernameTaken(data) });
+    }
+
+    //Game & UI functions
+    if (window.location.pathname.includes('play.html')) {
+        let myBoardStateControllerObject = new BoardStateControllerObject(myWebSocketManager);
+        let myUIManager = new UIManager(myWebSocketManager);
+        myWebSocketManager.addTypeListener('board-state', (data)=>{myBoardStateControllerObject.updateBoardState(data)});
+        myBoardStateControllerObject.addListener((data)=>{myUIManager.updateBoardUI(data)});
+    }
 });
