@@ -1,4 +1,4 @@
-class lobbyUser{
+class LobbyUser{
     constructor(websocket, username){
         this.username = username;
         this.websocket = websocket;
@@ -8,4 +8,4 @@ class lobbyUser{
     
 }
 
-module.exports = lobbyUser
+module.exports = LobbyUser

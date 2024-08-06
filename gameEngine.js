@@ -1,8 +1,6 @@
 const precalcs = require('./precalcs');
 const utils = require('./utils');
 //////////////////////////////////////////////////////////
-let Games ={}
-let gameNumber = 0
 const colors = { // Color/Player constants
 	WHITE: 0, 
 	BLACK: 1
@@ -200,8 +198,8 @@ class Board {
             [1 bit - on deck]
         */
         this.bitboards = [
-            [0b010,0b100,0b100,0b100,0b100], // white pieces: bomb, king, knight, bishop, rook
-            [0b010,0b100,0b100,0b100,0b100]  // black pieces: bomb, king, knight, bishop, rook
+            [0b010,0b010,0b100,0b100,0b100], // white pieces: bomb (1), king (1), knight (2), bishop (2), rook (2)
+            [0b010,0b010,0b100,0b100,0b100]  // black pieces: bomb (1), king (1), knight (2), bishop (2), rook (2)  
         ]
         this.actions = []
         this.startingBoard = []
@@ -665,7 +663,7 @@ class Board {
 
 
 class Game {
-    constructor(p1,p2,length,gameNumber) {
+    constructor(p1,p2,length) {
         this.players = [p1,p2] //0-index white, 1-index black
         this.winner = null
         this.board = new Board(5,5) //default to 5x5 board.
@@ -673,7 +671,6 @@ class Game {
         this.gameStartTime = Date.now();
         this.playStartTime;
         this.gameEndTime;
-        this.gameNumber = gameNumber;
         this.playersTimeAvailable = [30*1000+500,30*1000+500] // Setup time, plus half a second to account for lag time. 
         this.playersSetupComplete = [false,false]
     };
@@ -713,7 +710,9 @@ class Game {
         }
         // Check available actions
         if (boardState.myTurn) {//Only matters if it is our turn.
-            if (this.board.playerToSacrifice === color) { //If we must sacrifice, nothing else matters
+            if (this.board.phase == "setup"){
+                boardState.legalActions.push("setup");  
+            } else if (this.board.playerToSacrifice === color) { //If we must sacrifice, nothing else matters
                 boardState.legalActions.push("sacrifice");
             } else if (this.board.playerToOnDeck === color) { //If we have to on-deck, nothing else matters.
                 boardState.legalActions.push("on-deck");
@@ -766,7 +765,7 @@ class Game {
         return boardState;
     }
     selectRandomSetup(){
-        let selection = [pieces.BISHOP, pieces.BISHOP, pieces.KING, pieces.KING, pieces.ROOK, pieces.ROOK, pieces.KNIGHT, pieces.KNIGHT, pieces.BOMB]
+        let selection = [pieces.BISHOP, pieces.BISHOP, pieces.KING, pieces.ROOK, pieces.ROOK, pieces.KNIGHT, pieces.KNIGHT, pieces.BOMB]
         for (let i = selection.length - 1; i > 0;i--){
             const j = Math.floor(Math.random() * (i + 1));
             [selection[i], selection[j]] = [selection[j], selection[i]]; // Swap elements

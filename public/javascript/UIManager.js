@@ -4,7 +4,9 @@ class UIManager {
         this.username;
         this.color;
         this.opponentName;
-        this.allElements = ['lobby-container','name-entry','game-picker','play-button','custom-options','ai-difficulty','cancel-button'];
+        this.allElements = ['lobby-container','name-entry','game-picker'
+            ,'play-button','custom-options','ai-difficulty','cancel-button'
+            ,'bomb-button','challenge-button','game-clock-container'];
         this.currentState = [];
         this.currentActions = [];
         this.states = {
@@ -22,7 +24,7 @@ class UIManager {
             },
             custom:{
                 visible: ['lobby-container','game-picker','custom-options','play-button'],
-                actions: ['findOpponent']
+                actions: ['inviteOpponent']
             },
             AI:{
                 visible: ['lobby-container','game-picker','ai-difficulty','play-button'],
@@ -35,6 +37,10 @@ class UIManager {
             customCancel:{
                 visible: ['lobby-container','game-picker','custom-options','cancel-button'],
                 actions: ['cancelCustom']
+            },
+            boardState:{
+                visible: ["game-clock-container"],
+                actions: []
             }
         }
         this.setupButtons();
@@ -79,7 +85,7 @@ class UIManager {
         });
         document.getElementById('play-button').addEventListener('click', () => {
             this.doAction('enterQueue');
-            this.doAction('findOpponent');
+            this.doAction('inviteOpponent');
             this.doAction('playAI');
         });
         document.getElementById('cancel-button').addEventListener('click', () => {
@@ -146,16 +152,48 @@ class UIManager {
         this.webSocketManager.routeMessage({type:'exit-queue'});
 
     }
-    findOpponent(){
-        //TODO: implement find opponent
+    inviteOpponent(){
+        this.setState('customCancel');
+        const opponentName = document.getElementById('opponent-name-input').value.trim();
+        const gameLength = document.getElementById('game-length').value;
+        this.webSocketManager.routeMessage({type:'invite-opponent',opponentName:opponentName,gameLength:gameLength });
+    }
+    inviteReceived(data){
+        const opponentName = data.opponentName;
+        const confirmMessage = `${opponentName} has invited you to play. Do you accept?`;
+        
+        if (confirm(confirmMessage)) {
+            this.acceptInvite(opponentName);
+        } else {
+            this.declineInvite(opponentName);
+        }
+    }
+    inviteDeclined(data){
+        alert(`${data.opponentName} has declined your invite.`);
+        this.setState('lobby');
+    }
+
+    acceptInvite(opponentName) {
+        console.log(`Accepting invite from ${opponentName}`);
+        this.webSocketManager.routeMessage({type: 'accept-invite', opponentName: opponentName});
+    }
+
+    declineInvite(opponentName) {
+        console.log(`Declining invite from ${opponentName}`);
+        this.webSocketManager.routeMessage({type: 'decline-invite', opponentName: opponentName});
     }
     cancelCustom(){
         this.setState('custom');
+        this.webSocketManager.routeMessage({type:'cancel-invite'});
     }
     playAI(){
         alert('Sorry, AI is not implemented yet!');
     }
 
-
+    //Board State
+    updateBoardState(data){
+        this.setState('boardState');
+        console.log(data.board);
+    }
 
 }

@@ -83,9 +83,9 @@ document.addEventListener('DOMContentLoaded', function() {
     let myUIManager = new UIManager(myWebSocketManager);
     myWebSocketManager.addTypeListener('welcome', (data) => { myUIManager.welcome(data) });
     myWebSocketManager.addTypeListener('usernameTaken', (data) => { myUIManager.usernameTaken(data) });
-
+    myWebSocketManager.addTypeListener('invite', (data) => { myUIManager.inviteReceived(data) });
+    myWebSocketManager.addTypeListener('inviteDeclined', (data) => { myUIManager.inviteDeclined(data) });
     //Game & UI functions
-    let myBoardStateControllerObject = new BoardStateControllerObject(myWebSocketManager);
-    myWebSocketManager.addTypeListener('board-state', (data)=>{myBoardStateControllerObject.updateBoardState(data)});
-    myBoardStateControllerObject.addListener((data)=>{myUIManager.updateBoardUI(data)});
+    // let myBoardStateControllerObject = new BoardStateControllerObject(myWebSocketManager);
+    myWebSocketManager.addTypeListener('board-state', (data)=>{myUIManager.updateBoardState(data)});
 });

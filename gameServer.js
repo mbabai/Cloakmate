@@ -97,3 +97,7 @@ myGameServer.addTypeListener('submit-username', (ws,data)=>{myLobbyManager.recei
 myGameServer.addTypeListener('disconnect', (ws,data)=>{myLobbyManager.disconnect(ws,data)});
 myGameServer.addTypeListener('enter-queue', (ws,data)=>{myLobbyManager.enterQueue(ws,data)});
 myGameServer.addTypeListener('exit-queue', (ws,data)=>{myLobbyManager.exitQueue(ws,data)});
+myGameServer.addTypeListener('invite-opponent', (ws,data)=>{myLobbyManager.inviteOpponent(ws,data)});
+myGameServer.addTypeListener('cancel-invite', (ws,data)=>{myLobbyManager.cancelInvite(ws,data)});
+myGameServer.addTypeListener('accept-invite', (ws,data)=>{myLobbyManager.acceptInvite(ws,data)});
+myGameServer.addTypeListener('decline-invite', (ws,data)=>{myLobbyManager.declineInvite(ws,data)});

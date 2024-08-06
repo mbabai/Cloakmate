@@ -165,7 +165,7 @@ html, body {
     left: calc(50% + (100% / 5 * 0.6)); /* Recalculate the position to bring closer to center */
 }
 /* GAME CLOCK */
-.game-clock {
+#game-clock-container {
     position: absolute;
     top: 0%;
     /* left: 0; 
@@ -205,10 +205,12 @@ html, body {
 
 .clock {
     font-family: 'LCD', 'Lucida Console', monospace; /* Styling for digital clock appearance */
-    font-size: 3cqh;
-    padding: 0.7cqh 1cqh;
+    font-size: 2.5cqh;
+    padding: 0.5cqh 1cqh;
     border: 1px solid grey; /* Thin grey border as specified */
-    margin: 0 0.5cqh;
+    margin: 0 0.4cqh;
+    width:50%;
+    text-align: center;
 }
 
 .clock-highlight {
