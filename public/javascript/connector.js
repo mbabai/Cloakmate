@@ -2,7 +2,6 @@ class WebSocketManager {
     constructor() {
         this.typeListeners = {};
         this.messageQueue = [];
-        this.sessionID = this.getCookie('sessionID');
         this.initializeWebSocket();
     }
 
@@ -21,12 +20,7 @@ class WebSocketManager {
     }
 
     sendInitialMessage() {
-        console.log(this.sessionID)
-        if (this.sessionID) {
-            this.sendMessage({type: "session", sessionID: this.sessionID});
-        } else {
-            this.sendMessage({type: "Server", message: "Server Open"});
-        }
+        this.sendMessage({type: "Server", message: "Server Open"});
     }
 
     processPendingMessages() {
@@ -38,19 +32,7 @@ class WebSocketManager {
     handleMessage(event) {
         const data = JSON.parse(event.data);
         console.log('Message from server:', data);
-
-        if (data.type === 'session') {
-            this.handleSessionMessage(data);
-        } else {
-            this.notifyListeners(data);
-        }
-    }
-
-    handleSessionMessage(data) {
-        this.sessionID = data.sessionID;
-        console.log('Received sessionID:', this.sessionID);
-        // Set the sessionID as a cookie
-        document.cookie = `sessionID=${this.sessionID}; path=/; max-age=86400`; // Set cookie to expire in 24 hours
+        this.notifyListeners(data);
     }
 
     notifyListeners(data) {
@@ -71,10 +53,7 @@ class WebSocketManager {
         console.log(`Sending message: ${JSON.stringify(message)}`);
         this.sendMessage(message)
     }
-    sendMessage(message) {
-        if (this.sessionID) {
-            message.sessionID = this.sessionID;
-        }        
+    sendMessage(message) {      
         if (this.socket.readyState === WebSocket.OPEN) {
             this.socket.send(JSON.stringify(message));
         } else {
@@ -94,35 +73,19 @@ class WebSocketManager {
             this.typeListeners[type] = this.typeListeners[type].filter(l => l !== listener);
         }
     }
-
-    getCookie(name) {
-        const value = `; ${document.cookie}`;
-        const parts = value.split(`; ${name}=`);
-        if (parts.length === 2) {
-            const cookieValue = parts.pop().split(';').shift();
-            return cookieValue !== undefined ? cookieValue : null;
-        }
-        return null;
-    }
 }
 
 document.addEventListener('DOMContentLoaded', function() {
     //Main function that actually runs on setup.
     let myWebSocketManager = new WebSocketManager();
 
-    // Check if we are on the lobby page
-    if (window.location.pathname.includes('lobby.html')) {
-        let myLobbyUI = new LobbyUI(myWebSocketManager);
-        myWebSocketManager.addTypeListener('welcome', (data) => { myLobbyUI.welcome(data) });
-        myWebSocketManager.addTypeListener('reconnect', (data) => { myLobbyUI.reconnect(data) });
-        myWebSocketManager.addTypeListener('username-taken', (data) => { myLobbyUI.usernameTaken(data) });
-    }
+    //UI functions
+    let myUIManager = new UIManager(myWebSocketManager);
+    myWebSocketManager.addTypeListener('welcome', (data) => { myUIManager.welcome(data) });
+    myWebSocketManager.addTypeListener('usernameTaken', (data) => { myUIManager.usernameTaken(data) });
 
     //Game & UI functions
-    if (window.location.pathname.includes('play.html')) {
-        let myBoardStateControllerObject = new BoardStateControllerObject(myWebSocketManager);
-        let myUIManager = new UIManager(myWebSocketManager);
-        myWebSocketManager.addTypeListener('board-state', (data)=>{myBoardStateControllerObject.updateBoardState(data)});
-        myBoardStateControllerObject.addListener((data)=>{myUIManager.updateBoardUI(data)});
-    }
+    let myBoardStateControllerObject = new BoardStateControllerObject(myWebSocketManager);
+    myWebSocketManager.addTypeListener('board-state', (data)=>{myBoardStateControllerObject.updateBoardState(data)});
+    myBoardStateControllerObject.addListener((data)=>{myUIManager.updateBoardUI(data)});
 });

@@ -255,6 +255,10 @@ html, body {
     background-color: rgba(0, 0, 0, 0.8); /* Semi-transparent black */
 }
 
+#cancel-button {
+    background-color: red;
+}
+
 #lobby-container {
     z-index:10;
     position: absolute;
@@ -305,7 +309,7 @@ button {
 }
 
 button:hover {
-    background-color: #0056b3;
+    filter: brightness(85%);
 }
 
 /* Dialog Overlay */
@@ -350,18 +354,4 @@ button:hover {
 #accept-invite {
     background-color: #007BFF; /* Blue background for accept */
     color: white;
-}
-
-#accept-invite:hover {
-    background-color: #0056b3; /* Darker blue on hover */
-}
-
-/* Decline Button */
-#decline-invite {
-    background-color: #FF4136; /* Red background for decline */
-    color: white;
-}
-
-#decline-invite:hover {
-    background-color: #c32f1d; /* Darker red on hover */
 }

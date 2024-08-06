@@ -12,6 +12,7 @@
 </head>
 <body>
     <div class="main">
+        <div id="username-display" class="username-bar username-inline" style="display:none;"></div>
         <div class="game-clock">
             <div id="left-clock" class="clock-container">
                 <div id="left-player-name" class="player-name"></div>
@@ -50,25 +51,45 @@
                 <div class="inventory-slot"></div>
                 <div class="inventory-slot"></div>
             </div>
-            <!-- <div class="inventory-row top-row">
-                <div class="inventory-slot"><img src="/images/PawnWhiteKing.svg" draggable="true" id="piece1" class="game-piece"></div>
-                <div class="inventory-slot"><img src="/images/PawnWhiteBishop.svg" draggable="true" id="piece2" class="game-piece"></div>
-                <div class="on-deck-cell"></div>
-                <div class="inventory-slot"><img src="/images/PawnWhiteBishop.svg" draggable="true" id="piece3" class="game-piece"></div>
-                <div class="inventory-slot"><img src="/images/PawnWhiteKing.svg" draggable="true" id="piece4" class="game-piece"></div>
-            </div>
-            <div class="inventory-row bottom-row">
-                <div class="inventory-slot"><img src="/images/PawnWhiteRook.svg" draggable="true" id="piece5" class="game-piece"></div>
-                <div class="inventory-slot"><img src="/images/PawnWhiteKnight.svg" draggable="true" id="piece6" class="game-piece"></div>
-                <div class="inventory-slot"><img src="/images/PawnWhiteBomb.svg" draggable="true" id="piece7" class="game-piece"></div>
-                <div class="inventory-slot"><img src="/images/PawnWhiteKnight.svg" draggable="true" id="piece8" class="game-piece"></div>
-                <div class="inventory-slot"><img src="/images/PawnWhiteRook.svg" draggable="true" id="piece9" class="game-piece"></div>
-            </div> -->
         </div>
         <button id="bomb-button" class="game-button">Bomb!</button>
         <button id="challenge-button" class="game-button">Challenge</button>
+        <div id="lobby-container">
+            <div id="name-entry">
+                <input type="text" id="username-input" placeholder="Enter your username..." autofocus>
+                <button id="submit-username">Enter Lobby</button>
+            </div>
 
-        
+            <div id="game-picker" style="display:none;">
+                <h1>Welcome, <span class="username-inline"></span>!</h1>
+                <select id="game-selection">
+                    <option value="">Select game type...</option>
+                    <option value="AI">Play against AI</option>
+                    <option value="custom">Find Opponent</option>
+                    <option value="quickplay">Enter Quickplay Queue</option>
+                </select>
+
+                <select id="ai-difficulty" style="display: none;">
+                    <option value="easy">Easy</option>
+                    <option value="medium">Medium</option>
+                    <option value="hard">Hard</option>
+                </select>
+
+                <div id="custom-options" style="display: none;">
+                    <!-- <select id="opponent-name-dropdown" style="display: none;"></select> -->
+                    <input type="text" id="opponent-name-input" placeholder="Opponent's username" list="opponent-name-dropdown">
+                    <datalist id="opponent-name-dropdown"></datalist>
+                    <select id="game-length">
+                        <option value="1">Blitz (1 minute +2s)</option>
+                        <option value="5">Standard (5 minutes +5s)</option>
+                        <option value="15">Classic (15 minutes +10s)</option>
+                    </select>
+                </div>
+
+                <button id="play-button" style="display: none;">Go!</button>
+                <button id="cancel-button" style="display: none;">Cancel!</button>
+            </div>
+        </div>
     </div>
 </body>
 </html>
