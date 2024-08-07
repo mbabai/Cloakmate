@@ -24,6 +24,9 @@ class GameCoordinator {
         this.sendColorState(0)
         this.sendColorState(1)
     }
+    logGameState() {
+        return `#${this.gameNumber} - W:${this.users[0].username} vs B:${this.users[1].username}`
+    }
 
 }
 

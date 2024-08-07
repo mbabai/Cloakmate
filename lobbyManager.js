@@ -9,6 +9,7 @@ class LobbyManager {
         this.anonID = 0
         this.invites = [] // {from:user, to:user}
         this.wsToGame = new Map() // ws-> game
+        this.games = []
         this.gameNumber = 0
         this.heartbeat = setInterval(this.pulse.bind(this), 2000)
       }   
@@ -40,6 +41,21 @@ class LobbyManager {
         let user = this.lobby.get(ws)
         this.removeUserFromQueue(user);
         this.lobby.delete(ws);
+        // Check if the user is in any games
+        if (this.wsToGame.has(ws)) {
+            const game = this.wsToGame.get(ws);
+            const opponent = game.users.find(u => u.websocket !== ws);
+            
+            if (opponent) {
+                // Send disconnect message to the opponent
+                this.server.routeMessage(opponent.websocket, {
+                    type: 'opponent-disconnected',
+                    message: `${user.username} has disconnected from the game.`
+                });
+            }
+            this.endGame(game);
+            console.log(`Game #${game.gameNumber} ended due to ${user.username}'s disconnection.`);
+        }
       }
       receiveUsername(ws, message){
         console.log(`Received username: ${message.username}`);
@@ -142,6 +158,14 @@ class LobbyManager {
         this.wsToGame.set(user2.websocket, game);
         user1.isInGame = true;
         user2.isInGame = true;
+        this.games.push(game);
+      }
+      endGame(game){
+        this.games.splice(this.games.indexOf(game), 1);
+        game.users[0].isInGame = false;
+        game.users[1].isInGame = false;
+        this.wsToGame.delete(game.users[0].websocket);
+        this.wsToGame.delete(game.users[1].websocket);
       }
 
       logState(){

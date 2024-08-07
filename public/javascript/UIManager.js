@@ -4,9 +4,10 @@ class UIManager {
         this.username;
         this.color;
         this.opponentName;
+        this.board = null;
         this.allElements = ['lobby-container','name-entry','game-picker'
             ,'play-button','custom-options','ai-difficulty','cancel-button'
-            ,'bomb-button','challenge-button','game-clock-container'];
+            ,'bomb-button','challenge-button']
         this.currentState = [];
         this.currentActions = [];
         this.states = {
@@ -39,7 +40,7 @@ class UIManager {
                 actions: ['cancelCustom']
             },
             boardState:{
-                visible: ["game-clock-container"],
+                visible: [],
                 actions: []
             }
         }
@@ -138,7 +139,7 @@ class UIManager {
 
     isValidUsername(username) {
         if (username.length > 18) {
-            this.showAlert("Name must be 18 characters or fewer!");
+            alert("Name must be 18 characters or fewer!");
             return false;
         }
         return true;
@@ -168,6 +169,10 @@ class UIManager {
             this.declineInvite(opponentName);
         }
     }
+    opponentDisconnected(data){
+        alert(`${data.message} `);
+        this.setState('lobby');
+    }
     inviteDeclined(data){
         alert(`${data.opponentName} has declined your invite.`);
         this.setState('lobby');
@@ -194,6 +199,13 @@ class UIManager {
     updateBoardState(data){
         this.setState('boardState');
         console.log(data.board);
+        this.board = data.board;
+        this.setNames();
     }
-
+    setNames(){
+        const names = this.board.players.map(player => player.name);
+        document.getElementById('player-name').innerHTML = names[0];
+        document.getElementById('opponent-name').innerHTML = names[1];
+    }
 }
+

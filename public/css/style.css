@@ -166,51 +166,51 @@ html, body {
 }
 /* GAME CLOCK */
 #game-clock-container {
-    position: absolute;
-    top: 0%;
-    /* left: 0; 
-    right: 0;  */
+    position: fixed;
+    top: 1%;
+    left: 50%;
+    transform: translateX(-50%);
     display: flex;
-    justify-content: space-between; /* Distributes space between children evenly */
-    align-items: center;
-    width: 98%; /* Matches the width to that of the main container */
-    padding: 0 2%; /* Adds padding to prevent touching the edges */
-}
-.clock-name{
-    color:white;
-    font-size: 2.5cqh;
-}
-
-.player-name {
-    color: white; /* Adjust the color to fit the background for visibility */
-    font-size: 2.5cqh;
-    text-align: center;
+    justify-content: space-between;
+    align-items: flex-start;
+    width: 95%;
+    height: 8%;
+    max-width: calc(100vh / 1.6 * 0.95); /* Match the max-width of .main */
+    z-index: 1000; /* Ensure it's above other elements */
 }
 
 .clock-container {
     display: flex;
     flex-direction: column;
-    align-items: center; /* Centers the clock and name vertically */
-    width: 33%; /* Divides the space evenly between the two clocks and the game type */
+    max-width: 50%;
+    align-items: center;
 }
 
-/* Ensuring that each clock container does not overflow the boundaries */
 .clock-container:first-child {
-    align-items: flex-start; /* Aligns the left clock to the left */
+    align-items: flex-start;
 }
 
 .clock-container:last-child {
-    align-items: flex-end; /* Aligns the right clock to the right */
+    align-items: flex-end;
 }
 
 .clock {
-    font-family: 'LCD', 'Lucida Console', monospace; /* Styling for digital clock appearance */
+    font-family: 'LCD', 'Lucida Console', monospace;
     font-size: 2.5cqh;
     padding: 0.5cqh 1cqh;
-    border: 1px solid grey; /* Thin grey border as specified */
-    margin: 0 0.4cqh;
-    width:50%;
+    border: 1px solid grey;
+    margin: 0;
+    min-width: 80px;
     text-align: center;
+}
+
+.player-name {
+    color: white;
+    width: 100%;
+    font-size: 2cqh; /* Slightly smaller than the clock */
+    text-align: center;
+    margin-bottom: 0.5cqh; /* Add some space between name and clock */
+    white-space: nowrap; /* Prevent name from wrapping */
 }
 
 .clock-highlight {
@@ -236,6 +236,7 @@ html, body {
     text-align: center;
     font-size: 24px;
     color: white;
+    z-index: 1000;
 }
 
 #opponent-name-input {

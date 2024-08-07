@@ -88,4 +88,5 @@ document.addEventListener('DOMContentLoaded', function() {
     //Game & UI functions
     // let myBoardStateControllerObject = new BoardStateControllerObject(myWebSocketManager);
     myWebSocketManager.addTypeListener('board-state', (data)=>{myUIManager.updateBoardState(data)});
+    myWebSocketManager.addTypeListener('opponent-disconnected', (data) => { myUIManager.opponentDisconnected(data) });
 });
