@@ -207,14 +207,81 @@ class UIManager {
         this.opponentName = this.board.opponentName;
         this.updateBoardUI();
     }
+    endGame() {
+        // Reset game selection to default empty value
+        document.getElementById('game-selection').value = "";
+        this.stopClockTick();
+        this.resetClocks();
+        this.board = null;
+        this.opponentName = null;
+    }
 
     updateBoardUI() {
         this.updateNames();
         this.updateClocks();
         this.startClockTick();
         this.setBoardSpaceLabels()
+        this.setBoardPieces();
         // Add more UI update methods as needed
     }
+    setBoardPieces(){
+        // Clear the board of any existing pieces
+        const cells = document.querySelectorAll('.board .cell');
+        cells.forEach(cell => {
+            const pieceImage = cell.querySelector('img');
+            if (pieceImage) {
+                cell.removeChild(pieceImage);
+            }
+        });
+
+        // Function to create and append piece image
+        const createPieceImage = (piece) => {
+            const img = document.createElement('img');
+            img.src = `images/Pawn${piece}.svg`;
+            img.alt = `Pawn${piece}.svg`;
+            img.className = 'game-piece';
+            return img;
+        };
+
+        // Add pieces to the inventory
+        const inventorySlots = document.querySelectorAll('.inventory-slot');
+        let slotIndex = 0;
+
+        this.board.stash.forEach(pieceObj => {
+            for (let i = 0; i < pieceObj.count; i++) {
+                if (slotIndex < inventorySlots.length) {
+                    const pieceImage = createPieceImage(pieceObj.piece);
+                    inventorySlots[slotIndex].innerHTML = '';
+                    inventorySlots[slotIndex].appendChild(pieceImage);
+                    slotIndex++;
+                }
+            }
+        });
+
+        // Clear any remaining slots
+        while (slotIndex < inventorySlots.length) {
+            inventorySlots[slotIndex].innerHTML = '';
+            slotIndex++;
+        }
+
+        // Add piece to onDeck if present
+        if (this.board.onDeck) {
+            const onDeckElement = document.querySelector('.on-deck-cell');
+            onDeckElement.innerHTML = '';
+            const color = this.board.onDeck.color === this.board.color ? 'White' : 'Black';
+            onDeckElement.appendChild(createPieceImage(`${color}${this.board.onDeck.type}`));
+        }
+
+        // Add pieces to the board
+        this.board.pieces.forEach(piece => {
+            const cell = document.getElementById(`${piece.position.file}${piece.position.rank}`);
+            if (cell) {
+                const color = piece.color === this.board.color ? 'White' : 'Black';
+                cell.appendChild(createPieceImage(`${color}${piece.type}`));
+            }
+        });
+    }
+
     setBoardSpaceLabels() {
         const cells = document.querySelectorAll('.board .cell');
         const isWhite = this.board.color === 0;
@@ -266,14 +333,6 @@ class UIManager {
         });
     }
 
-    endGame() {
-        // Reset game selection to default empty value
-        document.getElementById('game-selection').value = "";
-        this.stopClockTick();
-        this.resetClocks();
-        this.board = null;
-        this.opponentName = null;
-    }
 
     startClockTick() {
         if (this.animationFrameId) {
