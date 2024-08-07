@@ -200,12 +200,34 @@ class UIManager {
         this.setState('boardState');
         console.log(data.board);
         this.board = data.board;
+        this.opponentName = this.board.opponentName;
         this.setNames();
+        this.setClocks();
     }
     setNames(){
-        const names = this.board.players.map(player => player.name);
-        document.getElementById('player-name').innerHTML = names[0];
-        document.getElementById('opponent-name').innerHTML = names[1];
+        document.getElementById('player-name').innerHTML = this.username;
+        document.getElementById('opponent-name').innerHTML = this.opponentName;
+    }
+    setClocks(){
+        // Remove existing color classes
+        document.getElementById('player-clock-time').classList.remove('white-clock', 'black-clock');
+        document.getElementById('opponent-clock-time').classList.remove('white-clock', 'black-clock');
+
+        // Add appropriate color classes based on player's color
+        if (this.board.color === 0) { // Assuming 0 is white
+            document.getElementById('player-clock-time').classList.add('white-clock');
+            document.getElementById('opponent-clock-time').classList.add('black-clock');
+        } else {
+            document.getElementById('player-clock-time').classList.add('black-clock');
+            document.getElementById('opponent-clock-time').classList.add('white-clock');
+        }
+        document.getElementById('player-clock-time').innerHTML = this.milisecondsToTime(this.board.clocks[this.board.color]);
+        document.getElementById('opponent-clock-time').innerHTML = this.milisecondsToTime(this.board.clocks[1-this.board.color])    ;
+    }
+    milisecondsToTime(miliseconds){
+        const seconds = Math.floor(miliseconds / 1000);
+        const minutes = Math.floor(seconds / 60);
+        return `${minutes}:${seconds % 60}`;
     }
 }
 

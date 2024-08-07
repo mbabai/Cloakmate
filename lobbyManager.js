@@ -172,6 +172,7 @@ class LobbyManager {
         console.log("Current Lobby State:");
         console.log(`- Lobby (${this.lobby.size}): ${Array.from(this.lobby.values()).map(user => user.username).join(', ')}`);
         console.log(`- Queue (${this.queue.length}): ${this.queue.map(user => user.username).join(', ')}`);
+        console.log(`- Games (${this.games.length}): ${this.games.map(game => `${game.logGameState()}`).join(', ')}`);
       }
 }
 

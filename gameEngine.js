@@ -684,6 +684,7 @@ class Game {
         const otherColor = color == colors.WHITE ? "Black" : "White"; 
         const boardState = {
             color: color,
+            opponentName: this.players[1-color],
             phase: this.board.phase,
             board: Array.from(Array(this.board.height), () => Array(this.board.width).fill(null)),
             onDeck: null,
