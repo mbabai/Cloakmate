@@ -273,13 +273,7 @@ class UIManager {
         }
 
         // Add pieces to the board
-        this.board.pieces.forEach(piece => {
-            const cell = document.getElementById(`${piece.position.file}${piece.position.rank}`);
-            if (cell) {
-                const color = piece.color === this.board.color ? 'White' : 'Black';
-                cell.appendChild(createPieceImage(`${color}${piece.type}`));
-            }
-        });
+        //TODO
     }
 
     setBoardSpaceLabels() {
@@ -350,10 +344,16 @@ class UIManager {
             if (this.board.phase === "setup") {
                 this.board.clocks[0] -= deltaTime;
                 this.board.clocks[1] -= deltaTime;
+                playerClockElement.classList.add('clock-highlight');
+                opponentClockElement.classList.add('clock-highlight');
             } else if (this.board.myTurn) {
                 this.board.clocks[this.board.color] -= deltaTime;
+                playerClockElement.classList.add('clock-highlight');
+                opponentClockElement.classList.remove('clock-highlight');
             } else {
                 this.board.clocks[1 - this.board.color] -= deltaTime;
+                playerClockElement.classList.remove('clock-highlight');
+                opponentClockElement.classList.add('clock-highlight');
             }
 
             // Check if any clock has reached 0
@@ -361,13 +361,11 @@ class UIManager {
                 this.stopClockTick();
                 this.board.clocks[0] = Math.max(0, this.board.clocks[0]);
                 this.board.clocks[1] = Math.max(0, this.board.clocks[1]);
+                
             }
 
             playerClockElement.textContent = this.formatTime(Math.max(0, this.board.clocks[this.board.color]));
             opponentClockElement.textContent = this.formatTime(Math.max(0, this.board.clocks[1 - this.board.color]));
-
-            playerClockElement.classList.toggle('clock-highlight', this.board.myTurn && this.board.phase !== "setup");
-            opponentClockElement.classList.toggle('clock-highlight', !this.board.myTurn && this.board.phase !== "setup");
 
             if (this.board.clocks[0] > 0 && this.board.clocks[1] > 0) {
                 this.animationFrameId = requestAnimationFrame(tick);
@@ -381,6 +379,8 @@ class UIManager {
         if (this.animationFrameId) {
             cancelAnimationFrame(this.animationFrameId);
             this.animationFrameId = null;
+            playerClockElement.classList.remove('clock-highlight');
+            opponentClockElement.classList.remove('clock-highlight');
         }
     }
 
