@@ -161,7 +161,8 @@ class UIManager {
     }
     inviteReceived(data){
         const opponentName = data.opponentName;
-        const confirmMessage = `${opponentName} has invited you to play. Do you accept?`;
+        const gameLength = data.gameLength;
+        const confirmMessage = `${opponentName} has invited you to play a ${gameLength} minute game. \nDo you accept?`;
         
         if (confirm(confirmMessage)) {
             this.acceptInvite(opponentName);
@@ -170,12 +171,15 @@ class UIManager {
         }
     }
     opponentDisconnected(data){
-        alert(`${data.message} `);
         this.setState('lobby');
+        this.endGame();
+        alert(`${data.message} `);
+
     }
     inviteDeclined(data){
-        alert(`${data.opponentName} has declined your invite.`);
         this.setState('lobby');
+        this.endGame();
+        alert(`${data.opponentName} has declined your invite.`);
     }
 
     acceptInvite(opponentName) {
@@ -201,33 +205,105 @@ class UIManager {
         console.log(data.board);
         this.board = data.board;
         this.opponentName = this.board.opponentName;
-        this.setNames();
-        this.setClocks();
+        this.updateBoardUI();
     }
-    setNames(){
-        document.getElementById('player-name').innerHTML = this.username;
-        document.getElementById('opponent-name').innerHTML = this.opponentName;
-    }
-    setClocks(){
-        // Remove existing color classes
-        document.getElementById('player-clock-time').classList.remove('white-clock', 'black-clock');
-        document.getElementById('opponent-clock-time').classList.remove('white-clock', 'black-clock');
 
-        // Add appropriate color classes based on player's color
-        if (this.board.color === 0) { // Assuming 0 is white
-            document.getElementById('player-clock-time').classList.add('white-clock');
-            document.getElementById('opponent-clock-time').classList.add('black-clock');
-        } else {
-            document.getElementById('player-clock-time').classList.add('black-clock');
-            document.getElementById('opponent-clock-time').classList.add('white-clock');
-        }
-        document.getElementById('player-clock-time').innerHTML = this.milisecondsToTime(this.board.clocks[this.board.color]);
-        document.getElementById('opponent-clock-time').innerHTML = this.milisecondsToTime(this.board.clocks[1-this.board.color])    ;
+    updateBoardUI() {
+        this.updateNames();
+        this.updateClocks();
+        this.startClockTick();
+        // Add more UI update methods as needed
     }
-    milisecondsToTime(miliseconds){
-        const seconds = Math.floor(miliseconds / 1000);
+    endGame(){
+        // Reset game selection to default empty value
+        document.getElementById('game-selection').value = "";
+        this.stopClockTick();
+        this.resetClocks();
+        this.board = null;
+        this.opponentName = null;
+    }
+    startClockTick() {
+        if (this.animationFrameId) {
+            cancelAnimationFrame(this.animationFrameId);
+        }
+        
+        let lastTime = performance.now();
+        const tick = (currentTime) => {
+            const deltaTime = currentTime - lastTime;
+            lastTime = currentTime;
+
+            const playerClockElement = document.getElementById('player-clock-time');
+            const opponentClockElement = document.getElementById('opponent-clock-time');
+            
+            if (this.board.phase === "setup") {
+                this.board.clocks[0] -= deltaTime;
+                this.board.clocks[1] -= deltaTime;
+            } else if (this.board.myTurn) {
+                this.board.clocks[this.board.color] -= deltaTime;
+            } else {
+                this.board.clocks[1 - this.board.color] -= deltaTime;
+            }
+
+            // Check if any clock has reached 0
+            if (this.board.clocks[0] <= 0 || this.board.clocks[1] <= 0) {
+                this.stopClockTick();
+                this.board.clocks[0] = Math.max(0, this.board.clocks[0]);
+                this.board.clocks[1] = Math.max(0, this.board.clocks[1]);
+            }
+
+            playerClockElement.textContent = this.formatTime(Math.max(0, this.board.clocks[this.board.color]));
+            opponentClockElement.textContent = this.formatTime(Math.max(0, this.board.clocks[1 - this.board.color]));
+
+            playerClockElement.classList.toggle('clock-highlight', this.board.myTurn && this.board.phase !== "setup");
+            opponentClockElement.classList.toggle('clock-highlight', !this.board.myTurn && this.board.phase !== "setup");
+
+            if (this.board.clocks[0] > 0 && this.board.clocks[1] > 0) {
+                this.animationFrameId = requestAnimationFrame(tick);
+            }
+        };
+
+        this.animationFrameId = requestAnimationFrame(tick);
+    }
+
+    stopClockTick() {
+        if (this.animationFrameId) {
+            cancelAnimationFrame(this.animationFrameId);
+            this.animationFrameId = null;
+        }
+    }
+
+    updateNames() {
+        document.getElementById('player-name').textContent = this.username;
+        document.getElementById('opponent-name').textContent = this.opponentName;
+    }
+
+    updateClocks() {
+        const playerClockElement = document.getElementById('player-clock-time');
+        const opponentClockElement = document.getElementById('opponent-clock-time');
+
+        playerClockElement.classList.remove('white-clock', 'black-clock');
+        opponentClockElement.classList.remove('white-clock', 'black-clock');
+
+        const playerColor = this.board.color === 0 ? 'white' : 'black';
+        const opponentColor = this.board.color === 0 ? 'black' : 'white';
+
+        playerClockElement.classList.add(`${playerColor}-clock`);
+        opponentClockElement.classList.add(`${opponentColor}-clock`);
+
+        playerClockElement.textContent = this.formatTime(this.board.clocks[this.board.color]);
+        opponentClockElement.textContent = this.formatTime(this.board.clocks[1 - this.board.color]);
+    }
+    resetClocks(){
+        const playerClockElement = document.getElementById('player-clock-time');
+        const opponentClockElement = document.getElementById('opponent-clock-time');
+        playerClockElement.textContent = this.formatTime(0);
+        opponentClockElement.textContent = this.formatTime(0);
+    }
+
+    formatTime(milliseconds) {
+        const seconds = Math.floor(milliseconds / 1000);
         const minutes = Math.floor(seconds / 60);
-        return `${minutes}:${seconds % 60}`;
+        const remainingSeconds = seconds % 60;
+        return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
     }
 }
-

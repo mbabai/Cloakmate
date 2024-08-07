@@ -152,6 +152,8 @@ class LobbyManager {
       }
 
       startGame(user1,user2,length){
+        this.removeUserFromQueue(user1);
+        this.removeUserFromQueue(user2);
         console.log(`Starting game between ${user1.username} and ${user2.username}`);
         let game = new GameCoordinator(user1,user2,length, ++this.gameNumber, this.server);
         this.wsToGame.set(user1.websocket, game);
