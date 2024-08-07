@@ -212,9 +212,61 @@ class UIManager {
         this.updateNames();
         this.updateClocks();
         this.startClockTick();
+        this.setBoardSpaceLabels()
         // Add more UI update methods as needed
     }
-    endGame(){
+    setBoardSpaceLabels() {
+        const cells = document.querySelectorAll('.board .cell');
+        const isWhite = this.board.color === 0;
+        const letters = ['A', 'B', 'C', 'D', 'E'];
+        const numbers = ['5', '4', '3', '2', '1'];
+
+        cells.forEach((cell, index) => {
+            const row = Math.floor(index / 5);
+            const col = index % 5;
+            
+            let letter, number;
+            if (isWhite) {
+                letter = letters[col];
+                number = numbers[row];
+            } else {
+                letter = letters[4 - col];
+                number = numbers[4 - row];
+            }
+            const cellId = `${letter}${number}`;
+            cell.id = cellId;
+
+            // Clear any existing content
+            cell.innerHTML = '';
+
+            // Add number label to the upper left corner of leftmost column
+            if (col === 0 ) { 
+                const numberSpan = document.createElement('span');
+                numberSpan.className = 'cell-number';
+                numberSpan.textContent = number;
+                numberSpan.style.position = 'absolute';
+                numberSpan.style.top = '2px';
+                numberSpan.style.left = '2px';
+                cell.appendChild(numberSpan);
+            }
+
+            // Add letter label to the lower right corner of bottom row
+            if (row === 4) { 
+                const letterSpan = document.createElement('span');
+                letterSpan.className = 'cell-letter';
+                letterSpan.textContent = letter;
+                letterSpan.style.position = 'absolute';
+                letterSpan.style.bottom = '2px';
+                letterSpan.style.right = '2px';
+                cell.appendChild(letterSpan);
+            }
+
+            // Ensure the cell has position: relative for absolute positioning of spans
+            cell.style.position = 'relative';
+        });
+    }
+
+    endGame() {
         // Reset game selection to default empty value
         document.getElementById('game-selection').value = "";
         this.stopClockTick();
@@ -222,6 +274,7 @@ class UIManager {
         this.board = null;
         this.opponentName = null;
     }
+
     startClockTick() {
         if (this.animationFrameId) {
             cancelAnimationFrame(this.animationFrameId);
@@ -293,7 +346,8 @@ class UIManager {
         playerClockElement.textContent = this.formatTime(this.board.clocks[this.board.color]);
         opponentClockElement.textContent = this.formatTime(this.board.clocks[1 - this.board.color]);
     }
-    resetClocks(){
+
+    resetClocks() {
         const playerClockElement = document.getElementById('player-clock-time');
         const opponentClockElement = document.getElementById('opponent-clock-time');
         playerClockElement.textContent = this.formatTime(0);
