@@ -10,6 +10,10 @@ class UIManager {
             ,'bomb-button','challenge-button']
         this.currentState = [];
         this.currentActions = [];
+        this.draggedPiece = null;
+        this.originalParent = null;
+        this.offsetX = 0;
+        this.offsetY = 0;
         this.states = {
             pageLoad: {
                 visible: ['lobby-container','name-entry'],
@@ -42,6 +46,29 @@ class UIManager {
             boardState:{
                 visible: [],
                 actions: []
+            },
+            setup:{
+                visible: [],
+                actions: ['select-board-piece', 'select-on-deck-piece', 'select-stash-piece'
+                    , 'move-board-to-on-deck', 'move-stash-to-on-deck', 'move-on-deck-to-on-deck'
+                    , 'move-board-to-first-rank', 'move-stash-to-first-rank', 'move-on-deck-to-first-rank'
+                    , 'move-on-deck-to-stash', 'move-stash-to-stash', 'move-board-to-stash']
+            },
+            bomb:{
+                visible: ['bomb-button'],
+                actions: ['bomb']
+            },
+            challenge:{
+                visible: ['challenge-button'],
+                actions: ['challenge']
+            },
+            ready:{
+                visible: ['ready-button'],
+                actions: ['ready']
+            },
+            sacrifice:{
+                visible: [],
+                actions: ['sacrifice']
             }
         }
         this.setupButtons();
@@ -78,7 +105,107 @@ class UIManager {
                 this.currentActions.push(action);
             });
         });
+        console.log(this)
     }
+
+
+    setupPieceMovement() {
+        // Remove all existing event listeners from game pieces
+        const gamePieces = document.querySelectorAll('.game-piece');
+        gamePieces.forEach(piece => {
+            piece.removeEventListener('mousedown', this.handleMouseDown);
+            piece.removeEventListener('mousemove', this.movePiece);
+            piece.removeEventListener('mouseup', this.releasePiece);
+        });
+        // Add event listeners to game pieces
+        gamePieces.forEach(piece => {
+            piece.addEventListener('mousedown', this.handleMouseDown.bind(this));
+        });
+    }
+    handleMouseDown(e) {
+        if (e.target.classList.contains('game-piece')) {
+            this.draggedPiece = e.target;
+            this.originalParent = this.draggedPiece.parentElement;
+            this.draggedPiece.classList.add('selected');
+            console.log(this.draggedPiece);
+            console.log(this.originalParent);
+            console.log(this.draggedPiece.parentElement);
+
+            // Store original dimensions
+            this.originalWidth = this.draggedPiece.offsetWidth;
+            this.originalHeight = this.draggedPiece.offsetHeight;
+
+            // Calculate offset
+            // const rect = this.draggedPiece.getBoundingClientRect();
+            this.offsetX = this.originalWidth/2;
+            this.offsetY = this.originalHeight/2;
+
+            // Move piece to follow cursor
+            this.draggedPiece.style.position = 'fixed';
+            this.draggedPiece.style.width = `${this.originalWidth}px`;
+            this.draggedPiece.style.height = `${this.originalHeight}px`;
+            this.movePiece(e);
+
+            // Add event listeners for dragging and releasing
+            document.addEventListener('mousemove', this.movePiece.bind(this));
+            document.addEventListener('mouseup', this.releasePiece.bind(this));
+        }
+    }
+
+    movePiece(e) {
+        if (this.draggedPiece) {
+            const newLeft = e.clientX - this.offsetX;
+            const newTop = e.clientY - this.offsetY;
+            this.draggedPiece.style.left = `${newLeft}px`;
+            this.draggedPiece.style.top = `${newTop}px`;
+        }
+    }
+
+    releasePiece(e) {
+        if (this.draggedPiece) {
+            // Temporarily hide the dragged piece to see what's behind it
+            this.draggedPiece.style.display = 'none';
+            
+            const target = document.elementFromPoint(e.clientX, e.clientY);
+            
+            // Make the dragged piece visible again
+            this.draggedPiece.style.display = 'block';
+
+            if (target && (target.classList.contains('cell') || 
+                target.classList.contains('on-deck-cell') || 
+                target.classList.contains('inventory-slot'))) {
+                // Move piece to new parent
+                target.appendChild(this.draggedPiece);
+                this.resetPieceStyle();
+            } else {
+                // Return to original parent
+                this.originalParent.appendChild(this.draggedPiece);
+                this.resetPieceStyle();
+            }
+
+            // Clean up
+            document.removeEventListener('mousemove', this.movePiece);
+            document.removeEventListener('mouseup', this.releasePiece);
+            this.draggedPiece.classList.remove('selected');
+            this.draggedPiece = null;
+            this.originalParent = null;
+        }
+    }
+
+    resetPieceStyle() {
+        this.draggedPiece.style.position = 'static';
+        this.draggedPiece.style.left = '';
+        this.draggedPiece.style.top = '';
+    }
+
+
+
+
+
+
+
+
+
     setupButtons(){
         //Add event listeners to all buttons
         document.getElementById('submit-username').addEventListener('click', () => {
@@ -126,7 +253,7 @@ class UIManager {
                 console.warn(`Action '${action}' is in currentActions but no corresponding method exists.`);
             }
         } else {
-            console.warn(`Action '${action}' is not in the current set of allowed actions.`);
+            // console.log(`Action '${action}' is not in the current set of allowed actions.`);
         }
     }
     submitUsername(params){
@@ -206,6 +333,7 @@ class UIManager {
         this.board = data.board;
         this.opponentName = this.board.opponentName;
         this.updateBoardUI();
+        this.setupPieceMovement();
     }
     endGame() {
         // Reset game selection to default empty value
@@ -222,7 +350,14 @@ class UIManager {
         this.startClockTick();
         this.setBoardSpaceLabels()
         this.setBoardPieces();
+        this.updateLegalGameActions();
         // Add more UI update methods as needed
+    }
+    updateLegalGameActions(){
+        this.board.legalActions.forEach(action => {
+            this.addState(action);
+        });
+        this.updateUI();
     }
     setBoardPieces(){
         // Clear the board of any existing pieces
@@ -379,6 +514,8 @@ class UIManager {
         if (this.animationFrameId) {
             cancelAnimationFrame(this.animationFrameId);
             this.animationFrameId = null;
+            const playerClockElement = document.getElementById('player-clock-time');
+            const opponentClockElement = document.getElementById('opponent-clock-time');
             playerClockElement.classList.remove('clock-highlight');
             opponentClockElement.classList.remove('clock-highlight');
         }
