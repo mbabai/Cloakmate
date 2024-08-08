@@ -710,9 +710,24 @@ class Game {
             }
         }
         // Check available actions
-        if (boardState.myTurn) {//Only matters if it is our turn.
-            if (this.board.phase == "setup"){
-                boardState.legalActions.push("setup");  
+        if (boardState.myTurn || this.board.phase === "setup") {//Only matters if it is our turn.
+            if (this.board.phase === "setup"){
+                boardState.legalActions.push("select-board-piece"); 
+                boardState.legalActions.push("select-on-deck-piece"); 
+                boardState.legalActions.push("select-stash-piece"); 
+
+                boardState.legalActions.push("move-board-to-on-deck"); 
+                boardState.legalActions.push("move-stash-to-on-deck");
+                boardState.legalActions.push("move-on-deck-to-on-deck");  
+
+                boardState.legalActions.push("move-board-to-first-rank");  
+                boardState.legalActions.push("move-stash-to-first-rank");  
+                boardState.legalActions.push("move-on-deck-to-first-rank");
+
+                boardState.legalActions.push("move-on-deck-to-stash");  
+                boardState.legalActions.push("move-stash-to-stash"); 
+                boardState.legalActions.push("move-board-to-stash");  
+ 
             } else if (this.board.playerToSacrifice === color) { //If we must sacrifice, nothing else matters
                 boardState.legalActions.push("sacrifice");
             } else if (this.board.playerToOnDeck === color) { //If we have to on-deck, nothing else matters.
