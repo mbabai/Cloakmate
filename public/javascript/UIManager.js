@@ -127,26 +127,21 @@ class UIManager {
             this.draggedPiece = e.target;
             this.originalParent = this.draggedPiece.parentElement;
             this.draggedPiece.classList.add('selected');
-            console.log(this.draggedPiece);
-            console.log(this.originalParent);
-            console.log(this.draggedPiece.parentElement);
 
-            // Store original dimensions
-            this.originalWidth = this.draggedPiece.offsetWidth;
-            this.originalHeight = this.draggedPiece.offsetHeight;
+            const rect = this.draggedPiece.getBoundingClientRect();
+            this.offsetX = rect.width / 2;
+            this.offsetY = rect.height / 2;
 
-            // Calculate offset
-            // const rect = this.draggedPiece.getBoundingClientRect();
-            this.offsetX = this.originalWidth/2;
-            this.offsetY = this.originalHeight/2;
+            this.originalWidth = rect.width;
+            this.originalHeight = rect.height;
 
-            // Move piece to follow cursor
+            document.body.appendChild(this.draggedPiece);
             this.draggedPiece.style.position = 'fixed';
             this.draggedPiece.style.width = `${this.originalWidth}px`;
             this.draggedPiece.style.height = `${this.originalHeight}px`;
+            this.draggedPiece.style.zIndex = '1000';
             this.movePiece(e);
 
-            // Add event listeners for dragging and releasing
             document.addEventListener('mousemove', this.movePiece.bind(this));
             document.addEventListener('mouseup', this.releasePiece.bind(this));
         }
@@ -154,8 +149,8 @@ class UIManager {
 
     movePiece(e) {
         if (this.draggedPiece) {
-            const newLeft = e.clientX - this.offsetX;
-            const newTop = e.clientY - this.offsetY;
+            const newLeft = e.clientX;
+            const newTop = e.clientY;
             this.draggedPiece.style.left = `${newLeft}px`;
             this.draggedPiece.style.top = `${newTop}px`;
         }
@@ -193,9 +188,13 @@ class UIManager {
     }
 
     resetPieceStyle() {
-        this.draggedPiece.style.position = 'static';
-        this.draggedPiece.style.left = '';
-        this.draggedPiece.style.top = '';
+        this.draggedPiece.style.position = 'absolute';
+        this.draggedPiece.style.left = '50%';
+        this.draggedPiece.style.top = '50%';
+        this.draggedPiece.style.transform = 'translate(-50%, -50%)';
+        this.draggedPiece.style.width = '90%';
+        this.draggedPiece.style.height = '90%';
+        this.draggedPiece.style.zIndex = '';
     }
 
 
