@@ -359,10 +359,11 @@ class UIManager {
         this.updateUI();
     }
     setBoardPieces(){
-        // Clear the board of any existing pieces
+        // Clear the board of any existing pieces, except for crown images
         const cells = document.querySelectorAll('.board .cell');
+        ////////////////////////////////////
         cells.forEach(cell => {
-            const pieceImage = cell.querySelector('img');
+            const pieceImage = cell.querySelector('.piece-image');
             if (pieceImage) {
                 cell.removeChild(pieceImage);
             }
@@ -407,7 +408,17 @@ class UIManager {
         }
 
         // Add pieces to the board
-        //TODO
+        this.board.board.forEach((row, y) => {
+            row.forEach((piece, x) => {
+                if (piece) {
+                    const cell = document.getElementById(`${String.fromCharCode(65 + x)}${5 - y}`);
+                    if (cell) {
+                        const pieceImage = createPieceImage(piece);
+                        cell.appendChild(pieceImage);
+                    }
+                }
+            });
+        });
     }
 
     setBoardSpaceLabels() {
@@ -432,7 +443,8 @@ class UIManager {
             cell.id = cellId;
 
             // Clear any existing content
-            cell.innerHTML = '';
+            /////////////////////////////////////
+            // cell.innerHTML = '';
 
             // Add number label to the upper left corner of leftmost column
             if (col === 0 ) { 
