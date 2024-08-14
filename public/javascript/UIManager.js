@@ -381,15 +381,15 @@ class UIManager {
         frontRowSquares.forEach(square => {
             const pieceElement = square.querySelector('.game-piece');
             if (pieceElement) {
-                piecePositions.frontRow[square.id] = pieceElement.dataset.pieceType;
+                piecePositions.frontRow[square.id] = pieceElement.alt.replace('.svg', '').replace('Pawn', '');
             }
         });
 
         // Get on-deck cell
         const onDeckCell = document.querySelector('.on-deck-cell');
-        const onDeckPiece = onDeckCell.querySelector('.piece');
+        const onDeckPiece = onDeckCell.querySelector('.game-piece');
         if (onDeckPiece) {
-            piecePositions.onDeck = onDeckPiece.dataset.pieceType;
+            piecePositions.onDeck = onDeckPiece.alt.replace('.svg', '').replace('Pawn', '');
         }
         console.log(piecePositions);
         // Route message with type "ready" and the piece positions
