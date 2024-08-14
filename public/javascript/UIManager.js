@@ -7,7 +7,7 @@ class UIManager {
         this.board = null;
         this.allElements = ['lobby-container','name-entry','game-picker'
             ,'play-button','custom-options','ai-difficulty','cancel-button'
-            ,'bomb-button','challenge-button']
+            ,'bomb-button','challenge-button','ready-button']
         this.currentState = [];
         this.currentActions = [];
         this.draggedPiece = null;
@@ -48,8 +48,8 @@ class UIManager {
                 actions: []
             },
             setup:{
-                visible: [],
-                actions: ['select-board-piece', 'select-on-deck-piece', 'select-stash-piece'
+                visible: ['first-row-highlight-gold', 'on-deck-cell-highlight-gold'],
+                actions: ['swap','select-board-piece', 'select-on-deck-piece', 'select-stash-piece'  
                     , 'move-board-to-on-deck', 'move-stash-to-on-deck', 'move-on-deck-to-on-deck'
                     , 'move-board-to-first-rank', 'move-stash-to-first-rank', 'move-on-deck-to-first-rank'
                     , 'move-on-deck-to-stash', 'move-stash-to-stash', 'move-board-to-stash']
@@ -62,9 +62,13 @@ class UIManager {
                 visible: ['challenge-button'],
                 actions: ['challenge']
             },
-            ready:{
+            readyable:{
                 visible: ['ready-button'],
                 actions: ['ready']
+            },
+            ready:{
+                visible: [],
+                actions: []
             },
             sacrifice:{
                 visible: [],
@@ -74,9 +78,14 @@ class UIManager {
         this.setupButtons();
         this.setupGameSelection();  // Add this line
         this.setState('pageLoad');
+        this.playerTimerId = null;
+        this.opponentTimerId = null;
     }
     addState(state){
         this.currentState.push(state);
+    }
+    hasState(state){
+        return this.currentState.includes(state);
     }
     removeState(state){
         this.currentState = this.currentState.filter(s => s !== state);
@@ -93,10 +102,29 @@ class UIManager {
         });
         //show elements that are in the current state
         this.currentState.forEach(state => {
-            this.states[state].visible.forEach(element => {
-                document.getElementById(element).style.display = 'block';
+            this.states[state].visible.forEach(indicatorString => {
+                const visibbleElement = document.getElementById(indicatorString)
+                if(visibbleElement){
+                    visibbleElement.style.display = 'block';
+                } else {
+                    console.log(`${indicatorString} for highlighting`);
+                    // Apply appropriate highlight CSS for states containing "highlight"
+                    if (indicatorString.includes('highlight')) {
+                        const [elementClass, highlightType] = indicatorString.split('-highlight-');
+                        const elements = document.querySelectorAll(`.${elementClass}`);
+                        elements.forEach(element => {
+                            if (highlightType === 'gold') {
+                                element.classList.add('highlighted-cell-gold');
+                            } else if (highlightType === 'red') {
+                                element.classList.add('highlighted-cell-red');
+                            }
+                        });
+                    }   
+                } 
             });
         });
+
+
         //remove actions that are in the current state
         this.currentActions = [];
         //add actions that are in the current state
@@ -161,16 +189,26 @@ class UIManager {
             // Temporarily hide the dragged piece to see what's behind it
             this.draggedPiece.style.display = 'none';
             
-            const target = document.elementFromPoint(e.clientX, e.clientY);
-            
+            let target = document.elementFromPoint(e.clientX, e.clientY);
             // Make the dragged piece visible again
             this.draggedPiece.style.display = 'block';
 
             if (target && (target.classList.contains('cell') || 
-                target.classList.contains('on-deck-cell') || 
-                target.classList.contains('inventory-slot'))) {
-                // Move piece to new parent
-                target.appendChild(this.draggedPiece);
+                target.classList.contains('on-deck-cell')    || 
+                target.classList.contains('inventory-slot')  || 
+                target.classList.contains('game-piece'))) {
+                
+                if (this.currentActions.includes('swap') && target.classList.contains('game-piece')) {
+                    let targetPiece = target;
+                    target = targetPiece.parentElement;
+                    this.originalParent.appendChild(targetPiece);
+                    target.appendChild(this.draggedPiece);
+                } else if (target.classList.contains('game-piece')) {
+                    //don't append to another piece
+                    this.originalParent.appendChild(this.draggedPiece);
+                }else{
+                    target.appendChild(this.draggedPiece);
+                }
                 this.resetPieceStyle();
             } else {
                 // Return to original parent
@@ -185,7 +223,35 @@ class UIManager {
             this.draggedPiece = null;
             this.originalParent = null;
         }
+        this.postMoveState();
     }
+    postMoveState(){
+        this.checkReadyState();
+        this.updateUI();
+    }
+    checkReadyState(){
+        // Check if on-deck-cell and first row cells have game pieces
+        const onDeckCell = document.querySelector('.on-deck-cell');
+        const firstRowCells = document.querySelectorAll('.cell.first-row');
+        const allCellsFilled = onDeckCell.querySelector('.game-piece') && 
+            Array.from(firstRowCells).every(cell => cell.querySelector('.game-piece'));
+
+        // Check if one of the first-row pieces is a king
+        const hasKingInFirstRow = Array.from(firstRowCells).some(cell => {
+            const piece = cell.querySelector('.game-piece');
+            return piece && piece.src.includes('King');
+        });
+
+        // Update state based on cell occupancy and king presence
+        if (allCellsFilled && hasKingInFirstRow) {
+            if (!this.hasState('readyable')) {
+                this.addState('readyable');
+            }
+        } else {
+            this.removeState('readyable');
+        }
+    }
+    
 
     resetPieceStyle() {
         this.draggedPiece.style.position = 'absolute';
@@ -218,6 +284,9 @@ class UIManager {
         document.getElementById('cancel-button').addEventListener('click', () => {
             this.doAction('cancelQueue');
             this.doAction('cancelCustom');
+        });
+        document.getElementById('ready-button').addEventListener('click', () => {
+            this.doAction('ready');
         });
 
     }
@@ -255,6 +324,38 @@ class UIManager {
             // console.log(`Action '${action}' is not in the current set of allowed actions.`);
         }
     }
+    ready(params){
+        // Stop the current player's clock
+        this.stopClockTick('player');
+        this.setState('ready');
+        // Generate JSON object with piece positions
+        const piecePositions = {
+            frontRow: {},
+            onDeck: null
+        };
+        // Get front row squares
+        const frontRowSquares = document.querySelectorAll('.front-row-square');
+        frontRowSquares.forEach(square => {
+            const pieceElement = square.querySelector('.piece');
+            if (pieceElement) {
+                piecePositions.frontRow[square.id] = pieceElement.dataset.pieceType;
+            }
+        });
+
+        // Get on-deck cell
+        const onDeckCell = document.querySelector('.on-deck-cell');
+        const onDeckPiece = onDeckCell.querySelector('.piece');
+        if (onDeckPiece) {
+            piecePositions.onDeck = onDeckPiece.dataset.pieceType;
+        }
+        console.log(piecePositions);
+        // Route message with type "ready" and the piece positions
+        this.webSocketManager.routeMessage({
+            type: 'ready',
+            piecePositions: piecePositions
+        });
+    }
+
     submitUsername(params){
         const username = document.getElementById('username-input').value.trim();
         console.log(`Submitting username: ${username}`);
@@ -337,7 +438,7 @@ class UIManager {
     endGame() {
         // Reset game selection to default empty value
         document.getElementById('game-selection').value = "";
-        this.stopClockTick();
+        this.stopClockTick('both');
         this.resetClocks();
         this.board = null;
         this.opponentName = null;
@@ -475,59 +576,50 @@ class UIManager {
 
 
     startClockTick() {
-        if (this.animationFrameId) {
-            cancelAnimationFrame(this.animationFrameId);
-        }
+        this.stopClockTick('both');
         
-        let lastTime = performance.now();
-        const tick = (currentTime) => {
-            const deltaTime = currentTime - lastTime;
-            lastTime = currentTime;
-
-            const playerClockElement = document.getElementById('player-clock-time');
-            const opponentClockElement = document.getElementById('opponent-clock-time');
-            
-            if (this.board.phase === "setup") {
-                this.board.clocks[0] -= deltaTime;
-                this.board.clocks[1] -= deltaTime;
-                playerClockElement.classList.add('clock-highlight');
-                opponentClockElement.classList.add('clock-highlight');
-            } else if (this.board.myTurn) {
-                this.board.clocks[this.board.color] -= deltaTime;
-                playerClockElement.classList.add('clock-highlight');
-                opponentClockElement.classList.remove('clock-highlight');
-            } else {
-                this.board.clocks[1 - this.board.color] -= deltaTime;
-                playerClockElement.classList.remove('clock-highlight');
-                opponentClockElement.classList.add('clock-highlight');
-            }
-
-            // Check if any clock has reached 0
-            if (this.board.clocks[0] <= 0 || this.board.clocks[1] <= 0) {
-                this.stopClockTick();
-                this.board.clocks[0] = Math.max(0, this.board.clocks[0]);
-                this.board.clocks[1] = Math.max(0, this.board.clocks[1]);
-                
-            }
-
-            playerClockElement.textContent = this.formatTime(Math.max(0, this.board.clocks[this.board.color]));
-            opponentClockElement.textContent = this.formatTime(Math.max(0, this.board.clocks[1 - this.board.color]));
-
-            if (this.board.clocks[0] > 0 && this.board.clocks[1] > 0) {
-                this.animationFrameId = requestAnimationFrame(tick);
-            }
+        const tickClock = (clockElement, colorIndex) => {
+            return setInterval(() => {
+                this.board.clocks[colorIndex] -= 100; // Decrease by 100ms (0.1 seconds)
+                if (this.board.clocks[colorIndex] <= 0) {
+                    this.stopClockTick(colorIndex === this.board.color ? 'player' : 'opponent');
+                    this.board.clocks[colorIndex] = 0;
+                }
+                clockElement.textContent = this.formatTime(Math.max(0, this.board.clocks[colorIndex]));
+            }, 100); // Update every 100ms for smoother display
         };
 
-        this.animationFrameId = requestAnimationFrame(tick);
+        const playerClockElement = document.getElementById('player-clock-time');
+        const opponentClockElement = document.getElementById('opponent-clock-time');
+
+        if (this.board.phase === "setup") {
+            this.playerTimerId = tickClock(playerClockElement, this.board.color);
+            this.opponentTimerId = tickClock(opponentClockElement, 1 - this.board.color);
+            playerClockElement.classList.add('clock-highlight');
+            opponentClockElement.classList.add('clock-highlight');
+        } else if (this.board.myTurn) {
+            this.playerTimerId = tickClock(playerClockElement, this.board.color);
+            playerClockElement.classList.add('clock-highlight');
+            opponentClockElement.classList.remove('clock-highlight');
+        } else {
+            this.opponentTimerId = tickClock(opponentClockElement, 1 - this.board.color);
+            playerClockElement.classList.remove('clock-highlight');
+            opponentClockElement.classList.add('clock-highlight');
+        }
     }
 
-    stopClockTick() {
-        if (this.animationFrameId) {
-            cancelAnimationFrame(this.animationFrameId);
-            this.animationFrameId = null;
-            const playerClockElement = document.getElementById('player-clock-time');
-            const opponentClockElement = document.getElementById('opponent-clock-time');
+    stopClockTick(clockToStop) {
+        const playerClockElement = document.getElementById('player-clock-time');
+        const opponentClockElement = document.getElementById('opponent-clock-time');
+
+        if (clockToStop === 'player' || clockToStop === 'both') {
+            clearInterval(this.playerTimerId);
+            this.playerTimerId = null;
             playerClockElement.classList.remove('clock-highlight');
+        }
+        if (clockToStop === 'opponent' || clockToStop === 'both') {
+            clearInterval(this.opponentTimerId);
+            this.opponentTimerId = null;
             opponentClockElement.classList.remove('clock-highlight');
         }
     }
@@ -552,6 +644,8 @@ class UIManager {
 
         playerClockElement.textContent = this.formatTime(this.board.clocks[this.board.color]);
         opponentClockElement.textContent = this.formatTime(this.board.clocks[1 - this.board.color]);
+
+        this.startClockTick(); // Start the clocks after updating
     }
 
     resetClocks() {

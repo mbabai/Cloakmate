@@ -15,10 +15,11 @@ html, body {
     align-items: center;
     position: relative; /* Allows absolute positioning inside */
     width: 100vw;
-    height: 100vh;
+    height: 100%;
+    /* height: 100vh; */
     max-height: calc(100vw * 1.6);
     max-width: calc(100vh / 1.6);
-    background: #444; /* Dark background for the main div */
+    background: #666; /* Dark background for the main div */
 }
 
 .board-labels.left {
@@ -64,8 +65,17 @@ html, body {
     z-index: 9;
 }
 
-.board .cell.highlighted {
-    box-shadow: inset 0 0 15px rgba(200, 170, 0, 0.9); /* Subtle glow effect */
+/* .board .cell.highlighted {
+    box-shadow: inset 0 0 15px rgba(200, 170, 0, 0.9); 
+    transition: box-shadow 0.3s; 
+} */
+
+.highlighted-cell-gold {
+    box-shadow: inset 0 0 30px rgba(200, 170, 0, 0.9); /* Subtle glow effect */
+    transition: box-shadow 0.3s;
+}
+.highlighted-cell-red {
+    box-shadow: inset 0 0 30px rgba(161, 6, 1, 0.9); /* Subtle glow effect */
     transition: box-shadow 0.3s;
 }
 
@@ -165,6 +175,13 @@ html, body {
 #bomb-button {
     font-size: 3.5cqh; /* Slightly larger font size for "Bomb!" since it's shorter */
     left: calc(50% - (100% / 5 * 0.6) - (100% / 5 * 1.7)); /* Recalculate the position to bring closer to center */
+}
+
+#ready-button {
+    font-size: 3.5cqh; 
+    left: 48%; /* Center the button horizontally */
+    top: 40%;
+    transform: translateX(-50%); /* Adjust for the button's width */
 }
 
 #challenge-button {
