@@ -377,9 +377,9 @@ class UIManager {
             onDeck: null
         };
         // Get front row squares
-        const frontRowSquares = document.querySelectorAll('.front-row-square');
+        const frontRowSquares = document.querySelectorAll('.first-row');
         frontRowSquares.forEach(square => {
-            const pieceElement = square.querySelector('.piece');
+            const pieceElement = square.querySelector('.game-piece');
             if (pieceElement) {
                 piecePositions.frontRow[square.id] = pieceElement.dataset.pieceType;
             }
@@ -583,12 +583,12 @@ class UIManager {
                 letter = letters[4 - col];
                 number = numbers[4 - row];
             }
-            const cellId = `${letter}${number}`;
-            cell.id = cellId;
-
-            // Clear any existing content
-            /////////////////////////////////////
-            // cell.innerHTML = '';
+            cell.id = `${letter}-${number}`;
+            // Remove any existing cell-number or cell-letter spans
+            const existingNumberSpan = cell.querySelector('.cell-number');
+            const existingLetterSpan = cell.querySelector('.cell-letter');
+            if (existingNumberSpan) existingNumberSpan.remove();
+            if (existingLetterSpan) existingLetterSpan.remove();
 
             // Add number label to the upper left corner of leftmost column
             if (col === 0 ) { 
