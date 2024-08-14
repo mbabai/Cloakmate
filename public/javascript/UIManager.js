@@ -51,7 +51,7 @@ class UIManager {
                 visible: ['first-row-highlight-gold', 'on-deck-cell-highlight-gold'],
                 actions: ['swap','select-board-piece', 'select-on-deck-piece', 'select-stash-piece'  
                     , 'move-board-to-on-deck', 'move-stash-to-on-deck', 'move-on-deck-to-on-deck'
-                    , 'move-board-to-first-rank', 'move-stash-to-first-rank', 'move-on-deck-to-first-rank'
+                    , 'move-board-to-board', 'move-stash-to-board', 'move-on-deck-to-board'
                     , 'move-on-deck-to-stash', 'move-stash-to-stash', 'move-board-to-stash']
             },
             bomb:{
@@ -99,6 +99,11 @@ class UIManager {
         //hide all elements
         this.allElements.forEach(element => {
             document.getElementById(element).style.display = 'none';
+            // Remove all highlight classes from cell, on-deck, and inventory elements
+            document.querySelectorAll('.cell, .on-deck-cell, .inventory-slot').forEach(element => {
+                const classesToRemove = Array.from(element.classList).filter(className => className.startsWith('highlight'));
+                element.classList.remove(...classesToRemove);
+        });
         });
         //show elements that are in the current state
         this.currentState.forEach(state => {
@@ -151,27 +156,41 @@ class UIManager {
         });
     }
     handleMouseDown(e) {
+        this.draggedPiece = null;
         if (e.target.classList.contains('game-piece')) {
-            this.draggedPiece = e.target;
-            this.originalParent = this.draggedPiece.parentElement;
-            this.draggedPiece.classList.add('selected');
+            const parentElement = e.target.parentElement;
+            let canSelectPiece = false;
 
-            const rect = this.draggedPiece.getBoundingClientRect();
-            this.offsetX = rect.width / 2;
-            this.offsetY = rect.height / 2;
+            if (parentElement.classList.contains('cell') && this.currentActions.includes('select-board-piece')) {
+                canSelectPiece = true;
+            } else if (parentElement.classList.contains('on-deck-cell') && this.currentActions.includes('select-on-deck-piece')) {
+                canSelectPiece = true;
+            } else if (parentElement.classList.contains('inventory-slot') && this.currentActions.includes('select-stash-piece')) {
+                canSelectPiece = true;
+            }
 
-            this.originalWidth = rect.width;
-            this.originalHeight = rect.height;
+            if (canSelectPiece) {
+                this.draggedPiece = e.target;
+                this.originalParent = this.draggedPiece.parentElement;
+                this.draggedPiece.classList.add('selected');
 
-            document.body.appendChild(this.draggedPiece);
-            this.draggedPiece.style.position = 'fixed';
-            this.draggedPiece.style.width = `${this.originalWidth}px`;
-            this.draggedPiece.style.height = `${this.originalHeight}px`;
-            this.draggedPiece.style.zIndex = '1000';
-            this.movePiece(e);
+                const rect = this.draggedPiece.getBoundingClientRect();
+                this.offsetX = rect.width / 2;
+                this.offsetY = rect.height / 2;
 
-            document.addEventListener('mousemove', this.movePiece.bind(this));
-            document.addEventListener('mouseup', this.releasePiece.bind(this));
+                this.originalWidth = rect.width;
+                this.originalHeight = rect.height;
+
+                document.body.appendChild(this.draggedPiece);
+                this.draggedPiece.style.position = 'fixed';
+                this.draggedPiece.style.width = `${this.originalWidth}px`;
+                this.draggedPiece.style.height = `${this.originalHeight}px`;
+                this.draggedPiece.style.zIndex = '1000';
+                this.movePiece(e);
+
+                document.addEventListener('mousemove', this.movePiece.bind(this));
+                document.addEventListener('mouseup', this.releasePiece.bind(this));
+            }
         }
     }
 
@@ -193,23 +212,34 @@ class UIManager {
             // Make the dragged piece visible again
             this.draggedPiece.style.display = 'block';
 
+            const originalLocation = this.getLocation(this.originalParent);
+            const targetLocation = this.getLocation(target);
+
             if (target && (target.classList.contains('cell') || 
                 target.classList.contains('on-deck-cell')    || 
                 target.classList.contains('inventory-slot')  || 
                 target.classList.contains('game-piece'))) {
                 
-                if (this.currentActions.includes('swap') && target.classList.contains('game-piece')) {
-                    let targetPiece = target;
-                    target = targetPiece.parentElement;
-                    this.originalParent.appendChild(targetPiece);
-                    target.appendChild(this.draggedPiece);
-                } else if (target.classList.contains('game-piece')) {
-                    //don't append to another piece
+                const moveAction = `move-${originalLocation}-to-${targetLocation}`;
+                
+                if (this.currentActions.includes(moveAction)) {
+                    if (this.currentActions.includes('swap') && target.classList.contains('game-piece')) {
+                        let targetPiece = target;
+                        target = targetPiece.parentElement;
+                        this.originalParent.appendChild(targetPiece);
+                        target.appendChild(this.draggedPiece);
+                    } else if (target.classList.contains('game-piece')) {
+                        //don't append to another piece
+                        this.originalParent.appendChild(this.draggedPiece);
+                    } else {
+                        target.appendChild(this.draggedPiece);
+                    }
+                    this.resetPieceStyle();
+                } else {
+                    // Return to original parent if move is not allowed
                     this.originalParent.appendChild(this.draggedPiece);
-                }else{
-                    target.appendChild(this.draggedPiece);
+                    this.resetPieceStyle();
                 }
-                this.resetPieceStyle();
             } else {
                 // Return to original parent
                 this.originalParent.appendChild(this.draggedPiece);
@@ -222,8 +252,21 @@ class UIManager {
             this.draggedPiece.classList.remove('selected');
             this.draggedPiece = null;
             this.originalParent = null;
+            this.postMoveState();
         }
-        this.postMoveState();
+    }
+
+    getLocation(element) {
+        if (element.classList.contains('cell')) {
+            return 'board';
+        } else if (element.classList.contains('on-deck-cell')) {
+            return 'on-deck';
+        } else if (element.classList.contains('inventory-slot')) {
+            return 'stash';
+        } else if (element.classList.contains('game-piece')) {
+            return this.getLocation(element.parentElement);
+        }
+        return 'unknown';
     }
     postMoveState(){
         this.checkReadyState();
