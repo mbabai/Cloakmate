@@ -1,6 +1,12 @@
 const { Game } = require('./gameEngine');
-
-//Game Arena - coordinates games between players
+const pieces = {
+    BOMB: 0,
+    KING: 1,
+    KNIGHT: 2,
+    BISHOP: 3,
+    ROOK: 4
+};
+//Game Arena - coordinates games between players, converts between game engine style variables and frontend style variables
 class GameCoordinator {
     constructor(user1,user2,length,gameNumber,server) {
         this.nameToUser = new Map();
@@ -26,6 +32,49 @@ class GameCoordinator {
     }
     logGameState() {
         return `#${this.gameNumber} - W:${this.users[0].username} vs B:${this.users[1].username}`
+    }
+    convertLocationToXY(location) {
+        const [letter, number] = location.split('-');
+        const x = letter.charCodeAt(0) - 'A'.charCodeAt(0);
+        const y = parseInt(number) - 1;
+        return { x, y };
+    }
+
+    convertPieceToEngineFormat(piece) {
+        const color = piece.startsWith('White') ? 0 : 1;
+        const type = pieces[piece.replace(/White|Black/, '').toUpperCase()];
+        return { color, type };
+    }
+
+    submitSetup(player, data) {
+        let engineFrontRow = [];
+        let engineOnDeck = null;
+
+        // Convert frontRow
+        for (const [position, piece] of Object.entries(data.frontRow)) {
+            const { x, y } = this.convertLocationToXY(position);
+            const { type } = this.convertPieceToEngineFormat(piece);
+            engineFrontRow.push({ x, y, type });
+        }
+
+        // Convert onDeck
+        if (data.onDeck) {
+            const { type } = this.convertPieceToEngineFormat(data.onDeck);
+            engineOnDeck = type;
+        }
+        console.log("READY-----------")
+        console.log(engineFrontRow)
+        console.log(engineOnDeck)
+        console.log(player.username)
+
+        if (!this.game.trySetup(player.username, engineFrontRow, engineOnDeck)) {
+            console.log("Illegal setup");
+            this.server.routeMessage(player.websocket, { type: "setup-error", message: "Your setup was invalid. Please try again." });
+        } else {
+            console.log("Setup completed for", player.username);
+            const otherPlayer = this.users.find(u => u.username !== player.username);
+            this.server.routeMessage(otherPlayer.websocket, { type: "opponent-setup-complete", message: "Your opponent has completed their setup." });
+        }
     }
 
 }

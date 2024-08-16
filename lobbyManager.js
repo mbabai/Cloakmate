@@ -37,6 +37,9 @@ class LobbyManager {
       addUser(user){
         this.lobby.set(user.websocket, user);
       }
+      getPlayerFromWS(ws){
+        return this.lobby.get(ws);
+      }
       disconnect(ws){
         let user = this.lobby.get(ws)
         this.removeUserFromQueue(user);
@@ -161,6 +164,11 @@ class LobbyManager {
         user1.isInGame = true;
         user2.isInGame = true;
         this.games.push(game);
+      }
+      submitSetup(ws,data){
+        let game = this.wsToGame.get(ws);
+        let player = this.getPlayerFromWS(ws);
+        game.submitSetup(player,data);
       }
       endGame(game){
         this.games.splice(this.games.indexOf(game), 1);

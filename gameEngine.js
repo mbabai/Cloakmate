@@ -775,33 +775,116 @@ class Game {
         
         return selection.slice(0, 6);;
     }
-    randomSetup(playerNumber){
-        const pick = this.selectRandomSetup()
-        for (let x = pick.length - 1; x >= 0;x--){
-            if (x==5){
-                this.board.moveStashPieceToOnDeck(playerNumber, pick[x])
-            }else{
-                let y = playerNumber == 0 ? 0: 4;
-                this.board.moveStashPieceToBoard(playerNumber, pick[x], x, y)
+    randomSetup(playerNumber) {
+        let isLegal = false;
+        let pick;
+        let convertedFrontRow;
+        let onDeckPiece;
+
+        while (!isLegal) {
+            pick = this.selectRandomSetup();
+            convertedFrontRow = [];
+            onDeckPiece = null;
+
+            for (let x = 0; x < pick.length; x++) {
+                if (x == 5) {
+                    onDeckPiece = pick[x];
+                } else {
+                    let y = playerNumber == 0 ? 0 : 4;
+                    convertedFrontRow.push({ x, y, type: pieceStringNames[playerNumber][pick[x]] });
+                }
             }
-        }
-        this.playersSetupComplete[playerNumber]
-    }
-    placePieces(playerName,pieceList,onDeck){
-        const playerColor = this.getPlayerColorIndex(playerName)
-        let y = playerColor == colors.WHITE ? 0: 4;
-        console.log(pieceList)
-        console.log(onDeck)
-        this.board.moveStashPieceToOnDeck(playerColor, pieces[onDeck])
-        for(let i=0;i<pieceList.length;i++){
-            let thisPiece = pieceList[i]
-            let x = playerColor == colors.WHITE ? i: 4-i;
-            this.board.moveStashPieceToBoard(playerColor, pieces[thisPiece.type], x, y)
+
+            const expectedColor = playerNumber === colors.WHITE ? 'White' : 'Black';
+            isLegal = this.isSetupLegal(convertedFrontRow, pieceStringNames[playerNumber][onDeckPiece], expectedColor);
         }
 
-        
-           
-        
+        // Now that we have a legal setup, place the pieces
+        let playerName = this.players[playerNumber].userName
+        this.placeSetupPieces(playerName,convertedFrontRow,onDeckPiece)
+    }
+
+    trySetup(playerName, frontRow, onDeck) {
+        const playerColor = this.getPlayerColorIndex(playerName);
+    
+        if (!frontRow || onDeck === undefined) {
+            console.error("Illegal setup: frontRow or onDeck are null or undefined");
+            return false;
+        }
+    
+        // Convert frontRow to the correct format
+        const convertedFrontRow = frontRow.map(piece => ({
+            x: piece.x,
+            y: piece.y,
+            type: piece.type
+        }));
+    
+        // Check legality of the setup
+        if (!this.isSetupLegal(convertedFrontRow, onDeck, playerColor)) {
+            console.log("Illegal setup");
+            return false;
+        }
+    
+        // Ensure all pieces are accounted for
+        if (convertedFrontRow.length !== 5 || onDeck === undefined) {
+            console.error("Invalid setup: Incorrect number of pieces");
+            return false;
+        }
+    
+        // Call placeSetupPieces with the formatted data
+        this.placeSetupPieces(playerColor, convertedFrontRow, onDeck);
+        return true;
+    }
+    
+    isSetupLegal(frontRow, onDeck, playerColor) {
+        const pieceCounts = {
+            [pieces.KING]: 0,
+            [pieces.BOMB]: 0,
+            [pieces.KNIGHT]: 0,
+            [pieces.BISHOP]: 0,
+            [pieces.ROOK]: 0
+        };
+    
+        // Check front row
+        let frontRowHasKing = false;
+        const expectedRow = playerColor === colors.WHITE ? 0 : 4;
+        for (const piece of frontRow) {
+            if (piece.y !== expectedRow) {
+                console.log(`${piece.y} is the real row`)
+                console.error(`Illegal setup: Pieces must be on row ${expectedRow}`);
+                return false;
+            }
+            pieceCounts[piece.type]++;
+            if (piece.type === pieces.KING) frontRowHasKing = true;
+        }
+    
+        // Check on deck piece
+        pieceCounts[onDeck]++;
+    
+        if (!frontRowHasKing) {
+            console.error("Illegal setup: exactly 1 King must be on the front row");
+            return false;
+        }
+        // Validate piece counts
+        if (pieceCounts[pieces.KING] !== 1) {
+            console.error("Illegal setup: exactly 1 King must be in play");
+            return false;
+        }
+        if (pieceCounts[pieces.KNIGHT] > 2 || pieceCounts[pieces.BISHOP] > 2 || 
+            pieceCounts[pieces.ROOK] > 2 || pieceCounts[pieces.BOMB] > 1) {
+            console.error("Illegal setup: Too many Bombs, Knights, Bishops, or Rooks");
+            return false;
+        }
+    
+        return true;
+    }
+    
+    placeSetupPieces(playerColor, pieceList, onDeck) {
+        this.board.moveStashPieceToOnDeck(playerColor, onDeck);
+        for (let piece of pieceList) {
+            this.board.moveStashPieceToBoard(playerColor, piece.type, piece.x, piece.y);
+        }
+        this.completePlayerSetup(this.players[playerColor]);
     }
     completePlayerSetup(playerName){
         this.playersSetupComplete[this.players.indexOf(playerName)] = true

@@ -101,3 +101,4 @@ myGameServer.addTypeListener('invite-opponent', (ws,data)=>{myLobbyManager.invit
 myGameServer.addTypeListener('cancel-invite', (ws,data)=>{myLobbyManager.cancelInvite(ws,data)});
 myGameServer.addTypeListener('accept-invite', (ws,data)=>{myLobbyManager.acceptInvite(ws,data)});
 myGameServer.addTypeListener('decline-invite', (ws,data)=>{myLobbyManager.declineInvite(ws,data)});
+myGameServer.addTypeListener('submit-setup', (ws,data)=>{myLobbyManager.submitSetup(ws,data)});

@@ -374,16 +374,15 @@ class UIManager {
         this.stopClockTick('player');
         this.setState('ready');
         // Generate JSON object with piece positions
-        const piecePositions = {
-            frontRow: {},
-            onDeck: null
-        };
+        let frontRow = {}
+        let onDeck = null
+
         // Get front row squares
         const frontRowSquares = document.querySelectorAll('.first-row');
         frontRowSquares.forEach(square => {
             const pieceElement = square.querySelector('.game-piece');
             if (pieceElement) {
-                piecePositions.frontRow[square.id] = pieceElement.alt.replace('.svg', '').replace('Pawn', '');
+                frontRow[square.id] = pieceElement.alt.replace('.svg', '').replace('Pawn', '');
             }
         });
 
@@ -391,14 +390,46 @@ class UIManager {
         const onDeckCell = document.querySelector('.on-deck-cell');
         const onDeckPiece = onDeckCell.querySelector('.game-piece');
         if (onDeckPiece) {
-            piecePositions.onDeck = onDeckPiece.alt.replace('.svg', '').replace('Pawn', '');
+            onDeck = onDeckPiece.alt.replace('.svg', '').replace('Pawn', '');
         }
-        console.log(piecePositions);
+        console.log(frontRow);
+        console.log(onDeck);
         // Route message with type "ready" and the piece positions
         this.webSocketManager.routeMessage({
             type: 'submit-setup',
-            piecePositions: piecePositions
+            frontRow: frontRow,
+            onDeck: onDeck
         });
+    }
+    setupError(data){
+        alert(data.message);
+        this.setState('readyable');
+    }
+    opponentSetupComplete(data){
+        // Stop the opponent's clock
+        this.stopClockTick('opponent');
+
+        // Fill the back row with opponent's pawns
+        const backRowSquares = document.querySelectorAll('.last-row');
+        console.log(`~~~~~~~~~~~~~~~~~my color is ${this.color}`)
+        const opponentColor = this.color === 'White' ? 'Black' : 'White';
+        
+        backRowSquares.forEach(square => {
+            const pieceElement = document.createElement('img');
+            pieceElement.src = `images/Pawn${opponentColor}Front.svg`;
+            pieceElement.alt = `Pawn${opponentColor}Front`;
+            pieceElement.classList.add('game-piece');
+            
+            // Remove any existing piece in the square
+            const existingPiece = square.querySelector('.game-piece');
+            if (existingPiece) {
+                square.removeChild(existingPiece);
+            }
+            
+            square.appendChild(pieceElement);
+        });
+
+        console.log(`Opponent setup complete. Back row filled with ${opponentColor} pawns.`);
     }
 
     submitUsername(params){
@@ -476,6 +507,7 @@ class UIManager {
         this.setState('boardState');
         console.log(data.board);
         this.board = data.board;
+        this.color = data.board.color === 0 ? 'White' : 'Black';
         this.opponentName = this.board.opponentName;
         this.updateBoardUI();
         this.setupPieceMovement();

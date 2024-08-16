@@ -89,4 +89,9 @@ document.addEventListener('DOMContentLoaded', function() {
     // let myBoardStateControllerObject = new BoardStateControllerObject(myWebSocketManager);
     myWebSocketManager.addTypeListener('board-state', (data)=>{myUIManager.updateBoardState(data)});
     myWebSocketManager.addTypeListener('opponent-disconnected', (data) => { myUIManager.opponentDisconnected(data) });
+    myWebSocketManager.addTypeListener('setup-error', (data) => { myUIManager.setupError(data) });
+    myWebSocketManager.addTypeListener('opponent-setup-complete', (data) => { myUIManager.opponentSetupComplete(data) });
+
+    
+
 });
