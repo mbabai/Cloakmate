@@ -12,6 +12,8 @@ class UIManager {
         this.currentActions = [];
         this.draggedPiece = null;
         this.originalParent = null;
+        this.playerTime=0;
+        this.opponentTime=0;
         this.offsetX = 0;
         this.offsetY = 0;
         this.states = {
@@ -394,7 +396,7 @@ class UIManager {
         console.log(piecePositions);
         // Route message with type "ready" and the piece positions
         this.webSocketManager.routeMessage({
-            type: 'ready',
+            type: 'submit-setup',
             piecePositions: piecePositions
         });
     }
@@ -617,35 +619,50 @@ class UIManager {
         });
     }
 
-
     startClockTick() {
         this.stopClockTick('both');
         
-        const tickClock = (clockElement, colorIndex) => {
-            return setInterval(() => {
-                this.board.clocks[colorIndex] -= 100; // Decrease by 100ms (0.1 seconds)
-                if (this.board.clocks[colorIndex] <= 0) {
-                    this.stopClockTick(colorIndex === this.board.color ? 'player' : 'opponent');
-                    this.board.clocks[colorIndex] = 0;
+        const updateClock = (clockElement, isPlayer) => {
+            const startTime = performance.now();
+            const initialTime = isPlayer ? this.playerTime : this.opponentTime;
+            
+            const tick = (currentTime) => {
+                const elapsedTime = currentTime - startTime;
+                const totalTime = initialTime + elapsedTime;
+                
+                if (isPlayer) {
+                    this.playerTime = totalTime;
+                } else {
+                    this.opponentTime = totalTime;
                 }
-                clockElement.textContent = this.formatTime(Math.max(0, this.board.clocks[colorIndex]));
-            }, 100); // Update every 100ms for smoother display
+                
+                const remainingTime = Math.max(0, this.board.clocks[isPlayer ? this.board.color : 1 - this.board.color] - totalTime);
+                clockElement.textContent = this.formatTime(remainingTime);
+                
+                if (remainingTime > 0) {
+                    this[isPlayer ? 'playerAnimationId' : 'opponentAnimationId'] = requestAnimationFrame(tick);
+                } else {
+                    this.stopClockTick(isPlayer ? 'player' : 'opponent');
+                }
+            };
+            
+            return requestAnimationFrame(tick);
         };
 
         const playerClockElement = document.getElementById('player-clock-time');
         const opponentClockElement = document.getElementById('opponent-clock-time');
 
         if (this.board.phase === "setup") {
-            this.playerTimerId = tickClock(playerClockElement, this.board.color);
-            this.opponentTimerId = tickClock(opponentClockElement, 1 - this.board.color);
+            this.playerAnimationId = updateClock(playerClockElement, true);
+            this.opponentAnimationId = updateClock(opponentClockElement, false);
             playerClockElement.classList.add('clock-highlight');
             opponentClockElement.classList.add('clock-highlight');
         } else if (this.board.myTurn) {
-            this.playerTimerId = tickClock(playerClockElement, this.board.color);
+            this.playerAnimationId = updateClock(playerClockElement, true);
             playerClockElement.classList.add('clock-highlight');
             opponentClockElement.classList.remove('clock-highlight');
         } else {
-            this.opponentTimerId = tickClock(opponentClockElement, 1 - this.board.color);
+            this.opponentAnimationId = updateClock(opponentClockElement, false);
             playerClockElement.classList.remove('clock-highlight');
             opponentClockElement.classList.add('clock-highlight');
         }
@@ -656,13 +673,13 @@ class UIManager {
         const opponentClockElement = document.getElementById('opponent-clock-time');
 
         if (clockToStop === 'player' || clockToStop === 'both') {
-            clearInterval(this.playerTimerId);
-            this.playerTimerId = null;
+            cancelAnimationFrame(this.playerAnimationId);
+            this.playerAnimationId = null;
             playerClockElement.classList.remove('clock-highlight');
         }
         if (clockToStop === 'opponent' || clockToStop === 'both') {
-            clearInterval(this.opponentTimerId);
-            this.opponentTimerId = null;
+            cancelAnimationFrame(this.opponentAnimationId);
+            this.opponentAnimationId = null;
             opponentClockElement.classList.remove('clock-highlight');
         }
     }
@@ -685,6 +702,9 @@ class UIManager {
         playerClockElement.classList.add(`${playerColor}-clock`);
         opponentClockElement.classList.add(`${opponentColor}-clock`);
 
+        this.playerTime = 0;
+        this.opponentTime = 0;
+
         playerClockElement.textContent = this.formatTime(this.board.clocks[this.board.color]);
         opponentClockElement.textContent = this.formatTime(this.board.clocks[1 - this.board.color]);
 
@@ -694,8 +714,10 @@ class UIManager {
     resetClocks() {
         const playerClockElement = document.getElementById('player-clock-time');
         const opponentClockElement = document.getElementById('opponent-clock-time');
-        playerClockElement.textContent = this.formatTime(0);
-        opponentClockElement.textContent = this.formatTime(0);
+        this.playerTime = 0;
+        this.opponentTime = 0;
+        playerClockElement.textContent = this.formatTime(this.board.clocks[this.board.color]);
+        opponentClockElement.textContent = this.formatTime(this.board.clocks[1 - this.board.color]);
     }
 
     formatTime(milliseconds) {
