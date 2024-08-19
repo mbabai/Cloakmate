@@ -225,11 +225,19 @@ class UIManager {
                 const moveAction = `move-${originalLocation}-to-${targetLocation}`;
                 
                 if (this.currentActions.includes(moveAction)) {
-                    if (this.currentActions.includes('swap') && target.classList.contains('game-piece')) {
-                        let targetPiece = target;
-                        target = targetPiece.parentElement;
-                        this.originalParent.appendChild(targetPiece);
-                        target.appendChild(this.draggedPiece);
+                    if (this.currentActions.includes('swap') && (target.classList.contains('game-piece') || (target.classList.contains('cell') && target.querySelector('.game-piece')))) {
+                        let targetPiece = target.classList.contains('game-piece') ? target : target.querySelector('.game-piece');
+                        let targetPieceColor = targetPiece.src.includes('White') ? 'White' : 'Black';
+                        let draggedPieceColor = this.draggedPiece.src.includes('White') ? 'White' : 'Black';
+                        
+                        if (targetPieceColor === draggedPieceColor) {
+                            target = targetPiece.parentElement;
+                            this.originalParent.appendChild(targetPiece);
+                            target.appendChild(this.draggedPiece);
+                        } else {
+                            // If pieces are of different colors, don't swap
+                            this.originalParent.appendChild(this.draggedPiece);
+                        }
                     } else if (target.classList.contains('game-piece')) {
                         //don't append to another piece
                         this.originalParent.appendChild(this.draggedPiece);
