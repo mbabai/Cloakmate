@@ -201,10 +201,6 @@ class UIManager {
                 document.addEventListener('mousemove', this.movePiece.bind(this));
                 document.addEventListener('mouseup', this.releasePiece.bind(this));
 
-                // if (this.currentActions.includes('legal-board-move')) {
-                //     this.startLocation = this.getLocation(this.originalParent);
-                //     console.log('Start location:', this.startLocation);
-                // }
             }
         }
     }
@@ -223,8 +219,7 @@ class UIManager {
                 // Make the dragged piece visible again
                 this.draggedPiece.style.display = 'block';
 
-                const currentHoverLocation = this.getLocation(target);
-                // console.log('Start location:', this.startLocation, 'Current hover location:', currentHoverLocation);
+                console.log('Start location:', this.originalParent.id, 'Current hover location:', target.id );
             }
         }
     }
