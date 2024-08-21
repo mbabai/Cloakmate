@@ -113,7 +113,7 @@ class UIManager {
             document.querySelectorAll('.cell, .on-deck-cell, .inventory-slot').forEach(element => {
                 const classesToRemove = Array.from(element.classList).filter(className => className.startsWith('highlight'));
                 element.classList.remove(...classesToRemove);
-        });
+            });
         });
         //show elements that are in the current state
         this.currentState.forEach(state => {
@@ -122,7 +122,6 @@ class UIManager {
                 if(visibbleElement){
                     visibbleElement.style.display = 'block';
                 } else {
-                    console.log(`${indicatorString} for highlighting`);
                     // Apply appropriate highlight CSS for states containing "highlight"
                     if (indicatorString.includes('highlight')) {
                         const [elementClass, highlightType] = indicatorString.split('-highlight-');
@@ -216,17 +215,23 @@ class UIManager {
                 // Temporarily hide the dragged piece to see what's behind it
                 this.draggedPiece.style.display = 'none';
                 let target = document.elementFromPoint(e.clientX, e.clientY);
+                if (target.classList.contains('game-piece')) {
+                    let targetPieceColor = target.src.includes('White') ? 'White' : 'Black';
+                    let draggedPieceColor = this.draggedPiece.src.includes('White') ? 'White' : 'Black';
+                    if (targetPieceColor !== draggedPieceColor) {
+                        target = target.parentElement;
+                    }
+                }
                 // Make the dragged piece visible again
                 this.draggedPiece.style.display = 'block';
 
-                console.log('Start location:', this.originalParent.id, 'Current hover location:', target.id );
+                // console.log(this.getLegalMovePieces(this.originalParent.id,target.id));
             }
         }
     }
 
     releasePiece(e) {
         if (this.draggedPiece) {
-            console.log("dropped the piece!!!");
 
             // Temporarily hide the dragged piece to see what's behind it
             this.draggedPiece.style.display = 'none';
@@ -287,7 +292,49 @@ class UIManager {
             this.postMoveState();
         }
     }
+    getLegalMovePieces(start,target){
+        const possiblePieces = [];
+        const [startCol, startRow] = start.split('-');
+        const [endCol, endRow] = target.split('-');
 
+        // Convert letter coordinates to numbers (A=0, B=1, etc.)
+        const startX = startCol.charCodeAt(0) - 'A'.charCodeAt(0);
+        const endX = endCol.charCodeAt(0) - 'A'.charCodeAt(0);
+        
+        // Convert string numbers to integers
+        const startY = parseInt(startRow) - 1;
+        const endY = parseInt(endRow) - 1;
+
+        // Calculate differences
+        const dx = Math.abs(endX - startX);
+        const dy = Math.abs(endY - startY);
+
+        if(dx == 0 && dy == 0){
+            return possiblePieces;
+        }
+
+        // King: moves one square in any direction
+        if (dx <= 1 && dy <= 1) {
+            possiblePieces.push('King');
+        }
+
+        // Knight: moves in an L-shape
+        if ((dx === 1 && dy === 2) || (dx === 2 && dy === 1)) {
+            possiblePieces.push('Knight');
+        }
+
+        // Bishop: moves diagonally (max 3 squares)
+        if (dx === dy && dx <= 3) {
+            possiblePieces.push('Bishop');
+        }
+
+        // Rook: moves horizontally or vertically (max 3 squares)
+        if ((dx === 0 || dy === 0) && Math.max(dx, dy) <= 3) {
+            possiblePieces.push('Rook');
+        }
+
+        return possiblePieces;
+    }
     getLocation(element) {
         if (element.classList.contains('cell')) {
             return 'board';
