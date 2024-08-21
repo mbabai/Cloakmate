@@ -888,6 +888,11 @@ class Game {
     }
     completePlayerSetup(playerName){
         this.playersSetupComplete[this.players.indexOf(playerName)] = true
+        if (this.isSetupComplete()){
+            this.board.phase = "play"
+            this.board.playerTurn = colors.WHITE
+            this.playersTimeAvailable = [this.length*60*1000+500,this.length*60*1000+500] // Setup time, plus half a second to account for lag time.
+        }
     }
     isSetupComplete(){
         return this.playersSetupComplete[0] == true && this.playersSetupComplete[1] == true

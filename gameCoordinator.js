@@ -73,7 +73,17 @@ class GameCoordinator {
         } else {
             console.log("Setup completed for", player.username);
             const otherPlayer = this.users.find(u => u.username !== player.username);
-            this.server.routeMessage(otherPlayer.websocket, { type: "opponent-setup-complete", message: "Your opponent has completed their setup." });
+            
+            if (this.game.playersSetupComplete[this.game.getPlayerColorIndex(otherPlayer.username)]) { //the other player has completed their setup
+                console.log("Both players have completed their setup")
+                const playerBoardState = this.game.getColorState(this.game.getPlayerColorIndex(player.username));
+                const otherPlayerBoardState = this.game.getColorState(this.game.getPlayerColorIndex(otherPlayer.username));
+                
+                this.server.routeMessage(player.websocket, { type: "both-setup-complete", board: playerBoardState });
+                this.server.routeMessage(otherPlayer.websocket, { type: "both-setup-complete", board: otherPlayerBoardState });
+            } else {
+                this.server.routeMessage(otherPlayer.websocket, { type: "opponent-setup-complete", message: "Your opponent has completed their setup." });
+            }
         }
     }
 

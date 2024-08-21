@@ -91,6 +91,8 @@ document.addEventListener('DOMContentLoaded', function() {
     myWebSocketManager.addTypeListener('opponent-disconnected', (data) => { myUIManager.opponentDisconnected(data) });
     myWebSocketManager.addTypeListener('setup-error', (data) => { myUIManager.setupError(data) });
     myWebSocketManager.addTypeListener('opponent-setup-complete', (data) => { myUIManager.opponentSetupComplete(data) });
+    myWebSocketManager.addTypeListener('both-setup-complete', (data) => { myUIManager.bothSetupComplete(data) });
+
 
     
 

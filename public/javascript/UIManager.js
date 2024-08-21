@@ -56,6 +56,14 @@ class UIManager {
                     , 'move-board-to-board', 'move-stash-to-board', 'move-on-deck-to-board'
                     , 'move-on-deck-to-stash', 'move-stash-to-stash', 'move-board-to-stash']
             },
+            otherPlayerTurn:{
+                visible: [],
+                actions: []
+            },
+            move:{
+                visible: [],
+                actions: ['legal-board-move','select-board-piece', 'move-board-to-board']
+            },
             bomb:{
                 visible: ['bomb-button'],
                 actions: ['bomb']
@@ -192,6 +200,11 @@ class UIManager {
 
                 document.addEventListener('mousemove', this.movePiece.bind(this));
                 document.addEventListener('mouseup', this.releasePiece.bind(this));
+
+                if (this.currentActions.includes('legal-board-move')) {
+                    this.startLocation = this.getLocation(this.originalParent);
+                    console.log('Start location:', this.startLocation);
+                }
             }
         }
     }
@@ -202,11 +215,24 @@ class UIManager {
             const newTop = e.clientY;
             this.draggedPiece.style.left = `${newLeft}px`;
             this.draggedPiece.style.top = `${newTop}px`;
+
+            if (this.currentActions.includes('legal-board-move')) {
+                // Temporarily hide the dragged piece to see what's behind it
+                this.draggedPiece.style.display = 'none';
+                let target = document.elementFromPoint(e.clientX, e.clientY);
+                // Make the dragged piece visible again
+                this.draggedPiece.style.display = 'block';
+
+                const currentHoverLocation = this.getLocation(target);
+                console.log('Start location:', this.startLocation, 'Current hover location:', currentHoverLocation);
+            }
         }
     }
 
     releasePiece(e) {
         if (this.draggedPiece) {
+            console.log("dropped the piece!!!");
+
             // Temporarily hide the dragged piece to see what's behind it
             this.draggedPiece.style.display = 'none';
             
@@ -262,6 +288,7 @@ class UIManager {
             this.draggedPiece.classList.remove('selected');
             this.draggedPiece = null;
             this.originalParent = null;
+            this.startLocation = null;
             this.postMoveState();
         }
     }
@@ -440,6 +467,10 @@ class UIManager {
         console.log(`Opponent setup complete. Back row filled with ${opponentColor} pawns.`);
     }
 
+    bothSetupComplete(data){
+        this.updateBoardState(data);
+    }
+
     submitUsername(params){
         const username = document.getElementById('username-input').value.trim();
         console.log(`Submitting username: ${username}`);
@@ -517,6 +548,17 @@ class UIManager {
         this.board = data.board;
         this.color = data.board.color === 0 ? 'White' : 'Black';
         this.opponentName = this.board.opponentName;
+        if(this.board.currentTurn !== this.color){
+            this.setState('otherPlayerTurn');
+        } else {
+            // Add every state in the legalActions property of the board
+            if (this.board.legalActions && Array.isArray(this.board.legalActions)) {
+                this.board.legalActions.forEach(action => {
+                    this.addState(action);
+                });
+            }
+            this.updateUI();
+        }
         this.updateBoardUI();
         this.setupPieceMovement();
     }
@@ -524,6 +566,8 @@ class UIManager {
         // Reset game selection to default empty value
         document.getElementById('game-selection').value = "";
         this.stopClockTick('both');
+    }
+    clearBoard(){
         this.resetClocks();
         this.board = null;
         this.opponentName = null;
@@ -590,7 +634,7 @@ class UIManager {
             const onDeckElement = document.querySelector('.on-deck-cell');
             onDeckElement.innerHTML = '';
             const color = this.board.onDeck.color === this.board.color ? 'White' : 'Black';
-            onDeckElement.appendChild(createPieceImage(`${color}${this.board.onDeck.type}`));
+            onDeckElement.appendChild(createPieceImage(this.board.onDeck)); 
         }
 
         // Add pieces to the board
