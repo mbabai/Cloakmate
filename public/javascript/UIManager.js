@@ -201,10 +201,10 @@ class UIManager {
                 document.addEventListener('mousemove', this.movePiece.bind(this));
                 document.addEventListener('mouseup', this.releasePiece.bind(this));
 
-                if (this.currentActions.includes('legal-board-move')) {
-                    this.startLocation = this.getLocation(this.originalParent);
-                    console.log('Start location:', this.startLocation);
-                }
+                // if (this.currentActions.includes('legal-board-move')) {
+                //     this.startLocation = this.getLocation(this.originalParent);
+                //     console.log('Start location:', this.startLocation);
+                // }
             }
         }
     }
@@ -224,7 +224,7 @@ class UIManager {
                 this.draggedPiece.style.display = 'block';
 
                 const currentHoverLocation = this.getLocation(target);
-                console.log('Start location:', this.startLocation, 'Current hover location:', currentHoverLocation);
+                // console.log('Start location:', this.startLocation, 'Current hover location:', currentHoverLocation);
             }
         }
     }
@@ -306,7 +306,9 @@ class UIManager {
         return 'unknown';
     }
     postMoveState(){
-        this.checkReadyState();
+        if(this.currentState.includes('setup')){
+            this.checkReadyState();
+        }
         this.updateUI();
     }
     checkReadyState(){
@@ -548,7 +550,7 @@ class UIManager {
         this.board = data.board;
         this.color = data.board.color === 0 ? 'White' : 'Black';
         this.opponentName = this.board.opponentName;
-        if(this.board.currentTurn !== this.color){
+        if(!this.board.myTurn){
             this.setState('otherPlayerTurn');
         } else {
             // Add every state in the legalActions property of the board
@@ -566,11 +568,13 @@ class UIManager {
         // Reset game selection to default empty value
         document.getElementById('game-selection').value = "";
         this.stopClockTick('both');
+        this.clearBoard();
     }
     clearBoard(){
         this.resetClocks();
         this.board = null;
         this.opponentName = null;
+        this.removeAllPieces()
     }
 
     updateBoardUI() {
@@ -580,7 +584,6 @@ class UIManager {
         this.setBoardSpaceLabels()
         this.setBoardPieces();
         this.updateLegalGameActions();
-        // Add more UI update methods as needed
     }
     updateLegalGameActions(){
         this.board.legalActions.forEach(action => {
@@ -588,18 +591,14 @@ class UIManager {
         });
         this.updateUI();
     }
-    setBoardPieces(){
-        // Clear the board of any existing pieces, except for crown images
-        const cells = document.querySelectorAll('.board .cell');
-        ////////////////////////////////////
-        cells.forEach(cell => {
-            const pieceImage = cell.querySelector('.piece-image');
-            if (pieceImage) {
-                cell.removeChild(pieceImage);
-            }
+    removeAllPieces(){
+        const pieces = document.querySelectorAll('.game-piece');
+        pieces.forEach(piece => {
+            piece.remove();
         });
-
-        // Function to create and append piece image
+    }
+    setBoardPieces(){
+        this.removeAllPieces();
         const createPieceImage = (piece) => {
             const img = document.createElement('img');
             img.src = `images/Pawn${piece}.svg`;
@@ -611,7 +610,6 @@ class UIManager {
         // Add pieces to the inventory
         const inventorySlots = document.querySelectorAll('.inventory-slot');
         let slotIndex = 0;
-
         this.board.stash.forEach(pieceObj => {
             for (let i = 0; i < pieceObj.count; i++) {
                 if (slotIndex < inventorySlots.length) {
@@ -641,7 +639,9 @@ class UIManager {
         this.board.board.forEach((row, y) => {
             row.forEach((piece, x) => {
                 if (piece) {
-                    const cell = document.getElementById(`${String.fromCharCode(65 + x)}${5 - y}`);
+                    const letter = String.fromCharCode(65 + x); // Flip x-coordinate
+                    const number = y + 1; // Flip y-coordinate
+                    const cell = document.getElementById(`${letter}-${number}`);
                     if (cell) {
                         const pieceImage = createPieceImage(piece);
                         cell.appendChild(pieceImage);
