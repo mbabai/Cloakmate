@@ -137,8 +137,6 @@ class UIManager {
                 } 
             });
         });
-
-
         //remove actions that are in the current state
         this.currentActions = [];
         //add actions that are in the current state
@@ -149,8 +147,6 @@ class UIManager {
         });
         console.log(this)
     }
-
-
     setupPieceMovement() {
         // Remove all existing event listeners from game pieces
         const gamePieces = document.querySelectorAll('.game-piece');
@@ -177,7 +173,6 @@ class UIManager {
             } else if (parentElement.classList.contains('inventory-slot') && this.currentActions.includes('select-stash-piece')) {
                 canSelectPiece = true;
             }
-
             if (canSelectPiece) {
                 this.draggedPiece = e.target;
                 this.originalParent = this.draggedPiece.parentElement;
@@ -197,13 +192,12 @@ class UIManager {
                 this.draggedPiece.style.zIndex = '1000';
                 this.movePiece(e);
 
-                document.addEventListener('mousemove', this.movePiece.bind(this));
+                document.addEventListener('mousemove', this.movePiece.bind(this), {passive: true});
                 document.addEventListener('mouseup', this.releasePiece.bind(this));
 
             }
         }
     }
-
     movePiece(e) {
         if (this.draggedPiece) {
             const newLeft = e.clientX;
@@ -224,74 +218,92 @@ class UIManager {
                 }
                 // Make the dragged piece visible again
                 this.draggedPiece.style.display = 'block';
-
-                // console.log(this.getLegalMovePieces(this.originalParent.id,target.id));
+                requestAnimationFrame(function() {
+                    console.log(this.getLegalMovePieces(this.originalParent.id, target.id));
+                }.bind(this));
             }
         }
     }
-
     releasePiece(e) {
-        if (this.draggedPiece) {
+        if (!this.draggedPiece) return;
 
-            // Temporarily hide the dragged piece to see what's behind it
-            this.draggedPiece.style.display = 'none';
-            
-            let target = document.elementFromPoint(e.clientX, e.clientY);
-            // Make the dragged piece visible again
-            this.draggedPiece.style.display = 'block';
+        const target = this.getTargetElement(e);
+        const originalLocation = this.getLocationType(this.originalParent);
+        const targetLocationType = this.getLocationType(target);
 
-            const originalLocation = this.getLocation(this.originalParent);
-            const targetLocation = this.getLocation(target);
-
-            if (target && (target.classList.contains('cell') || 
-                target.classList.contains('on-deck-cell')    || 
-                target.classList.contains('inventory-slot')  || 
-                target.classList.contains('game-piece'))) {
-                
-                const moveAction = `move-${originalLocation}-to-${targetLocation}`;
-                
-                if (this.currentActions.includes(moveAction)) {
-                    if (this.currentActions.includes('swap') && (target.classList.contains('game-piece') || (target.classList.contains('cell') && target.querySelector('.game-piece')))) {
-                        let targetPiece = target.classList.contains('game-piece') ? target : target.querySelector('.game-piece');
-                        let targetPieceColor = targetPiece.src.includes('White') ? 'White' : 'Black';
-                        let draggedPieceColor = this.draggedPiece.src.includes('White') ? 'White' : 'Black';
-                        
-                        if (targetPieceColor === draggedPieceColor) {
-                            target = targetPiece.parentElement;
-                            this.originalParent.appendChild(targetPiece);
-                            target.appendChild(this.draggedPiece);
-                        } else {
-                            // If pieces are of different colors, don't swap
-                            this.originalParent.appendChild(this.draggedPiece);
-                        }
-                    } else if (target.classList.contains('game-piece')) {
-                        //don't append to another piece
-                        this.originalParent.appendChild(this.draggedPiece);
-                    } else {
-                        target.appendChild(this.draggedPiece);
-                    }
-                    this.resetPieceStyle();
-                } else {
-                    // Return to original parent if move is not allowed
-                    this.originalParent.appendChild(this.draggedPiece);
-                    this.resetPieceStyle();
-                }
+        if (this.isValidTarget(target)) {
+            const moveAction = `move-${originalLocation}-to-${targetLocationType}`;
+            if (this.currentActions.includes(moveAction)) {
+                this.handleValidMove(target);
             } else {
-                // Return to original parent
-                this.originalParent.appendChild(this.draggedPiece);
-                this.resetPieceStyle();
+                this.returnToOriginalParent();
             }
+        } else {
+            this.returnToOriginalParent();
+        }
 
-            // Clean up
-            document.removeEventListener('mousemove', this.movePiece);
-            document.removeEventListener('mouseup', this.releasePiece);
-            this.draggedPiece.classList.remove('selected');
-            this.draggedPiece = null;
-            this.originalParent = null;
-            this.startLocation = null;
-            this.postMoveState();
+        this.cleanupAfterDrag();
+    }
+    getTargetElement(e) {
+        this.draggedPiece.style.display = 'none';
+        const target = document.elementFromPoint(e.clientX, e.clientY);
+        this.draggedPiece.style.display = 'block';
+        return target;
+    }
+    isValidTarget(target) {
+        return target && (
+            target.classList.contains('cell') || 
+            target.classList.contains('on-deck-cell') || 
+            target.classList.contains('inventory-slot') || 
+            target.classList.contains('game-piece')
+        );
+    }
+    handleValidMove(target) {
+        if (this.canSwap(target)) {
+            this.swapPieces(target);
+        } else if (target.classList.contains('game-piece')) {
+            this.returnToOriginalParent();
+        } else {
+            target.appendChild(this.draggedPiece);
+        }
+        this.resetPieceStyle();
+    }
+
+    canSwap(target) {
+        return this.currentActions.includes('swap') && 
+               (target.classList.contains('game-piece') || 
+               (target.classList.contains('cell') && target.querySelector('.game-piece')));
+    }
+
+    swapPieces(target) {
+        let targetPiece = target.classList.contains('game-piece') ? target : target.querySelector('.game-piece');
+        let targetPieceColor = targetPiece.src.includes('White') ? 'White' : 'Black';
+        let draggedPieceColor = this.draggedPiece.src.includes('White') ? 'White' : 'Black';
+        
+        if (targetPieceColor === draggedPieceColor) {
+            target = targetPiece.parentElement;
+            this.originalParent.appendChild(targetPiece);
+            target.appendChild(this.draggedPiece);
+        } else {
+            this.returnToOriginalParent();
         }
     }
+
+    returnToOriginalParent() {
+        this.originalParent.appendChild(this.draggedPiece);
+        this.resetPieceStyle();
+    }
+
+    cleanupAfterDrag() {
+        document.removeEventListener('mousemove', this.movePiece);
+        document.removeEventListener('mouseup', this.releasePiece);
+        this.draggedPiece.classList.remove('selected');
+        this.draggedPiece = null;
+        this.originalParent = null;
+        this.startLocation = null;
+        this.postMoveState();
+    }
+    
     getLegalMovePieces(start,target){
         const possiblePieces = [];
         const [startCol, startRow] = start.split('-');
@@ -335,7 +347,7 @@ class UIManager {
 
         return possiblePieces;
     }
-    getLocation(element) {
+    getLocationType(element) {
         if (element.classList.contains('cell')) {
             return 'board';
         } else if (element.classList.contains('on-deck-cell')) {
@@ -343,7 +355,7 @@ class UIManager {
         } else if (element.classList.contains('inventory-slot')) {
             return 'stash';
         } else if (element.classList.contains('game-piece')) {
-            return this.getLocation(element.parentElement);
+            return this.getLocationType(element.parentElement);
         }
         return 'unknown';
     }
@@ -567,12 +579,10 @@ class UIManager {
         this.endGame();
         alert(`${data.opponentName} has declined your invite.`);
     }
-
     acceptInvite(opponentName) {
         console.log(`Accepting invite from ${opponentName}`);
         this.webSocketManager.routeMessage({type: 'accept-invite', opponentName: opponentName});
     }
-
     declineInvite(opponentName) {
         console.log(`Declining invite from ${opponentName}`);
         this.webSocketManager.routeMessage({type: 'decline-invite', opponentName: opponentName});
@@ -692,7 +702,6 @@ class UIManager {
             });
         });
     }
-
     setBoardSpaceLabels() {
         const cells = document.querySelectorAll('.board .cell');
         const isWhite = this.board.color === 0;
@@ -744,7 +753,6 @@ class UIManager {
             cell.style.position = 'relative';
         });
     }
-
     startClockTick() {
         this.stopClockTick('both');
         
@@ -793,7 +801,6 @@ class UIManager {
             opponentClockElement.classList.add('clock-highlight');
         }
     }
-
     stopClockTick(clockToStop) {
         const playerClockElement = document.getElementById('player-clock-time');
         const opponentClockElement = document.getElementById('opponent-clock-time');
@@ -809,12 +816,10 @@ class UIManager {
             opponentClockElement.classList.remove('clock-highlight');
         }
     }
-
     updateNames() {
         document.getElementById('player-name').textContent = this.username;
         document.getElementById('opponent-name').textContent = this.opponentName;
     }
-
     updateClocks() {
         const playerClockElement = document.getElementById('player-clock-time');
         const opponentClockElement = document.getElementById('opponent-clock-time');
@@ -836,7 +841,6 @@ class UIManager {
 
         this.startClockTick(); // Start the clocks after updating
     }
-
     resetClocks() {
         const playerClockElement = document.getElementById('player-clock-time');
         const opponentClockElement = document.getElementById('opponent-clock-time');
@@ -845,7 +849,6 @@ class UIManager {
         playerClockElement.textContent = this.formatTime(this.board.clocks[this.board.color]);
         opponentClockElement.textContent = this.formatTime(this.board.clocks[1 - this.board.color]);
     }
-
     formatTime(milliseconds) {
         const seconds = Math.floor(milliseconds / 1000);
         const minutes = Math.floor(seconds / 60);
