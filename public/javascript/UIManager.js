@@ -166,6 +166,14 @@ class UIManager {
             const parentElement = e.target.parentElement;
             let canSelectPiece = false;
 
+            // Check if the piece is the correct color
+            const pieceColor = e.target.src.includes('White') ? 'White' : 'Black';
+            const isPlayerPiece = (this.board.color === 0 && pieceColor === 'White') || (this.board.color === 1 && pieceColor === 'Black');
+
+            if (!isPlayerPiece) {
+                return; // Don't allow selection of opposite color pieces
+            }
+
             if (parentElement.classList.contains('cell') && this.currentActions.includes('select-board-piece')) {
                 canSelectPiece = true;
             } else if (parentElement.classList.contains('on-deck-cell') && this.currentActions.includes('select-on-deck-piece')) {
@@ -194,7 +202,6 @@ class UIManager {
 
                 document.addEventListener('mousemove', this.movePiece.bind(this), {passive: true});
                 document.addEventListener('mouseup', this.releasePiece.bind(this));
-
             }
         }
     }
@@ -206,23 +213,104 @@ class UIManager {
             this.draggedPiece.style.top = `${newTop}px`;
 
             if (this.currentActions.includes('legal-board-move')) {
-                // Temporarily hide the dragged piece to see what's behind it
-                this.draggedPiece.style.display = 'none';
-                let target = document.elementFromPoint(e.clientX, e.clientY);
-                if (target.classList.contains('game-piece')) {
-                    let targetPieceColor = target.src.includes('White') ? 'White' : 'Black';
-                    let draggedPieceColor = this.draggedPiece.src.includes('White') ? 'White' : 'Black';
-                    if (targetPieceColor !== draggedPieceColor) {
-                        target = target.parentElement;
-                    }
+                let target = this.getTargetElement(e);
+                if (target && target.id) {
+                    const startCellId = this.originalParent.id;
+                    const targetCellId = target.id;
+
+                    const legalMovePieces = [];
+                    ['King', 'Knight', 'Bishop', 'Rook'].forEach(pieceType => {
+                        if (this.isLegalMove(startCellId, targetCellId, pieceType)) {
+                            legalMovePieces.push(pieceType);
+                        }
+                    });
+                    requestAnimationFrame(() => {
+                        console.log(`${legalMovePieces}`);
+                    });
                 }
-                // Make the dragged piece visible again
-                this.draggedPiece.style.display = 'block';
-                requestAnimationFrame(function() {
-                    console.log(this.getLegalMovePieces(this.originalParent.id, target.id));
-                }.bind(this));
             }
         }
+    }
+
+    isLegalMove(startCellId, targetCellId, pieceType) {
+        const startCoords = this.cellIdToCoords(startCellId);
+        const targetCoords = this.cellIdToCoords(targetCellId);
+        // Check if target is the same as start
+        if (startCellId === targetCellId) {
+            return false;
+        }
+        // Check if target has a friendly piece
+        const targetPiece = this.board.board[targetCoords.y][targetCoords.x];
+        if (targetPiece) { // cannot move onto your own pieces.
+            const targetPieceColor = (targetPiece.includes('White') ? 'White' : 'Black');
+            if (targetPiece && targetPieceColor === this.color) {
+                return false;
+            }
+        }
+        // Check for piece-specific movement rules
+        switch (pieceType) {
+            case 'Rook':
+                if (startCoords.x !== targetCoords.x && startCoords.y !== targetCoords.y) {
+                    return false; // Rook can only move in straight lines
+                }
+                return this.isPathClear(startCoords, targetCoords);
+            case 'Bishop':
+                if (Math.abs(targetCoords.x - startCoords.x) !== Math.abs(targetCoords.y - startCoords.y)) {
+                    return false; // Bishop can only move diagonally
+                }
+                return this.isPathClear(startCoords, targetCoords);
+            case 'King':
+                // King can move one square in any direction
+                return Math.abs(targetCoords.x - startCoords.x) <= 1 && Math.abs(targetCoords.y - startCoords.y) <= 1;
+            case 'Knight':
+                // Knight moves in an L-shape
+                const dx = Math.abs(targetCoords.x - startCoords.x);
+                const dy = Math.abs(targetCoords.y - startCoords.y);
+                return (dx === 1 && dy === 2) || (dx === 2 && dy === 1);
+            default:
+                return false;
+        }
+    }
+
+    getPieceType(pieceElement) {
+        const src = pieceElement.src;
+        if (src.includes('Rook')) return 'Rook';
+        if (src.includes('Bishop')) return 'Bishop';
+        if (src.includes('King')) return 'King';
+        if (src.includes('Knight')) return 'Knight';
+        return null;
+    }
+
+    cellIdToCoords(cellId) {
+        const [letter, number] = cellId.split('-');
+        const x = letter.charCodeAt(0) - 'A'.charCodeAt(0);
+        const y =  parseInt(number) - 1;
+        return { x, y };
+    }
+
+    coordsToCellId(coords) {
+        const { x, y } = coords;
+        const letter = String.fromCharCode('A'.charCodeAt(0) + x);
+        const number = y + 1;
+        return `${letter}-${number}`;
+    }
+
+    isPathClear(start, target) {
+        const dx = Math.sign(target.x - start.x);
+        const dy = Math.sign(target.y - start.y);
+
+        let x = start.x + dx;
+        let y = start.y + dy;
+
+        while (x !== target.x || y !== target.y) {
+            if (this.board.board[y][x] != null) {
+                return false;  
+            }
+            x += dx;
+            y += dy;
+        }
+
+        return true;
     }
     releasePiece(e) {
         if (!this.draggedPiece) return;
@@ -246,23 +334,27 @@ class UIManager {
     }
     getTargetElement(e) {
         this.draggedPiece.style.display = 'none';
-        const target = document.elementFromPoint(e.clientX, e.clientY);
+        let target = document.elementFromPoint(e.clientX, e.clientY);
         this.draggedPiece.style.display = 'block';
+        
+        // If the target is a game piece, get its parent (the cell)
+        if (target.classList.contains('game-piece')) {
+            target = target.parentElement;
+        }
+        
         return target;
     }
     isValidTarget(target) {
         return target && (
             target.classList.contains('cell') || 
             target.classList.contains('on-deck-cell') || 
-            target.classList.contains('inventory-slot') || 
-            target.classList.contains('game-piece')
+            target.classList.contains('inventory-slot')
         );
     }
     handleValidMove(target) {
-        if (this.canSwap(target)) {
-            this.swapPieces(target);
-        } else if (target.classList.contains('game-piece')) {
-            this.returnToOriginalParent();
+        const targetPiece = target.querySelector('.game-piece');
+        if (this.canSwap(target) && targetPiece) {
+            this.swapPieces(target, targetPiece);
         } else {
             target.appendChild(this.draggedPiece);
         }
@@ -271,17 +363,14 @@ class UIManager {
 
     canSwap(target) {
         return this.currentActions.includes('swap') && 
-               (target.classList.contains('game-piece') || 
-               (target.classList.contains('cell') && target.querySelector('.game-piece')));
+               target.querySelector('.game-piece');
     }
 
-    swapPieces(target) {
-        let targetPiece = target.classList.contains('game-piece') ? target : target.querySelector('.game-piece');
+    swapPieces(target, targetPiece) {
         let targetPieceColor = targetPiece.src.includes('White') ? 'White' : 'Black';
         let draggedPieceColor = this.draggedPiece.src.includes('White') ? 'White' : 'Black';
         
         if (targetPieceColor === draggedPieceColor) {
-            target = targetPiece.parentElement;
             this.originalParent.appendChild(targetPiece);
             target.appendChild(this.draggedPiece);
         } else {
@@ -304,24 +393,16 @@ class UIManager {
         this.postMoveState();
     }
     
-    getLegalMovePieces(start,target){
+    getLegalMovePieces(start, target) {
         const possiblePieces = [];
-        const [startCol, startRow] = start.split('-');
-        const [endCol, endRow] = target.split('-');
-
-        // Convert letter coordinates to numbers (A=0, B=1, etc.)
-        const startX = startCol.charCodeAt(0) - 'A'.charCodeAt(0);
-        const endX = endCol.charCodeAt(0) - 'A'.charCodeAt(0);
-        
-        // Convert string numbers to integers
-        const startY = parseInt(startRow) - 1;
-        const endY = parseInt(endRow) - 1;
+        const startCoords = this.cellIdToCoords(start);
+        const endCoords = this.cellIdToCoords(target);
 
         // Calculate differences
-        const dx = Math.abs(endX - startX);
-        const dy = Math.abs(endY - startY);
+        const dx = Math.abs(endCoords.x - startCoords.x);
+        const dy = Math.abs(endCoords.y - startCoords.y);
 
-        if(dx == 0 && dy == 0){
+        if (dx == 0 && dy == 0) {
             return possiblePieces;
         }
 
@@ -649,7 +730,52 @@ class UIManager {
             piece.remove();
         });
     }
-    setBoardPieces(){
+    setBoardSpaceLabels() {
+        const cells = document.querySelectorAll('.board .cell');
+        const isWhite = this.board.color === 0;
+
+        cells.forEach((cell, index) => {
+            const row = Math.floor(index / 5);
+            const col = index % 5;
+            
+            let coords = isWhite ? { x: col, y: 4 - row } : { x: 4 - col, y: row };
+            let cellId = this.coordsToCellId(coords);
+            cell.id = cellId;
+
+            // Remove any existing cell-number or cell-letter spans
+            const existingNumberSpan = cell.querySelector('.cell-number');
+            const existingLetterSpan = cell.querySelector('.cell-letter');
+            if (existingNumberSpan) existingNumberSpan.remove();
+            if (existingLetterSpan) existingLetterSpan.remove();
+
+            // Add number label to the upper left corner of leftmost column
+            if (col === 0) { 
+                const numberSpan = document.createElement('span');
+                numberSpan.className = 'cell-number';
+                numberSpan.textContent = cellId.split('-')[1];
+                numberSpan.style.position = 'absolute';
+                numberSpan.style.top = '2px';
+                numberSpan.style.left = '2px';
+                cell.appendChild(numberSpan);
+            }
+
+            // Add letter label to the lower right corner of bottom row
+            if (row === 4) { 
+                const letterSpan = document.createElement('span');
+                letterSpan.className = 'cell-letter';
+                letterSpan.textContent = cellId.split('-')[0];
+                letterSpan.style.position = 'absolute';
+                letterSpan.style.bottom = '2px';
+                letterSpan.style.right = '2px';
+                cell.appendChild(letterSpan);
+            }
+
+            // Ensure the cell has position: relative for absolute positioning of spans
+            cell.style.position = 'relative';
+        });
+    }
+
+    setBoardPieces() {
         this.removeAllPieces();
         const createPieceImage = (piece) => {
             const img = document.createElement('img');
@@ -691,9 +817,8 @@ class UIManager {
         this.board.board.forEach((row, y) => {
             row.forEach((piece, x) => {
                 if (piece) {
-                    const letter = String.fromCharCode(65 + x); // Flip x-coordinate
-                    const number = y + 1; // Flip y-coordinate
-                    const cell = document.getElementById(`${letter}-${number}`);
+                    const cellId = this.coordsToCellId({ x, y });
+                    const cell = document.getElementById(cellId);
                     if (cell) {
                         const pieceImage = createPieceImage(piece);
                         cell.appendChild(pieceImage);
