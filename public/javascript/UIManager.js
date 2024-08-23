@@ -304,7 +304,7 @@ class UIManager {
         }
         legalMovePieces.forEach((pieceType, index) => {
             const facing = index === 0 ? 'left' : 'right';
-            const bubbleImage = document.getElementById(`${facing}-speech-bubble`);
+            const bubbleImage = document.getElementById(`${facing}-${type.toLowerCase()}-bubble`);
             bubbleImage.src = `/images/Bubble${type}${facing.charAt(0).toUpperCase() + facing.slice(1)}${pieceType}.svg`;
 
             // Position the bubble relative to the dragged piece
