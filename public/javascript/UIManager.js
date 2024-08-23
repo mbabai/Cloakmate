@@ -169,10 +169,8 @@ class UIManager {
         }
     }
     setElementHighlights(visName){
-        console.log(this.currentVisibles)
         if (visName.includes('highlight')) {
             const [elementClass, highlightType] = visName.split('-highlight-');
-            console.log(elementClass, highlightType)
             const elements = document.querySelectorAll(`.${elementClass}`);
             elements.forEach(element => {
                 if (this.hasVisible(visName)){  
