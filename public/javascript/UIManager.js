@@ -15,6 +15,7 @@ class UIManager {
         this.currentActions = [];
         this.draggedPiece = null;
         this.originalParent = null;
+        this.targetCell = null;
         this.playerTime=0;
         this.opponentTime=0;
         this.offsetX = 0;
@@ -105,7 +106,7 @@ class UIManager {
             },
             movePlaced:{
                 visible: [],
-                actions: ['select-declaration']
+                actions: ['declareMove']
             },
             moveComplete:{
                 visible: [],
@@ -202,7 +203,7 @@ class UIManager {
                 this.setElementHighlights(visName);
             }
         });        
-        console.log(this)
+        // console.log(this)
     }
     setupPieceMovement() {
         // Remove all existing event listeners from game pieces
@@ -473,6 +474,7 @@ class UIManager {
     }
     handleValidPieceDrop(target,legalMovePieces) {
         const targetPiece = target.querySelector('.game-piece');
+        this.targetCell = target;
         if (this.canSwap(target) && targetPiece) {
             this.swapPieces(target, targetPiece);
         } else {
@@ -486,21 +488,39 @@ class UIManager {
         this.resetPieceStyle();
 
     }
+    completeMove(declarationType){
+        const leftBubble = document.getElementById('left-speech-bubble');
+        leftBubble.src = `/images/BubbleSpeechLeft${declarationType}.svg`;
+        console.log(`Displaying: ${leftBubble.src}`);
+        this.setState('moveComplete');
+        this.addState('leftSpeechBubble');
+        this.updateUI();
+        // Send move information to the server
+        const targetId = this.targetCell.id;
+        const originalId = this.originalParent.id;
+        const moveData = {
+            originalId: originalId,
+            targetId: targetId,
+            declaration: declarationType
+        };
+        this.webSocketManager.routeMessage({type:'action', action:'move', data:moveData});
+        this.cleanupAfterMove()
+        this.stopClockTick('player');
+        this.startClockTick('opponent');
+    }
     handleValidMove(target,legalMovePieces) {
         this.moveSpeechBubblesToTarget(target);
         if (legalMovePieces.length === 1) {
-            this.setState('moveComplete');
-            const leftBubble = document.getElementById('left-speech-bubble');
-            leftBubble.src = `/images/BubbleSpeechLeft${legalMovePieces[0]}.svg`;
-            this.addState('leftSpeechBubble');
+            this.completeMove(legalMovePieces[0]);
         } else if (legalMovePieces.length > 1) {
             this.setState('movePlaced');
-            const leftBubble = document.getElementById('left-speech-bubble');
-            const rightBubble = document.getElementById('right-speech-bubble');
+            const leftBubble = document.getElementById('left-thought-bubble');
+            const rightBubble = document.getElementById('right-thought-bubble');
             leftBubble.src = `/images/BubbleThoughtLeft${legalMovePieces[0]}.svg`;
             rightBubble.src = `/images/BubbleThoughtRight${legalMovePieces[1]}.svg`;
             this.addState('leftThoughtBubble');
             this.addState('rightThoughtBubble');
+            this.updateUI();
         }
     }
     moveSpeechBubblesToTarget(target){
@@ -537,9 +557,12 @@ class UIManager {
         document.removeEventListener('mouseup', this.releasePiece);
         this.draggedPiece.classList.remove('selected');
         this.draggedPiece = null;
-        this.originalParent = null;
         this.startLocation = null;
         this.postMoveState();
+    }
+    cleanupAfterMove(){
+        this.targetCell = null;
+        this.originalParent = null;
     }
     getLocationType(element) {
         if (element.classList.contains('cell')) {
@@ -616,6 +639,12 @@ class UIManager {
         document.getElementById('ready-button').addEventListener('click', () => {
             this.doAction('ready');
         });
+        document.getElementById('left-thought-bubble').addEventListener('click', () => {
+            this.doAction('declareMove','left-thought-bubble')
+        });
+        document.getElementById('right-thought-bubble').addEventListener('click', () => {
+            this.doAction('declareMove','right-thought-bubble')
+        });
     }
     setupGameSelection() {
         const gameSelection = document.getElementById('game-selection');
@@ -648,6 +677,15 @@ class UIManager {
         } else {
             // console.log(`Action '${action}' is not in the current set of allowed actions.`);
         }
+    }
+    declareMove(params){
+        console.log(`Declaring: ${params}`);
+        const bubbleElement = document.getElementById(params);
+        const imageSrc = bubbleElement.src;
+        const pieceType = imageSrc.split('BubbleThought')[1].split('.')[0].replace(/Left|Right/, '');
+        console.log(`Declared Piece Type: ${pieceType}`);
+        this.legalActions = [pieceType];
+        this.completeMove(pieceType);
     }
     ready(params){
         // Stop the current player's clock
