@@ -310,7 +310,7 @@ class UIManager {
             // Position the bubble relative to the dragged piece
             const pieceRect = targetPiece.getBoundingClientRect();
             const offsetTop = 60; // Adjust this value based on your image size
-            const offsetSide = 73;
+            const offsetSide = 72.5;
             
             if (index === 0) {
                 // Left bubble: up and to the left
@@ -418,7 +418,7 @@ class UIManager {
         const targetLocationType = this.getLocationType(target);
         // Check if the target is a cell on the board
         const isBoardCell = target && target.classList.contains('cell') && target.id.match(/^[A-E]-[1-5]$/);
-        let isLegalityPassed = false;
+        let isLegalityPassed = true;
         let legalMovePieces = [];
         if (this.currentActions.includes('legal-board-move')){
             //Need to check if we have a legal move, but only if we're in the legal-board-move state
@@ -426,13 +426,11 @@ class UIManager {
                 const startCellId = this.originalParent.id;
                 const targetCellId = target.id;
                 legalMovePieces = this.getLegalMovePieceList(startCellId, targetCellId);
-                if (legalMovePieces.length > 0) {
-                    isLegalityPassed = true;
+                if (legalMovePieces.length === 0) {
+                    isLegalityPassed = false;
                 }
             }
-        } else {
-            isLegalityPassed = true;
-        }
+        } 
         if (this.isValidTarget(target)) {
             const moveAction = `move-${originalLocation}-to-${targetLocationType}`;
             if (this.currentActions.includes(moveAction) && isLegalityPassed) {
@@ -494,12 +492,15 @@ class UIManager {
             this.setState('moveComplete');
             const leftBubble = document.getElementById('left-speech-bubble');
             leftBubble.src = `/images/BubbleSpeechLeft${legalMovePieces[0]}.svg`;
+            this.addState('leftSpeechBubble');
         } else if (legalMovePieces.length > 1) {
             this.setState('movePlaced');
             const leftBubble = document.getElementById('left-speech-bubble');
             const rightBubble = document.getElementById('right-speech-bubble');
-            leftBubble.src = `/images/BubbleSpeechLeft${legalMovePieces[0]}.svg`;
-            rightBubble.src = `/images/BubbleSpeechRight${legalMovePieces[1]}.svg`;
+            leftBubble.src = `/images/BubbleThoughtLeft${legalMovePieces[0]}.svg`;
+            rightBubble.src = `/images/BubbleThoughtRight${legalMovePieces[1]}.svg`;
+            this.addState('leftThoughtBubble');
+            this.addState('rightThoughtBubble');
         }
     }
     moveSpeechBubblesToTarget(target){
@@ -580,8 +581,6 @@ class UIManager {
             this.removeState('readyable');
         }
     }
-    
-
     resetPieceStyle() {
         this.draggedPiece.style.position = 'absolute';
         this.draggedPiece.style.left = '50%';
@@ -617,7 +616,6 @@ class UIManager {
         document.getElementById('ready-button').addEventListener('click', () => {
             this.doAction('ready');
         });
-
     }
     setupGameSelection() {
         const gameSelection = document.getElementById('game-selection');
@@ -626,7 +624,6 @@ class UIManager {
             this.setState(selectedValue);
         });
     }
-
     welcome(data){
         console.log(`Welcome to the lobby: ${data.username}`);
         this.username = data.username;
@@ -639,7 +636,6 @@ class UIManager {
     usernameTaken(data) {
         alert(`${data.username} is already taken!`);
     }
-
     doAction(action,params={}){
         console.log(`Attempting action: ${action}`);
         if (this.currentActions.includes(action)) {
@@ -715,11 +711,9 @@ class UIManager {
 
         console.log(`Opponent setup complete. Back row filled with ${opponentColor} pawns.`);
     }
-
     bothSetupComplete(data){
         this.updateBoardState(data);
     }
-
     submitUsername(params){
         const username = document.getElementById('username-input').value.trim();
         console.log(`Submitting username: ${username}`);
@@ -727,7 +721,6 @@ class UIManager {
             this.webSocketManager.routeMessage({type:'submit-username', username:username});
         }
     }
-
     isValidUsername(username) {
         if (username.length > 18) {
             alert("Name must be 18 characters or fewer!");
@@ -787,7 +780,6 @@ class UIManager {
     playAI(){
         alert('Sorry, AI is not implemented yet!');
     }
-
     //Board State
     updateBoardState(data){
         this.setState('boardState');
@@ -821,7 +813,6 @@ class UIManager {
         this.opponentName = null;
         this.removeAllPieces()
     }
-
     updateBoardUI() {
         this.updateNames();
         this.updateClocks();
@@ -886,7 +877,6 @@ class UIManager {
             cell.style.position = 'relative';
         });
     }
-
     setBoardPieces() {
         this.removeAllPieces();
         const createPieceImage = (piece) => {
@@ -937,57 +927,6 @@ class UIManager {
                     }
                 }
             });
-        });
-    }
-    setBoardSpaceLabels() {
-        const cells = document.querySelectorAll('.board .cell');
-        const isWhite = this.board.color === 0;
-        const letters = ['A', 'B', 'C', 'D', 'E'];
-        const numbers = ['5', '4', '3', '2', '1'];
-
-        cells.forEach((cell, index) => {
-            const row = Math.floor(index / 5);
-            const col = index % 5;
-            
-            let letter, number;
-            if (isWhite) {
-                letter = letters[col];
-                number = numbers[row];
-            } else {
-                letter = letters[4 - col];
-                number = numbers[4 - row];
-            }
-            cell.id = `${letter}-${number}`;
-            // Remove any existing cell-number or cell-letter spans
-            const existingNumberSpan = cell.querySelector('.cell-number');
-            const existingLetterSpan = cell.querySelector('.cell-letter');
-            if (existingNumberSpan) existingNumberSpan.remove();
-            if (existingLetterSpan) existingLetterSpan.remove();
-
-            // Add number label to the upper left corner of leftmost column
-            if (col === 0 ) { 
-                const numberSpan = document.createElement('span');
-                numberSpan.className = 'cell-number';
-                numberSpan.textContent = number;
-                numberSpan.style.position = 'absolute';
-                numberSpan.style.top = '2px';
-                numberSpan.style.left = '2px';
-                cell.appendChild(numberSpan);
-            }
-
-            // Add letter label to the lower right corner of bottom row
-            if (row === 4) { 
-                const letterSpan = document.createElement('span');
-                letterSpan.className = 'cell-letter';
-                letterSpan.textContent = letter;
-                letterSpan.style.position = 'absolute';
-                letterSpan.style.bottom = '2px';
-                letterSpan.style.right = '2px';
-                cell.appendChild(letterSpan);
-            }
-
-            // Ensure the cell has position: relative for absolute positioning of spans
-            cell.style.position = 'relative';
         });
     }
     startClockTick() {
