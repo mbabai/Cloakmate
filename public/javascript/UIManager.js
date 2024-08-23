@@ -5,10 +5,13 @@ class UIManager {
         this.color;
         this.opponentName;
         this.board = null;
-        this.allElements = ['lobby-container','name-entry','game-picker'
+        this.allVisibles = ['first-row-highlight-gold', 'on-deck-cell-highlight-gold'
+            , 'lobby-container','name-entry','game-picker'
             ,'play-button','custom-options','ai-difficulty','cancel-button'
-            ,'bomb-button','challenge-button','ready-button']
+            ,'bomb-button','challenge-button','ready-button'
+            ,'left-speech-bubble','right-speech-bubble','left-thought-bubble','right-thought-bubble']
         this.currentState = [];
+        this.currentVisibles = [];
         this.currentActions = [];
         this.draggedPiece = null;
         this.originalParent = null;
@@ -83,6 +86,30 @@ class UIManager {
             sacrifice:{
                 visible: [],
                 actions: ['sacrifice']
+            },
+            leftThoughtBubble:{
+                visible: ['left-thought-bubble'],
+                actions: []
+            },
+            rightThoughtBubble:{
+                visible: ['right-thought-bubble'],
+                actions: []
+            },
+            leftSpeechBubble:{
+                visible: ['left-speech-bubble'],
+                actions: []
+            },
+            rightSpeechBubble:{
+                visible: ['right-speech-bubble'],
+                actions: []
+            },
+            movePlaced:{
+                visible: [],
+                actions: ['select-declaration']
+            },
+            moveComplete:{
+                visible: [],
+                actions: []
             }
         }
         this.setupButtons();
@@ -105,46 +132,78 @@ class UIManager {
         console.log(`Setting state to: ${state}`);
         this.updateUI();
     }
-    updateUI(){
-        //hide all elements
-        this.allElements.forEach(element => {
-            document.getElementById(element).style.display = 'none';
-            // Remove all highlight classes from cell, on-deck, and inventory elements
-            document.querySelectorAll('.cell, .on-deck-cell, .inventory-slot').forEach(element => {
-                const classesToRemove = Array.from(element.classList).filter(className => className.startsWith('highlight'));
-                element.classList.remove(...classesToRemove);
-            });
-        });
-        //show elements that are in the current state
-        this.currentState.forEach(state => {
-            this.states[state].visible.forEach(indicatorString => {
-                const visibbleElement = document.getElementById(indicatorString)
-                if(visibbleElement){
-                    visibbleElement.style.display = 'block';
-                } else {
-                    // Apply appropriate highlight CSS for states containing "highlight"
-                    if (indicatorString.includes('highlight')) {
-                        const [elementClass, highlightType] = indicatorString.split('-highlight-');
-                        const elements = document.querySelectorAll(`.${elementClass}`);
-                        elements.forEach(element => {
-                            if (highlightType === 'gold') {
-                                element.classList.add('highlighted-cell-gold');
-                            } else if (highlightType === 'red') {
-                                element.classList.add('highlighted-cell-red');
-                            }
-                        });
-                    }   
-                } 
-            });
-        });
-        //remove actions that are in the current state
+    addVisible(visible){
+        if (!this.currentVisibles.includes(visible)) {
+            this.currentVisibles.push(visible);
+        }
+    }
+    addAction(action){
+        if (!this.currentActions.includes(action)) {
+            this.currentActions.push(action);
+        }
+    }
+    addActionsAndVisisbles(){
+        this.currentVisibles = [];
         this.currentActions = [];
         //add actions that are in the current state
         this.currentState.forEach(state => {
+            this.states[state].visible.forEach(state => {
+                this.addVisible(state);
+            });
             this.states[state].actions.forEach(action => {
-                this.currentActions.push(action);
+                this.addAction(action);
             });
         });
+    }
+    hasVisible(visible){
+        return this.currentVisibles.includes(visible);
+    }
+    hasAction(action){
+        return this.currentActions.includes(action);
+    }
+    setElementDisplays(visName){
+        if(this.hasVisible(visName)){
+            document.getElementById(visName).style.display = 'block';
+        } else {
+            document.getElementById(visName).style.display = 'none';
+        }
+    }
+    setElementHighlights(visName){
+        console.log(this.currentVisibles)
+        if (visName.includes('highlight')) {
+            const [elementClass, highlightType] = visName.split('-highlight-');
+            console.log(elementClass, highlightType)
+            const elements = document.querySelectorAll(`.${elementClass}`);
+            elements.forEach(element => {
+                if (this.hasVisible(visName)){  
+                    if (highlightType === 'gold') {
+                        element.classList.add('highlighted-cell-gold');
+                    } else if (highlightType === 'red') {
+                        element.classList.add('highlighted-cell-red');
+                    }
+                } else {
+                    element.classList.remove('highlighted-cell-gold');
+                    element.classList.remove('highlighted-cell-red');
+                }
+            });
+        }       
+    }
+    unhighlightAllCells(){
+        document.querySelectorAll('.cell, .on-deck-cell, .inventory-slot').forEach(element => {
+            const classesToRemove = Array.from(element.classList).filter(className => className.startsWith('highlight'));
+            element.classList.remove(...classesToRemove);
+        });
+    }
+    updateUI(){
+        this.addActionsAndVisisbles();
+        this.unhighlightAllCells();
+        this.allVisibles.forEach(visName => {
+            if(document.getElementById(visName)){
+                this.setElementDisplays(visName);
+            } else {
+                this.setElementHighlights(visName);
+            }
+        });        
         console.log(this)
     }
     setupPieceMovement() {
@@ -205,6 +264,15 @@ class UIManager {
             }
         }
     }
+    getLegalMovePieceList(startCellId, targetCellId){
+        const legalMovePieces = [];
+        ['King', 'Knight', 'Bishop', 'Rook'].forEach(pieceType => {
+            if (this.isLegalMove(startCellId, targetCellId, pieceType)) {
+                legalMovePieces.push(pieceType);
+            }
+        });
+        return legalMovePieces;
+    }
     movePiece(e) {
         if (this.draggedPiece) {
             const newLeft = e.clientX;
@@ -218,25 +286,55 @@ class UIManager {
                     const startCellId = this.originalParent.id;
                     const targetCellId = target.id;
 
-                    const legalMovePieces = [];
-                    ['King', 'Knight', 'Bishop', 'Rook'].forEach(pieceType => {
-                        if (this.isLegalMove(startCellId, targetCellId, pieceType)) {
-                            legalMovePieces.push(pieceType);
-                        }
-                    });
+                    const legalMovePieces = this.getLegalMovePieceList(startCellId, targetCellId);
                     requestAnimationFrame(() => {
-                        console.log(`${legalMovePieces}`);
+                        this.displayLegalMoves(legalMovePieces,'Thought',this.draggedPiece);
                     });
                 }
             }
         }
     }
+    displayLegalMoves(legalMovePieces, type,targetPiece){
+        // Remove all elements of class "declaration"
+        this.removeState('leftSpeechBubble');
+        this.removeState('rightSpeechBubble');
+        this.removeState('leftThoughtBubble');
+        this.removeState('rightThoughtBubble');
+        if (legalMovePieces.length > 2) {
+            console.log(`Error: Too many legal moves - ${legalMovePieces}`);
+            return;
+        }
+        legalMovePieces.forEach((pieceType, index) => {
+            const facing = index === 0 ? 'left' : 'right';
+            const bubbleImage = document.getElementById(`${facing}-speech-bubble`);
+            bubbleImage.src = `/images/Bubble${type}${facing.charAt(0).toUpperCase() + facing.slice(1)}${pieceType}.svg`;
+
+            // Position the bubble relative to the dragged piece
+            const pieceRect = targetPiece.getBoundingClientRect();
+            const offsetTop = 60; // Adjust this value based on your image size
+            const offsetSide = 73;
+            
+            if (index === 0) {
+                // Left bubble: up and to the left
+                bubbleImage.style.left = `${pieceRect.left - offsetSide}px`;
+                bubbleImage.style.top = `${pieceRect.top - offsetTop}px`;
+            } else {
+                // Right bubble: up and to the right
+                bubbleImage.style.left = `${pieceRect.right - offsetSide}px`;
+                bubbleImage.style.top = `${pieceRect.top - offsetTop}px`;
+            }
+            this.addState(`${facing}${type}Bubble`);
+        });
+        this.updateUI();
+    }
 
     isLegalMove(startCellId, targetCellId, pieceType) {
         const startCoords = this.cellIdToCoords(startCellId);
         const targetCoords = this.cellIdToCoords(targetCellId);
-        // Check if target is the same as start
-        if (startCellId === targetCellId) {
+        // Check if target is the same as start , or if the distance is too great
+        const dx = Math.abs(targetCoords.x - startCoords.x);
+        const dy = Math.abs(targetCoords.y - startCoords.y);
+        if (startCellId === targetCellId || dx > 3 || dy > 3) {
             return false;
         }
         // Check if target has a friendly piece
@@ -264,8 +362,6 @@ class UIManager {
                 return Math.abs(targetCoords.x - startCoords.x) <= 1 && Math.abs(targetCoords.y - startCoords.y) <= 1;
             case 'Knight':
                 // Knight moves in an L-shape
-                const dx = Math.abs(targetCoords.x - startCoords.x);
-                const dy = Math.abs(targetCoords.y - startCoords.y);
                 return (dx === 1 && dy === 2) || (dx === 2 && dy === 1);
             default:
                 return false;
@@ -313,16 +409,36 @@ class UIManager {
         return true;
     }
     releasePiece(e) {
+        this.removeState('leftSpeechBubble');
+        this.removeState('rightSpeechBubble');
+        this.removeState('leftThoughtBubble');
+        this.removeState('rightThoughtBubble');
         if (!this.draggedPiece) return;
 
         const target = this.getTargetElement(e);
         const originalLocation = this.getLocationType(this.originalParent);
         const targetLocationType = this.getLocationType(target);
-
+        // Check if the target is a cell on the board
+        const isBoardCell = target && target.classList.contains('cell') && target.id.match(/^[A-E]-[1-5]$/);
+        let isLegalityPassed = false;
+        let legalMovePieces = [];
+        if (this.currentActions.includes('legal-board-move')){
+            //Need to check if we have a legal move, but only if we're in the legal-board-move state
+            if (isBoardCell) {
+                const startCellId = this.originalParent.id;
+                const targetCellId = target.id;
+                legalMovePieces = this.getLegalMovePieceList(startCellId, targetCellId);
+                if (legalMovePieces.length > 0) {
+                    isLegalityPassed = true;
+                }
+            }
+        } else {
+            isLegalityPassed = true;
+        }
         if (this.isValidTarget(target)) {
             const moveAction = `move-${originalLocation}-to-${targetLocationType}`;
-            if (this.currentActions.includes(moveAction)) {
-                this.handleValidMove(target);
+            if (this.currentActions.includes(moveAction) && isLegalityPassed) {
+                this.handleValidPieceDrop(target,legalMovePieces);
             } else {
                 this.returnToOriginalParent();
             }
@@ -332,11 +448,19 @@ class UIManager {
 
         this.cleanupAfterDrag();
     }
+ 
+    setPointerEventsElementsInTheWay(pointerEvents){
+        document.querySelectorAll('.bubble').forEach(bubble => {
+            bubble.style.pointerEvents = pointerEvents;
+        });    
+        this.draggedPiece.style.pointerEvents = pointerEvents;
+    }
+
     getTargetElement(e) {
-        this.draggedPiece.style.display = 'none';
+        this.setPointerEventsElementsInTheWay('none');
         let target = document.elementFromPoint(e.clientX, e.clientY);
-        this.draggedPiece.style.display = 'block';
-        
+        this.setPointerEventsElementsInTheWay('auto');
+
         // If the target is a game piece, get its parent (the cell)
         if (target.classList.contains('game-piece')) {
             target = target.parentElement;
@@ -351,21 +475,49 @@ class UIManager {
             target.classList.contains('inventory-slot')
         );
     }
-    handleValidMove(target) {
+    handleValidPieceDrop(target,legalMovePieces) {
         const targetPiece = target.querySelector('.game-piece');
         if (this.canSwap(target) && targetPiece) {
             this.swapPieces(target, targetPiece);
         } else {
             target.appendChild(this.draggedPiece);
+            // Display legal moves after a valid move
+            if (legalMovePieces.length > 0) {
+                console.log(`Dropped a legal move pieces: ${legalMovePieces}`);
+                this.handleValidMove(target,legalMovePieces);
+            } 
         }
         this.resetPieceStyle();
+
+    }
+    handleValidMove(target,legalMovePieces) {
+        this.moveSpeechBubblesToTarget(target);
+        if (legalMovePieces.length === 1) {
+            this.setState('moveComplete');
+            const leftBubble = document.getElementById('left-speech-bubble');
+            leftBubble.src = `/images/BubbleSpeechLeft${legalMovePieces[0]}.svg`;
+        } else if (legalMovePieces.length > 1) {
+            this.setState('movePlaced');
+            const leftBubble = document.getElementById('left-speech-bubble');
+            const rightBubble = document.getElementById('right-speech-bubble');
+            leftBubble.src = `/images/BubbleSpeechLeft${legalMovePieces[0]}.svg`;
+            rightBubble.src = `/images/BubbleSpeechRight${legalMovePieces[1]}.svg`;
+        }
+    }
+    moveSpeechBubblesToTarget(target){
+        const targetRect = target.getBoundingClientRect();
+        const leftBubble = document.getElementById('left-speech-bubble');
+        const rightBubble = document.getElementById('right-speech-bubble');
+        leftBubble.style.left = `${targetRect.left - 73}px`;
+        leftBubble.style.top = `${targetRect.top - 60}px`;
+        rightBubble.style.left = `${targetRect.right - 73}px`;
+        rightBubble.style.top = `${targetRect.top - 60}px`;
     }
 
     canSwap(target) {
         return this.currentActions.includes('swap') && 
                target.querySelector('.game-piece');
     }
-
     swapPieces(target, targetPiece) {
         let targetPieceColor = targetPiece.src.includes('White') ? 'White' : 'Black';
         let draggedPieceColor = this.draggedPiece.src.includes('White') ? 'White' : 'Black';
@@ -377,12 +529,10 @@ class UIManager {
             this.returnToOriginalParent();
         }
     }
-
     returnToOriginalParent() {
         this.originalParent.appendChild(this.draggedPiece);
         this.resetPieceStyle();
     }
-
     cleanupAfterDrag() {
         document.removeEventListener('mousemove', this.movePiece);
         document.removeEventListener('mouseup', this.releasePiece);
@@ -391,42 +541,6 @@ class UIManager {
         this.originalParent = null;
         this.startLocation = null;
         this.postMoveState();
-    }
-    
-    getLegalMovePieces(start, target) {
-        const possiblePieces = [];
-        const startCoords = this.cellIdToCoords(start);
-        const endCoords = this.cellIdToCoords(target);
-
-        // Calculate differences
-        const dx = Math.abs(endCoords.x - startCoords.x);
-        const dy = Math.abs(endCoords.y - startCoords.y);
-
-        if (dx == 0 && dy == 0) {
-            return possiblePieces;
-        }
-
-        // King: moves one square in any direction
-        if (dx <= 1 && dy <= 1) {
-            possiblePieces.push('King');
-        }
-
-        // Knight: moves in an L-shape
-        if ((dx === 1 && dy === 2) || (dx === 2 && dy === 1)) {
-            possiblePieces.push('Knight');
-        }
-
-        // Bishop: moves diagonally (max 3 squares)
-        if (dx === dy && dx <= 3) {
-            possiblePieces.push('Bishop');
-        }
-
-        // Rook: moves horizontally or vertically (max 3 squares)
-        if ((dx === 0 || dy === 0) && Math.max(dx, dy) <= 3) {
-            possiblePieces.push('Rook');
-        }
-
-        return possiblePieces;
     }
     getLocationType(element) {
         if (element.classList.contains('cell')) {
