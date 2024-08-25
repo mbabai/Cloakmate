@@ -765,17 +765,18 @@ class Game {
 
         return boardState;
     }
-    selectRandomSetup(){
-        let selection = [pieces.BISHOP, pieces.BISHOP, pieces.KING, pieces.ROOK, pieces.ROOK, pieces.KNIGHT, pieces.KNIGHT, pieces.BOMB]
-        for (let i = selection.length - 1; i > 0;i--){
+    selectRandomSetup() {
+        let selection = [pieces.BISHOP, pieces.BISHOP, pieces.KING, pieces.ROOK, pieces.ROOK, pieces.KNIGHT, pieces.KNIGHT, pieces.BOMB];
+        for (let i = selection.length - 1; i > 0; i--) {
             const j = Math.floor(Math.random() * (i + 1));
             [selection[i], selection[j]] = [selection[j], selection[i]]; // Swap elements
         }
         // Select the first 6 elements from the shuffled array
-        
-        return selection.slice(0, 6);;
+        return selection.slice(0, 6);
     }
+
     randomSetup(playerNumber) {
+        console.log(`Random Setup for player #${playerNumber}`);
         let isLegal = false;
         let pick;
         let convertedFrontRow;
@@ -783,25 +784,26 @@ class Game {
 
         while (!isLegal) {
             pick = this.selectRandomSetup();
+            console.log(`Pick: ${pick}`);
             convertedFrontRow = [];
             onDeckPiece = null;
 
             for (let x = 0; x < pick.length; x++) {
-                if (x == 5) {
+                if (x === 5) {
                     onDeckPiece = pick[x];
                 } else {
-                    let y = playerNumber == 0 ? 0 : 4;
-                    convertedFrontRow.push({ x, y, type: pieceStringNames[playerNumber][pick[x]] });
+                    let y = playerNumber === colors.WHITE ? 0 : 4;
+                    convertedFrontRow.push({ x, y, type: pick[x] });
                 }
             }
 
-            const expectedColor = playerNumber === colors.WHITE ? 'White' : 'Black';
-            isLegal = this.isSetupLegal(convertedFrontRow, pieceStringNames[playerNumber][onDeckPiece], expectedColor);
+            isLegal = this.isSetupLegal(convertedFrontRow, onDeckPiece, playerNumber);
         }
 
         // Now that we have a legal setup, place the pieces
-        let playerName = this.players[playerNumber].userName
-        this.placeSetupPieces(playerName,convertedFrontRow,onDeckPiece)
+
+        this.placeSetupPieces(playerNumber, convertedFrontRow, onDeckPiece);
+        return this.getColorState(playerNumber);
     }
 
     trySetup(playerName, frontRow, onDeck) {
@@ -816,11 +818,11 @@ class Game {
         const convertedFrontRow = frontRow.map(piece => ({
             x: piece.x,
             y: piece.y,
-            type: piece.type
+            type: this.getPieceTypeFromString(piece.type)
         }));
     
         // Check legality of the setup
-        if (!this.isSetupLegal(convertedFrontRow, onDeck, playerColor)) {
+        if (!this.isSetupLegal(convertedFrontRow, this.getPieceTypeFromString(onDeck), playerColor)) {
             console.log("Illegal setup");
             return false;
         }
@@ -832,7 +834,7 @@ class Game {
         }
     
         // Call placeSetupPieces with the formatted data
-        this.placeSetupPieces(playerColor, convertedFrontRow, onDeck);
+        this.placeSetupPieces(playerColor, convertedFrontRow, this.getPieceTypeFromString(onDeck));
         return true;
     }
     
@@ -850,7 +852,6 @@ class Game {
         const expectedRow = playerColor === colors.WHITE ? 0 : 4;
         for (const piece of frontRow) {
             if (piece.y !== expectedRow) {
-                console.log(`${piece.y} is the real row`)
                 console.error(`Illegal setup: Pieces must be on row ${expectedRow}`);
                 return false;
             }
@@ -877,6 +878,17 @@ class Game {
         }
     
         return true;
+    }
+
+    getPieceTypeFromString(pieceString) {
+        const pieceMap = {
+            'KING': pieces.KING,
+            'BOMB': pieces.BOMB,
+            'KNIGHT': pieces.KNIGHT,
+            'BISHOP': pieces.BISHOP,
+            'ROOK': pieces.ROOK
+        };
+        return pieceMap[pieceString.toUpperCase()] || null;
     }
     
     placeSetupPieces(playerColor, pieceList, onDeck) {

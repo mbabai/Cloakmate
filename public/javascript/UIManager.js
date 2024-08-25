@@ -8,7 +8,7 @@ class UIManager {
         this.allVisibles = ['first-row-highlight-gold', 'on-deck-cell-highlight-gold'
             , 'lobby-container','name-entry','game-picker'
             ,'play-button','custom-options','ai-difficulty','cancel-button'
-            ,'bomb-button','challenge-button','ready-button'
+            ,'bomb-button','challenge-button','ready-button', 'random-setup-button'
             ,'left-speech-bubble','right-speech-bubble','left-thought-bubble','right-thought-bubble']
         this.currentState = [];
         this.currentVisibles = [];
@@ -56,8 +56,9 @@ class UIManager {
                 actions: []
             },
             setup:{
-                visible: ['first-row-highlight-gold', 'on-deck-cell-highlight-gold'],
-                actions: ['swap','select-board-piece', 'select-on-deck-piece', 'select-stash-piece'  
+                visible: ['first-row-highlight-gold', 'on-deck-cell-highlight-gold', 'random-setup-button'],
+                actions: ['randomSetup'
+                    , 'swap','select-board-piece', 'select-on-deck-piece', 'select-stash-piece'
                     , 'move-board-to-on-deck', 'move-stash-to-on-deck', 'move-on-deck-to-on-deck'
                     , 'move-board-to-board', 'move-stash-to-board', 'move-on-deck-to-board'
                     , 'move-on-deck-to-stash', 'move-stash-to-stash', 'move-board-to-stash']
@@ -641,6 +642,9 @@ class UIManager {
         document.getElementById('ready-button').addEventListener('click', () => {
             this.doAction('ready');
         });
+        document.getElementById('random-setup-button').addEventListener('click', () => {
+            this.doAction('randomSetup');
+        });
         document.getElementById('left-thought-bubble').addEventListener('click', () => {
             this.doAction('declareMove','left-thought-bubble')
         });
@@ -688,6 +692,17 @@ class UIManager {
         console.log(`Declared Piece Type: ${pieceType}`);
         this.legalActions = [pieceType];
         this.completeMove(pieceType);
+    }
+    randomSetup(params){
+        // Stop the current player's clock
+        this.stopClockTick('player');
+        this.setState('ready');
+        this.webSocketManager.routeMessage({type:'random-setup'});
+    }
+    randomSetupComplete(params){
+        const tempBoardState = params.board;
+        this.setBoardPieces(tempBoardState);
+        this.setState('ready');
     }
     ready(params){
         // Stop the current player's clock
@@ -869,7 +884,7 @@ class UIManager {
         this.updateClocks();
         this.startCorrectClocks();
         this.setBoardSpaceLabels()
-        this.setBoardPieces();
+        this.setBoardPieces(this.board);
         this.updateLegalGameActions();
     }
     updateLegalGameActions(){
@@ -928,7 +943,7 @@ class UIManager {
             cell.style.position = 'relative';
         });
     }
-    setBoardPieces() {
+    setBoardPieces(currentBoard) {
         this.removeAllPieces();
         const createPieceImage = (piece) => {
             const img = document.createElement('img');
@@ -941,7 +956,7 @@ class UIManager {
         // Add pieces to the inventory
         const inventorySlots = document.querySelectorAll('.inventory-slot');
         let slotIndex = 0;
-        this.board.stash.forEach(pieceObj => {
+        currentBoard.stash.forEach(pieceObj => {
             for (let i = 0; i < pieceObj.count; i++) {
                 if (slotIndex < inventorySlots.length) {
                     const pieceImage = createPieceImage(pieceObj.piece);
@@ -959,15 +974,15 @@ class UIManager {
         }
 
         // Add piece to onDeck if present
-        if (this.board.onDeck) {
+        if (currentBoard.onDeck) {
             const onDeckElement = document.querySelector('.on-deck-cell');
             onDeckElement.innerHTML = '';
-            const color = this.board.onDeck.color === this.board.color ? 'White' : 'Black';
-            onDeckElement.appendChild(createPieceImage(this.board.onDeck)); 
+            const color = currentBoard.onDeck.color === currentBoard.color ? 'White' : 'Black';
+            onDeckElement.appendChild(createPieceImage(currentBoard.onDeck)); 
         }
 
         // Add pieces to the board
-        this.board.board.forEach((row, y) => {
+        currentBoard.board.forEach((row, y) => {
             row.forEach((piece, x) => {
                 if (piece) {
                     const cellId = this.coordsToCellId({ x, y });

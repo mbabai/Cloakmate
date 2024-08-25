@@ -170,6 +170,11 @@ class LobbyManager {
         let player = this.getPlayerFromWS(ws);
         game.submitSetup(player,data);
       }
+      randomSetup(ws,data){
+        let game = this.wsToGame.get(ws);
+        let player = this.getPlayerFromWS(ws);
+        game.randomSetup(player);
+      }
       endGame(game){
         this.games.splice(this.games.indexOf(game), 1);
         game.users[0].isInGame = false;

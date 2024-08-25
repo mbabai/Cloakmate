@@ -185,6 +185,13 @@ html, body {
     top: 40%;
     transform: translateX(-50%); /* Adjust for the button's width */
 }
+#random-setup-button {
+    background-color: darkred;
+    font-size: 3.5cqh; 
+    left: 48%; /* Center the button horizontally */
+    top: 40%;
+    transform: translateX(-50%); /* Adjust for the button's width */
+}
 
 #challenge-button {
     left: calc(50% + (100% / 5 * 0.6)); /* Recalculate the position to bring closer to center */

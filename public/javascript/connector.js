@@ -92,7 +92,7 @@ document.addEventListener('DOMContentLoaded', function() {
     myWebSocketManager.addTypeListener('setup-error', (data) => { myUIManager.setupError(data) });
     myWebSocketManager.addTypeListener('opponent-setup-complete', (data) => { myUIManager.opponentSetupComplete(data) });
     myWebSocketManager.addTypeListener('both-setup-complete', (data) => { myUIManager.bothSetupComplete(data) });
-
+    myWebSocketManager.addTypeListener('random-setup-complete', (data) => { myUIManager.randomSetupComplete(data) });
 
     
 
