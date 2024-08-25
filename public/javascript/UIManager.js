@@ -18,6 +18,8 @@ class UIManager {
         this.targetCell = null;
         this.playerTime=0;
         this.opponentTime=0;
+        this.playerClockTicking = false;
+        this.opponentClockTicking = false;
         this.offsetX = 0;
         this.offsetY = 0;
         this.states = {
@@ -503,10 +505,10 @@ class UIManager {
             targetId: targetId,
             declaration: declarationType
         };
-        this.webSocketManager.routeMessage({type:'action', action:'move', data:moveData});
-        this.cleanupAfterMove()
         this.stopClockTick('player');
         this.startClockTick('opponent');
+        this.webSocketManager.routeMessage({type:'action', action:'move', data:moveData});
+        this.cleanupAfterMove();
     }
     handleValidMove(target,legalMovePieces) {
         this.moveSpeechBubblesToTarget(target);
@@ -851,10 +853,21 @@ class UIManager {
         this.opponentName = null;
         this.removeAllPieces()
     }
+    startCorrectClocks(){
+        if (this.board.phase === 'setup') {
+            this.startClockTick('both');
+        } else if (this.board.phase === 'play'){
+            if (this.board.myTurn) {
+                this.startClockTick('player');
+            } else {
+                this.startClockTick('opponent');
+        }
+        }
+    }
     updateBoardUI() {
         this.updateNames();
         this.updateClocks();
-        this.startClockTick();
+        this.startCorrectClocks();
         this.setBoardSpaceLabels()
         this.setBoardPieces();
         this.updateLegalGameActions();
@@ -967,8 +980,7 @@ class UIManager {
             });
         });
     }
-    startClockTick() {
-        this.stopClockTick('both');
+    startClockTick(clockToStart) {
         
         const updateClock = (clockElement, isPlayer) => {
             const startTime = performance.now();
@@ -1000,31 +1012,33 @@ class UIManager {
         const playerClockElement = document.getElementById('player-clock-time');
         const opponentClockElement = document.getElementById('opponent-clock-time');
 
-        if (this.board.phase === "setup") {
-            this.playerAnimationId = updateClock(playerClockElement, true);
-            this.opponentAnimationId = updateClock(opponentClockElement, false);
-            playerClockElement.classList.add('clock-highlight');
-            opponentClockElement.classList.add('clock-highlight');
-        } else if (this.board.myTurn) {
+        if ((clockToStart === 'player' || clockToStart === 'both') && !this.playerClockTicking) {
+            this.playerClockTicking = true;
             this.playerAnimationId = updateClock(playerClockElement, true);
             playerClockElement.classList.add('clock-highlight');
-            opponentClockElement.classList.remove('clock-highlight');
-        } else {
+        }
+        if ((clockToStart === 'opponent' || clockToStart === 'both') && !this.opponentClockTicking) {
+            this.opponentClockTicking = true;
             this.opponentAnimationId = updateClock(opponentClockElement, false);
-            playerClockElement.classList.remove('clock-highlight');
             opponentClockElement.classList.add('clock-highlight');
         }
+        // if (clockToStart !== 'both') {
+        //     const otherClock = clockToStart === 'player' ? opponentClockElement : playerClockElement;
+        //     otherClock.classList.remove('clock-highlight');
+        // }
     }
     stopClockTick(clockToStop) {
         const playerClockElement = document.getElementById('player-clock-time');
         const opponentClockElement = document.getElementById('opponent-clock-time');
 
         if (clockToStop === 'player' || clockToStop === 'both') {
+            this.playerClockTicking = false;
             cancelAnimationFrame(this.playerAnimationId);
             this.playerAnimationId = null;
             playerClockElement.classList.remove('clock-highlight');
         }
         if (clockToStop === 'opponent' || clockToStop === 'both') {
+            this.opponentClockTicking = false;
             cancelAnimationFrame(this.opponentAnimationId);
             this.opponentAnimationId = null;
             opponentClockElement.classList.remove('clock-highlight');
@@ -1052,8 +1066,6 @@ class UIManager {
 
         playerClockElement.textContent = this.formatTime(this.board.clocks[this.board.color]);
         opponentClockElement.textContent = this.formatTime(this.board.clocks[1 - this.board.color]);
-
-        this.startClockTick(); // Start the clocks after updating
     }
     resetClocks() {
         const playerClockElement = document.getElementById('player-clock-time');
