@@ -993,9 +993,7 @@ class UIManager {
         img.className = 'game-piece';
         return img;
     }
-    setBoardPieces(currentBoard) {
-        this.removeAllPieces();
-        // Add pieces to the inventory
+    placeStashPieces(currentBoard){
         const inventorySlots = document.querySelectorAll('.inventory-slot');
         let slotIndex = 0;
         currentBoard.stash.forEach(pieceObj => {
@@ -1008,21 +1006,20 @@ class UIManager {
                 }
             }
         });
-
         // Clear any remaining slots
         while (slotIndex < inventorySlots.length) {
             inventorySlots[slotIndex].innerHTML = '';
             slotIndex++;
         }
-
-        // Add piece to onDeck if present
+    }
+    placeOnDeckPiece(currentBoard){
         if (currentBoard.onDeck) {
             const onDeckElement = document.querySelector('.on-deck-cell');
             onDeckElement.innerHTML = '';
             onDeckElement.appendChild(this.createPieceImage(currentBoard.onDeck)); 
         }
-
-        // Add pieces to the board
+    }
+    placePiecesOnBoard(currentBoard){
         currentBoard.board.forEach((row, y) => {
             row.forEach((piece, x) => {
                 if (piece) {
@@ -1035,9 +1032,17 @@ class UIManager {
                 }
             });
         });
-        // Get the last action from the action history
+    }
+    setBoardPieces(currentBoard) {
+        this.removeAllPieces();
+        this.placeStashPieces(currentBoard);
+        this.placeOnDeckPiece(currentBoard);
+        this.placePiecesOnBoard(currentBoard);
+        this.showLastMove();
+        this.updateUI();
+    }
+    showLastMove(){
         const lastAction = this.board.actionHistory[this.board.actionHistory.length - 1];
-        
         if (lastAction && lastAction.type === actions.MOVE) {
             const startCellId = this.coordsToCellId({ x: lastAction.x1, y: lastAction.y1 });
             const startCell = document.getElementById(startCellId);
@@ -1054,7 +1059,6 @@ class UIManager {
             }
 
         }
-        this.updateUI();
     }
     setSpeechBubbleImageType(declaration){
         const leftBubble = document.getElementById('left-speech-bubble');
