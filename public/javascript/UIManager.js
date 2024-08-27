@@ -1033,6 +1033,31 @@ class UIManager {
             });
         });
     }
+    showLastMove(){
+        let lastMove;
+        for (let i = this.board.actionHistory.length - 1; i >= 0; i--) {
+            if (this.board.actionHistory[i].type === actions.MOVE) {
+                lastMove = this.board.actionHistory[i];
+                break;
+            }
+        }
+        if (lastMove) {
+            const startCellId = this.coordsToCellId({ x: lastMove.x1, y: lastMove.y1 });
+            const startCell = document.getElementById(startCellId);
+            const targetCellId = this.coordsToCellId({ x: lastMove.x2, y: lastMove.y2 });
+            const targetCell = document.getElementById(targetCellId);
+            if (startCell) {
+                this.moveOriginHighlight(startCell);
+                this.addState('originHighlight');
+            }
+            if (targetCell){
+                this.setSpeechBubbleImageType(lastMove.declaration);
+                this.moveSpeechBubblesToTarget(targetCell);
+                this.addState('leftSpeechBubble');
+            }
+
+        }
+    }
     setBoardPieces(currentBoard) {
         this.removeAllPieces();
         this.placeStashPieces(currentBoard);
@@ -1040,25 +1065,6 @@ class UIManager {
         this.placePiecesOnBoard(currentBoard);
         this.showLastMove();
         this.updateUI();
-    }
-    showLastMove(){
-        const lastAction = this.board.actionHistory[this.board.actionHistory.length - 1];
-        if (lastAction && lastAction.type === actions.MOVE) {
-            const startCellId = this.coordsToCellId({ x: lastAction.x1, y: lastAction.y1 });
-            const startCell = document.getElementById(startCellId);
-            const targetCellId = this.coordsToCellId({ x: lastAction.x2, y: lastAction.y2 });
-            const targetCell = document.getElementById(targetCellId);
-            if (startCell) {
-                this.moveOriginHighlight(startCell);
-                this.addState('originHighlight');
-            }
-            if (targetCell){
-                this.setSpeechBubbleImageType(lastAction.declaration);
-                this.moveSpeechBubblesToTarget(targetCell);
-                this.addState('leftSpeechBubble');
-            }
-
-        }
     }
     setSpeechBubbleImageType(declaration){
         const leftBubble = document.getElementById('left-speech-bubble');
