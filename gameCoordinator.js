@@ -1,4 +1,4 @@
-const { Game } = require('./gameEngine');
+const { Game , Action , Board } = require('./gameEngine');
 const pieces = {
     BOMB: 0,
     KING: 1,
@@ -38,7 +38,22 @@ class GameCoordinator {
         this.server.routeMessage(player.websocket,{type:"random-setup-complete", board:thisPlayerGameState})
         this.checkPlayerSetupCompletion(player)
     }
-
+    gameAction(player,data){
+        const playerColorIndex = this.game.getPlayerColorIndex(player.username)
+        const details = data.details
+        console.log(`ACTION:::::::::::::::::::::::::::::`)
+        console.log(data.action)
+        console.log(playerColorIndex)
+        console.log(data)
+        const thisAction = new Action(data.action,playerColorIndex,details.x1,details.y1,details.declaration,details.x2,details.y2)
+        thisAction.board = this.game.board;
+        const isActionSuccessful = this.game.board.takeAction(thisAction)
+        if (isActionSuccessful) {
+            this.broadcastGameState()
+        } else {
+            this.server.routeMessage(player.websocket, { type: "illegal-action", message: "Your action was illegal. Please try again." });
+        }
+    }
     submitSetup(player, data) {
         console.log("READY-----------") 
         console.log(data.frontRow)

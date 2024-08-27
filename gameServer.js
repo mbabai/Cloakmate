@@ -103,3 +103,4 @@ myGameServer.addTypeListener('accept-invite', (ws,data)=>{myLobbyManager.acceptI
 myGameServer.addTypeListener('decline-invite', (ws,data)=>{myLobbyManager.declineInvite(ws,data)});
 myGameServer.addTypeListener('submit-setup', (ws,data)=>{myLobbyManager.submitSetup(ws,data)});
 myGameServer.addTypeListener('random-setup', (ws,data)=>{myLobbyManager.randomSetup(ws,data)});
+myGameServer.addTypeListener('game-action', (ws,data)=>{myLobbyManager.gameAction(ws,data)});

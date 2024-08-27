@@ -27,7 +27,13 @@ const pieceTypeNames = {
     [pieces.ROOK]: 'Rook',
     [pieces.UNKNOWN]: 'Unknown'
 };
-
+const actions = {
+    MOVE: 0,
+    CHALLENGE: 1,
+    BOMB: 2,
+    SACRIFICE: 3,
+    ONDECK: 4
+};
 
 class UIManager {
     constructor(webSocketManager) {
@@ -523,13 +529,15 @@ class UIManager {
         const originalxy = this.cellIdToCoords(this.originalParent.id);
         const targetxy = this.cellIdToCoords(this.targetCell.id);
         const moveData = {
-            startxy: originalxy,
-            endxy: targetxy,
+            x1: originalxy.x,
+            y1: originalxy.y,
+            x2: targetxy.x,
+            y2: targetxy.y,
             declaration: declarationType
         };
         this.stopClockTick('player');
         this.startClockTick('opponent');
-        this.webSocketManager.routeMessage({type:'action', action:'move', data:moveData});
+        this.webSocketManager.routeMessage({type:'game-action', action:actions.MOVE, details:moveData});
         this.cleanupAfterMove();
     }
     handleValidMove(target,legalMovePieces) {
@@ -693,6 +701,10 @@ class UIManager {
     }
     usernameTaken(data) {
         alert(`${data.username} is already taken!`);
+    }
+    illegalAction(data){
+        alert(data.message);
+        this.updateUI();
     }
     doAction(action,params={}){
         console.log(`Attempting action: ${action}`);

@@ -31,19 +31,20 @@ const All = precalcs.createAllPiecesLookupTable()
 
 class Action {
     constructor(type, player,  x1 = null, y1 = null, declaration = null, x2 = null, y2 = null) {
-        this.type = type;
+        this.type = type; // from actions enum
         this.player = player;
+        this.board = null;
         
         // Set attributes based on the action type
         switch (type) {
             case actions.MOVE:
-                this.x1 = x1;
-                this.y1 = y1;
-                this.declaration = declaration;
-                this.x2 = x2;
-                this.y2 = y2;
-                this.wasBluff = null;
-                this.wasCapture = null;
+                this.x1 = x1; // start x
+                this.y1 = y1; // start y
+                this.declaration = declaration; // piece type
+                this.x2 = x2; // end x
+                this.y2 = y2; // end y
+                this.wasBluff = null; // was bluff
+                this.wasCapture = null; // was capture
                 break;
             case actions.CHALLENGE:
                 // Only type and player are needed for CHALLENGE
@@ -497,7 +498,7 @@ class Board {
 
     takeAction(action){
         action.board = this; //Just in case, set the move's board to this board.
-        if(!action.isLegal()){return;}
+        if(!action.isLegal()){return false;}
         let lastAction = this.actions[this.actions.length - 1]
         let twoActionsAgo = this.actions[this.actions.length - 2]
         switch (action.type){
@@ -564,6 +565,7 @@ class Board {
         this.actions.push(action) //Add this action to the list
         action.print()
         this.printBoard()
+        return true;
     }
     undoLastAction(){
         let lastMove = this.actions.pop()
@@ -771,7 +773,6 @@ class Game {
         // Select the first 6 elements from the shuffled array
         return selection.slice(0, 6);
     }
-
     randomSetup(playerNumber) {
         console.log(`Random Setup for player #${playerNumber}`);
         let isLegal = false;
@@ -801,7 +802,6 @@ class Game {
         this.placeSetupPieces(playerNumber, frontRow, onDeckPiece);
         return this.getColorState(playerNumber);
     }
-
     trySetup(playerName, frontRow, onDeck) {
         const playerColor = this.getPlayerColorIndex(playerName);
     
@@ -825,8 +825,7 @@ class Game {
         // Call placeSetupPieces with the formatted data
         this.placeSetupPieces(playerColor, frontRow, onDeck);
         return true;
-    }
-    
+    }   
     isSetupLegal(frontRow, onDeck, playerColor) {
         const pieceCounts = {
             [pieces.KING]: 0,

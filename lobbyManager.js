@@ -165,6 +165,11 @@ class LobbyManager {
         user2.isInGame = true;
         this.games.push(game);
       }
+      gameAction(ws,data){
+        let game = this.wsToGame.get(ws);
+        let player = this.getPlayerFromWS(ws);
+        game.gameAction(player,data);
+      }
       submitSetup(ws,data){
         let game = this.wsToGame.get(ws);
         let player = this.getPlayerFromWS(ws);
@@ -184,10 +189,16 @@ class LobbyManager {
       }
 
       logState(){
-        console.log("Current Lobby State:");
+        // console.clear();
+        console.log(`\n\n\n\n\n`)
+        console.log(`Current Lobby State (${new Date().toLocaleString()}):`)
         console.log(`- Lobby (${this.lobby.size}): ${Array.from(this.lobby.values()).map(user => user.username).join(', ')}`);
         console.log(`- Queue (${this.queue.length}): ${this.queue.map(user => user.username).join(', ')}`);
-        console.log(`- Games (${this.games.length}): ${this.games.map(game => `${game.logGameState()}`).join('\n')}`);
+        console.log(`- Games (${this.games.length}):`) // ${this.games.map(game => `${game.logGameState()}`).join('\n')}`);
+        this.games.forEach((game, index) => {
+          console.log(game.logGameState())
+          game.game.board.printBoard()
+        });
       }
 }
 
