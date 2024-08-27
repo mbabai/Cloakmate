@@ -99,6 +99,10 @@ html, body {
     z-index: 100;
     position: fixed;
     display: none;
+    -webkit-user-drag: none; /* Specifically for WebKit */
+    -khtml-user-drag: none; /* For Konqueror */
+    -moz-user-drag: none; /* For Firefox */
+    -o-user-drag: none; /* For Opera */
 }
 
 .inventory {
@@ -117,6 +121,10 @@ html, body {
     justify-content: center;
     width: 100%;
     height: 50%;
+    -webkit-user-drag: none; /* Specifically for WebKit */
+    -khtml-user-drag: none; /* For Konqueror */
+    -moz-user-drag: none; /* For Firefox */
+    -o-user-drag: none; /* For Opera */
 }
 
 .inventory-slot, .on-deck-cell {
@@ -128,6 +136,10 @@ html, body {
 .on-deck-cell {
     background-color: black;
     border: 1px solid white;
+    -webkit-user-drag: none; /* Specifically for WebKit */
+    -khtml-user-drag: none; /* For Konqueror */
+    -moz-user-drag: none; /* For Firefox */
+    -o-user-drag: none; /* For Opera */
 }
 
 .on-deck-cell.empty {
@@ -177,6 +189,7 @@ html, body {
 #bomb-button {
     font-size: 3.5cqh; /* Slightly larger font size for "Bomb!" since it's shorter */
     left: calc(50% - (100% / 5 * 0.6) - (100% / 5 * 1.7)); /* Recalculate the position to bring closer to center */
+    display: none;
 }
 
 #ready-button {
@@ -184,6 +197,7 @@ html, body {
     left: 48%; /* Center the button horizontally */
     top: 40%;
     transform: translateX(-50%); /* Adjust for the button's width */
+    display: none;
 }
 #random-setup-button {
     background-color: darkred;
@@ -191,10 +205,12 @@ html, body {
     left: 48%; /* Center the button horizontally */
     top: 40%;
     transform: translateX(-50%); /* Adjust for the button's width */
+    display: none;
 }
 
 #challenge-button {
     left: calc(50% + (100% / 5 * 0.6)); /* Recalculate the position to bring closer to center */
+    display: none;
 }
 /* GAME CLOCK */
 #game-clock-container {
@@ -209,6 +225,11 @@ html, body {
     height: 8%;
     max-width: calc(100vh / 1.6 * 0.95); /* Match the max-width of .main */
     z-index: 1000; /* Ensure it's above other elements */
+    -webkit-user-drag: none; /* Specifically for WebKit */
+    -khtml-user-drag: none; /* For Konqueror */
+    -moz-user-drag: none; /* For Firefox */
+    -o-user-drag: none; /* For Opera */
+    pointer-events: none;
 }
 
 .clock-container {
@@ -234,6 +255,7 @@ html, body {
     margin: 0;
     min-width: 80px;
     text-align: center;
+
 }
 
 .player-name {
@@ -306,6 +328,10 @@ html, body {
     width: 80%; /* Responsive width */
     max-width: 500px; /* Maximum size */
     height:45%;
+    -webkit-user-drag: none; /* Specifically for WebKit */
+    -khtml-user-drag: none; /* For Konqueror */
+    -moz-user-drag: none; /* For Firefox */
+    -o-user-drag: none; /* For Opera */
 }
 
 #status-text {

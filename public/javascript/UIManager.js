@@ -516,13 +516,15 @@ class UIManager {
         console.log(`Displaying: ${leftBubble.src}`);
         this.setState('moveComplete');
         this.addState('leftSpeechBubble');
+        this.moveSpeechBubblesToTarget(this.targetCell);
         this.updateUI();
         // Send move information to the server
-        const targetId = this.targetCell.id;
-        const originalId = this.originalParent.id;
+        
+        const originalxy = this.cellIdToCoords(this.originalParent.id);
+        const targetxy = this.cellIdToCoords(this.targetCell.id);
         const moveData = {
-            originalId: originalId,
-            targetId: targetId,
+            startxy: originalxy,
+            endxy: targetxy,
             declaration: declarationType
         };
         this.stopClockTick('player');
@@ -531,7 +533,6 @@ class UIManager {
         this.cleanupAfterMove();
     }
     handleValidMove(target,legalMovePieces) {
-        this.moveSpeechBubblesToTarget(target);
         if (legalMovePieces.length === 1) {
             this.completeMove(legalMovePieces[0]);
         } else if (legalMovePieces.length > 1) {
@@ -542,6 +543,7 @@ class UIManager {
             rightBubble.src = `/images/BubbleThoughtRight${pieceTypeNames[legalMovePieces[1]]}.svg`;
             this.addState('leftThoughtBubble');
             this.addState('rightThoughtBubble');
+            this.displayLegalMoves(legalMovePieces,'Thought',target);
             this.updateUI();
         }
     }
@@ -708,13 +710,14 @@ class UIManager {
     declareMove(params){
         console.log(`Declaring: ${params}`);
         const bubbleElement = document.getElementById(params);
-        const imageSrc = bubbleElement.src;
-        const pieceTypeName = imageSrc.split('BubbleThought')[1].split('.')[0].replace(/Left|Right/, '');
-        const blackPieceType = this.convertPieceImageNameToEngineFormat(pieceTypeName);
-        const pieceType = blackPieceType.split('Black')[1];
-        console.log(`Declared Piece Type: ${pieceTypeName}`);
+        const pieceType = this.bubbleImageToEngineFormat(bubbleElement.src);
+        console.log(`Declared Piece Type: ${pieceTypeNames[pieceType]}`);
         this.legalActions = [pieceType];
         this.completeMove(pieceType);
+    }
+    bubbleImageToEngineFormat(imageSrc){
+        const pieceTypeName = imageSrc.split('BubbleThought')[1].split('.')[0].replace(/Left|Right/, '');
+        return pieces[pieceTypeName.toUpperCase()];
     }
     randomSetup(params){
         // Stop the current player's clock
