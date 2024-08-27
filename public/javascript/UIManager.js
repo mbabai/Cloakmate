@@ -1,11 +1,16 @@
-const pieceStringNames = {
-    [colors.WHITE]: ['WhiteBomb', 'WhiteKing', 'WhiteKnight', 'WhiteBishop', 'WhiteRook','WhiteUnknown'],
-    [colors.BLACK]: ['BlackBomb', 'BlackKing', 'BlackKnight', 'BlackBishop', 'BlackRook','BlackUnknown']   
-};
+
 const colors = { // Color/Player constants
 	WHITE: 0, 
 	BLACK: 1
 }
+const colorNames = {
+    [colors.WHITE]: 'White',
+    [colors.BLACK]: 'Black'
+}
+const pieceStringNames = {
+    [colors.WHITE]: ['WhiteBomb', 'WhiteKing', 'WhiteKnight', 'WhiteBishop', 'WhiteRook','WhiteUnknown'],
+    [colors.BLACK]: ['BlackBomb', 'BlackKing', 'BlackKnight', 'BlackBishop', 'BlackRook','BlackUnknown']   
+};
 const pieces = { //Piece constants
     BOMB:0,
     KING:1,
@@ -362,7 +367,7 @@ class UIManager {
             return false;
         }
         // Check if target has a friendly piece
-        const targetPiece = this.convertPieceImageNameToEngineFormat(this.board.board[targetCoords.y][targetCoords.x]);
+        const targetPiece = this.board.board[targetCoords.y][targetCoords.x];
         if (targetPiece && targetPiece.color === this.board.color) {
             return false;
         }
@@ -389,8 +394,8 @@ class UIManager {
         }
     }
     convertPieceImageNameToEngineFormat(ImageNamge) {
-        const pieceName = ImageNamge.replace(/\.svg$/, '').replace(/^Pawn/, '');
-        const color = pieceName.startsWith('White') ? colors.WHITE : colors.BLACK;
+        const pieceName = ImageNamge.replace(/\.svg$/, '').split('Pawn')[1];
+        const color = pieceName.startsWith('White') ? colors.WHITE : colors.BLACK; // Default to Black
         const type = pieces[pieceName.slice(5).toUpperCase()]; // Remove 'White' or 'Black' prefix
         return { color, type };
     };
@@ -464,14 +469,12 @@ class UIManager {
 
         this.cleanupAfterDrag();
     }
- 
     setPointerEventsElementsInTheWay(pointerEvents){
         document.querySelectorAll('.bubble').forEach(bubble => {
             bubble.style.pointerEvents = pointerEvents;
         });    
         this.draggedPiece.style.pointerEvents = pointerEvents;
     }
-
     getTargetElement(e) {
         this.setPointerEventsElementsInTheWay('none');
         let target = document.elementFromPoint(e.clientX, e.clientY);
@@ -551,7 +554,6 @@ class UIManager {
         rightBubble.style.left = `${targetRect.right - 73}px`;
         rightBubble.style.top = `${targetRect.top - 60}px`;
     }
-
     canSwap(target) {
         return this.currentActions.includes('swap') && 
                target.querySelector('.game-piece');
@@ -610,7 +612,10 @@ class UIManager {
 
         // Check if one of the first-row pieces is a king
         const hasKingInFirstRow = Array.from(firstRowCells).some(cell => {
-            const piece = this.convertPieceImageNameToEngineFormat(cell.querySelector('.game-piece').src);
+            const pieceElement = cell.querySelector('.game-piece');
+            if (!pieceElement) return false;
+            const pieceImage = pieceElement.src;
+            const piece = this.convertPieceImageNameToEngineFormat(pieceImage);
             return piece && piece.type === pieces.KING;
         });
 
@@ -705,7 +710,8 @@ class UIManager {
         const bubbleElement = document.getElementById(params);
         const imageSrc = bubbleElement.src;
         const pieceTypeName = imageSrc.split('BubbleThought')[1].split('.')[0].replace(/Left|Right/, '');
-        const pieceType = this.convertPieceImageNameToEngineFormat(pieceTypeName);
+        const blackPieceType = this.convertPieceImageNameToEngineFormat(pieceTypeName);
+        const pieceType = blackPieceType.split('Black')[1];
         console.log(`Declared Piece Type: ${pieceTypeName}`);
         this.legalActions = [pieceType];
         this.completeMove(pieceType);
@@ -769,8 +775,8 @@ class UIManager {
         
         backRowSquares.forEach(square => {
             const pieceElement = document.createElement('img');
-            pieceElement.src = `images/Pawn${opponentColor}Front.svg`;
-            pieceElement.alt = `Pawn${opponentColor}Front`;
+            pieceElement.src = `images/Pawn${colorNames[opponentColor]}Unknown.svg`;
+            pieceElement.alt = `Pawn${colorNames[opponentColor]}Unknown`;
             pieceElement.classList.add('game-piece');
             
             // Remove any existing piece in the square
@@ -782,7 +788,7 @@ class UIManager {
             square.appendChild(pieceElement);
         });
 
-        console.log(`Opponent setup complete. Back row filled with ${opponentColor} pawns.`);
+        console.log(`Opponent setup complete. Back row filled with ${colorNames[opponentColor]} pawns.`);
     }
     bothSetupComplete(data){
         this.updateBoardState(data);
@@ -960,23 +966,21 @@ class UIManager {
             cell.style.position = 'relative';
         });
     }
+    createPieceImage(piece) {
+        const img = document.createElement('img');
+        img.src = this.getPieceImageNameFromEngineFormat(piece);
+        img.className = 'game-piece';
+        return img;
+    }
     setBoardPieces(currentBoard) {
         this.removeAllPieces();
-        const createPieceImage = (piece) => {
-            const img = document.createElement('img');
-            img.src = `images/Pawn${piece}.svg`;
-            img.alt = `Pawn${piece}.svg`;
-            img.className = 'game-piece';
-            return img;
-        };
-
         // Add pieces to the inventory
         const inventorySlots = document.querySelectorAll('.inventory-slot');
         let slotIndex = 0;
         currentBoard.stash.forEach(pieceObj => {
             for (let i = 0; i < pieceObj.count; i++) {
                 if (slotIndex < inventorySlots.length) {
-                    const pieceImage = createPieceImage(pieceObj.piece);
+                    const pieceImage = this.createPieceImage(pieceObj.piece);
                     inventorySlots[slotIndex].innerHTML = '';
                     inventorySlots[slotIndex].appendChild(pieceImage);
                     slotIndex++;
@@ -995,7 +999,7 @@ class UIManager {
             const onDeckElement = document.querySelector('.on-deck-cell');
             onDeckElement.innerHTML = '';
             const color = currentBoard.onDeck.color === currentBoard.color ? 'White' : 'Black';
-            onDeckElement.appendChild(createPieceImage(currentBoard.onDeck)); 
+            onDeckElement.appendChild(this.createPieceImage(currentBoard.onDeck)); 
         }
 
         // Add pieces to the board
@@ -1005,7 +1009,7 @@ class UIManager {
                     const cellId = this.coordsToCellId({ x, y });
                     const cell = document.getElementById(cellId);
                     if (cell) {
-                        const pieceImage = createPieceImage(piece);
+                        const pieceImage = this.createPieceImage(piece);
                         cell.appendChild(pieceImage);
                     }
                 }

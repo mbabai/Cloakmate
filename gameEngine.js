@@ -345,7 +345,7 @@ class Board {
         return null; // No piece on deck for the player
     }
 
-    moveStashPieceToOnDeck(player, type) {
+    moveStashPieceToOnDeck(player, type) { 
         // Check the stash count for the piece to be moved to on deck
         const stashCountForPiece = Number((this.bitboards[player][type] & (0b11 << 1)) >> 1);
         if (stashCountForPiece <= 0) {
@@ -794,12 +794,11 @@ class Game {
                 }
             }
 
-            isLegal = this.isSetupLegal(convertedFrontRow, onDeckPiece, playerNumber);
+            isLegal = this.isSetupLegal(frontRow, onDeckPiece, playerNumber);
         }
 
         // Now that we have a legal setup, place the pieces
-
-        this.placeSetupPieces(playerNumber, convertedFrontRow, onDeckPiece);
+        this.placeSetupPieces(playerNumber, frontRow, onDeckPiece);
         return this.getColorState(playerNumber);
     }
 
@@ -818,13 +817,13 @@ class Game {
         }
     
         // Ensure all pieces are accounted for
-        if (convertedFrontRow.length !== 5 || onDeck === undefined) {
+        if (frontRow.length !== 5 || onDeck === undefined) {
             console.error("Invalid setup: Incorrect number of pieces");
             return false;
         }
     
         // Call placeSetupPieces with the formatted data
-        this.placeSetupPieces(playerColor, convertedFrontRow, this.getPieceTypeFromString(onDeck));
+        this.placeSetupPieces(playerColor, frontRow, onDeck);
         return true;
     }
     
@@ -845,7 +844,7 @@ class Game {
                 console.error(`Illegal setup: Pieces must be on row ${expectedRow}`);
                 return false;
             }
-            if (!(piece.type in pieces) || piece.type === pieces.UNKNOWN) {
+            if (!Object.values(pieces).includes(piece.type) || piece.type === pieces.UNKNOWN) {
                 console.error("Illegal setup: Unknown piece");
                 return false;
             }
@@ -876,20 +875,8 @@ class Game {
     
         return true;
     }
-
-    getPieceTypeFromString(pieceString) {
-        const pieceMap = {
-            'KING': pieces.KING,
-            'BOMB': pieces.BOMB,
-            'KNIGHT': pieces.KNIGHT,
-            'BISHOP': pieces.BISHOP,
-            'ROOK': pieces.ROOK
-        };
-        return pieceMap[pieceString.toUpperCase()] || null;
-    }
-    
     placeSetupPieces(playerColor, pieceList, onDeck) {
-        this.board.moveStashPieceToOnDeck(playerColor, onDeck);
+        this.board.moveStashPieceToOnDeck(playerColor, onDeck.type);
         for (let piece of pieceList) {
             this.board.moveStashPieceToBoard(playerColor, piece.type, piece.x, piece.y);
         }
