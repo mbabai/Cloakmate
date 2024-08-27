@@ -71,7 +71,9 @@ class Action {
         }
     }
     copy(){
-        return new Action(this.type, this.player, this.x1, this.y1, this.declaration, this.x2, this.y2);
+        const newAction = new Action(this.type, this.player, this.x1, this.y1, this.declaration, this.x2, this.y2);
+        newAction.wasCapture = this.wasCapture 
+        return newAction;
     }
     isCapture(){
         //must be called BEFORE the move is complete to be accurate
@@ -510,7 +512,6 @@ class Board {
                 this.movePiece(action.x1,action.y1,action.x2,action.y2)
                 this.flipTurn()
                 action.wasBluff = action.isBluff()
-                this.actions.push(action)
                 break;
             case actions.CHALLENGE:  
                 if(lastAction.wasBluff && lastAction.type == actions.MOVE){ //Kill the bluffing piece, and the turn does NOT flip.

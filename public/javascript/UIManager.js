@@ -41,7 +41,7 @@ class UIManager {
         this.username;
         this.opponentName;
         this.board = null;
-        this.allVisibles = ['first-row-highlight-gold', 'on-deck-cell-highlight-gold'
+        this.allVisibles = ['first-row-highlight-gold', 'on-deck-cell-highlight-gold', 'origin-highlight'
             , 'lobby-container','name-entry','game-picker'
             ,'play-button','custom-options','ai-difficulty','cancel-button'
             ,'bomb-button','challenge-button','ready-button', 'random-setup-button'
@@ -143,6 +143,10 @@ class UIManager {
                 visible: ['right-speech-bubble'],
                 actions: []
             },
+            originHighlight:{
+                visible: ['origin-highlight'],
+                actions: []
+            },
             movePlaced:{
                 visible: [],
                 actions: ['declareMove']
@@ -218,7 +222,7 @@ class UIManager {
                         element.classList.add('highlighted-cell-gold');
                     } else if (highlightType === 'red') {
                         element.classList.add('highlighted-cell-red');
-                    }
+                    } 
                 } else {
                     element.classList.remove('highlighted-cell-gold');
                     element.classList.remove('highlighted-cell-red');
@@ -517,11 +521,11 @@ class UIManager {
 
     }
     completeMove(declarationType){
-        const leftBubble = document.getElementById('left-speech-bubble');
-        leftBubble.src = `/images/BubbleSpeechLeft${pieceTypeNames[declarationType]}.svg`;
-        console.log(`Displaying: ${leftBubble.src}`);
+        this.setSpeechBubbleImageType(declarationType);
         this.setState('moveComplete');
         this.addState('leftSpeechBubble');
+        this.addState('originHighlight');
+        this.moveOriginHighlight(this.originalParent);
         this.moveSpeechBubblesToTarget(this.targetCell);
         this.updateUI();
         // Send move information to the server
@@ -912,9 +916,11 @@ class UIManager {
         } else if (this.board.phase === 'play'){
             if (this.board.myTurn) {
                 this.startClockTick('player');
+                this.stopClockTick('opponent');
             } else {
                 this.startClockTick('opponent');
-        }
+                this.stopClockTick('player');
+            }
         }
     }
     updateBoardUI() {
@@ -1013,7 +1019,6 @@ class UIManager {
         if (currentBoard.onDeck) {
             const onDeckElement = document.querySelector('.on-deck-cell');
             onDeckElement.innerHTML = '';
-            const color = currentBoard.onDeck.color === currentBoard.color ? 'White' : 'Black';
             onDeckElement.appendChild(this.createPieceImage(currentBoard.onDeck)); 
         }
 
@@ -1030,7 +1035,36 @@ class UIManager {
                 }
             });
         });
+        // Get the last action from the action history
+        const lastAction = this.board.actionHistory[this.board.actionHistory.length - 1];
+        
+        if (lastAction && lastAction.type === actions.MOVE) {
+            const startCellId = this.coordsToCellId({ x: lastAction.x1, y: lastAction.y1 });
+            const startCell = document.getElementById(startCellId);
+            const targetCellId = this.coordsToCellId({ x: lastAction.x2, y: lastAction.y2 });
+            const targetCell = document.getElementById(targetCellId);
+            if (startCell) {
+                this.moveOriginHighlight(startCell);
+                this.addState('originHighlight');
+            }
+            if (targetCell){
+                this.setSpeechBubbleImageType(lastAction.declaration);
+                this.moveSpeechBubblesToTarget(targetCell);
+                this.addState('leftSpeechBubble');
+            }
+
+        }
+        this.updateUI();
     }
+    setSpeechBubbleImageType(declaration){
+        const leftBubble = document.getElementById('left-speech-bubble');
+        leftBubble.src = `/images/BubbleSpeechLeft${pieceTypeNames[declaration]}.svg`;
+    }
+    moveOriginHighlight(cell){
+        const originHighlight = document.getElementById('origin-highlight');
+        originHighlight.style.position = 'absolute';
+        cell.appendChild(originHighlight); 
+    }   
     startClockTick(clockToStart) {
         
         const updateClock = (clockElement, isPlayer) => {

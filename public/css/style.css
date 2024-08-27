@@ -93,6 +93,22 @@ html, body {
 .game-piece.selected {
     background: radial-gradient(circle, rgba(65, 105, 225, 0.75) 0%, rgba(65, 105, 225, 0.35) 40%, transparent 80%);
 }
+#origin-highlight{
+    border: 5px solid rgba(33, 0, 179, 0.50);
+    background-color: rgba(33, 0, 179, 0.100);
+    border-radius: 50%;
+    top:50%;
+    left:50%;
+    width: 50%;
+    height: 50%;
+    transform: translate(-50%,-50%);
+    -webkit-user-drag: none; /* Specifically for WebKit */
+    -khtml-user-drag: none; /* For Konqueror */
+    -moz-user-drag: none; /* For Firefox */
+    -o-user-drag: none; /* For Opera */
+    display: none;
+    pointer-events: none;
+}
 .bubble {
     width: 12vw;
     height: 12vh;

@@ -19,6 +19,7 @@ class GameCoordinator {
         this.users = []
         this.users.push(this.nameToUser.get(this.game.players[0]))
         this.users.push(this.nameToUser.get(this.game.players[1]))
+        this.lastActionTime = null; //Use this to track the clock.
         this.server = server;
         this.broadcastGameState()
     }
@@ -41,18 +42,20 @@ class GameCoordinator {
     gameAction(player,data){
         const playerColorIndex = this.game.getPlayerColorIndex(player.username)
         const details = data.details
-        console.log(`ACTION:::::::::::::::::::::::::::::`)
-        console.log(data.action)
-        console.log(playerColorIndex)
-        console.log(data)
         const thisAction = new Action(data.action,playerColorIndex,details.x1,details.y1,details.declaration,details.x2,details.y2)
         thisAction.board = this.game.board;
         const isActionSuccessful = this.game.board.takeAction(thisAction)
         if (isActionSuccessful) {
+            this.updatePlayerTime(playerColorIndex)
             this.broadcastGameState()
         } else {
             this.server.routeMessage(player.websocket, { type: "illegal-action", message: "Your action was illegal. Please try again." });
         }
+    }
+    updatePlayerTime(playerColorIndex){
+        const turnTime = Date.now() - this.lastActionTime;
+        this.game.playersTimeAvailable[playerColorIndex] -= turnTime;
+        this.lastActionTime = Date.now();
     }
     submitSetup(player, data) {
         console.log("READY-----------") 
@@ -75,7 +78,8 @@ class GameCoordinator {
             console.log("Both players have completed their setup")
             const playerBoardState = this.game.getColorState(this.game.getPlayerColorIndex(player.username));
             const otherPlayerBoardState = this.game.getColorState(this.game.getPlayerColorIndex(otherPlayer.username));
-            
+            this.game.playStartTime = Date.now();
+            this.lastActionTime = Date.now();
             this.server.routeMessage(player.websocket, { type: "both-setup-complete", board: playerBoardState });
             this.server.routeMessage(otherPlayer.websocket, { type: "both-setup-complete", board: otherPlayerBoardState });
         } else {
