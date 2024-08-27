@@ -10,15 +10,12 @@ const pieces = { //Piece constants
     KING:1,
     KNIGHT:2,
     BISHOP:3,
-    ROOK:4
+    ROOK:4,
+    UNKNOWN:5
 }
-const pieceStringNames = {
-    [colors.WHITE]: ['WhiteBomb', 'WhiteKing', 'WhiteKnight', 'WhiteBishop', 'WhiteRook'],
-    [colors.BLACK]: ['BlackBomb', 'BlackKing', 'BlackKnight', 'BlackBishop', 'BlackRook']   
-};
 const pieceSymbols = { //queen is BOMB
-    [colors.WHITE]: ['♛', '♚', '♞', '♝', '♜'],
-    [colors.BLACK]: ['♕', '♔', '♘', '♗', '♖'] 
+    [colors.WHITE]: ['♛', '♚', '♞', '♝', '♜','♟'],
+    [colors.BLACK]: ['♕', '♔', '♘', '♗', '♖','♙'] 
 };
 
 const actions = {
@@ -681,7 +678,7 @@ class Game {
     }
     getColorState(color) {
         // returns a version of the board state that obfuscates the other side's information.
-        const otherColor = color == colors.WHITE ? "Black" : "White"; 
+        const otherColor = 1 - color; 
         const boardState = {
             color: color,
             opponentName: this.players[1-color],
@@ -702,9 +699,9 @@ class Game {
                 const pieceInfo = this.board.getPieceAt(x, y);
                 if (pieceInfo) {
                     if (pieceInfo.player === color) {
-                        boardState.board[y][x] = pieceStringNames[pieceInfo.player][pieceInfo.type];
+                        boardState.board[y][x] = {color: color, type: pieceInfo.type};
                     } else {
-                        boardState.board[y][x] = `${otherColor}Front`;
+                        boardState.board[y][x] = {color: otherColor, type: pieces.UNKNOWN} ;
                     }
                 }
             }
@@ -732,7 +729,7 @@ class Game {
         // Handle on-deck piece for the current player
         const onDeckType = this.board.getOnDeckPieceforPlayer(color);
         if (onDeckType !== null) {
-            boardState.onDeck = pieceStringNames[color][onDeckType];
+            boardState.onDeck = {color: color, type: onDeckType} ;
         }
 
         // Handle captured pieces
@@ -740,12 +737,12 @@ class Game {
             for (let type = 0; type < this.board.bitboards[player].length; type++) {
                 const capturedCount = Number((this.board.bitboards[player][type] & (0b11000)) >> 3);
                 if (capturedCount > 0) {
-                    const pieceName = pieceStringNames[player][type];
+                    const thisPiece = {color: player, type: type} ;
                     for (let i = 0; i < capturedCount; i++) {
                         if (this.board.lastCapturedPiece && this.board.lastCapturedPiece.player === player && this.board.lastCapturedPiece.type === type && i === 0) {
-                            boardState.captured.push( `${otherColor}Front`); // Last captured piece shown as 'Front'
+                            boardState.captured.push({color: otherColor, type: pieces.UNKNOWN} ); // Last captured piece shown as 'unknown'
                         } else {
-                            boardState.captured.push(pieceName);
+                            boardState.captured.push(thisPiece);
                         }
                     }
                 }
@@ -757,7 +754,7 @@ class Game {
             const stashCount = Number((this.board.bitboards[color][type] & (0b11 << 1)) >> 1);
             if (stashCount > 0) {
                 boardState.stash.push({
-                    piece: pieceStringNames[color][type],
+                    piece: {color: color, type: type},
                     count: stashCount
                 });
             }
@@ -766,7 +763,7 @@ class Game {
         return boardState;
     }
     selectRandomSetup() {
-        let selection = [pieces.BISHOP, pieces.BISHOP, pieces.KING, pieces.ROOK, pieces.ROOK, pieces.KNIGHT, pieces.KNIGHT, pieces.BOMB];
+        let selection = [pieces.KING, pieces.BISHOP, pieces.BISHOP, pieces.ROOK, pieces.ROOK, pieces.KNIGHT, pieces.KNIGHT, pieces.BOMB];
         for (let i = selection.length - 1; i > 0; i--) {
             const j = Math.floor(Math.random() * (i + 1));
             [selection[i], selection[j]] = [selection[j], selection[i]]; // Swap elements
@@ -779,21 +776,21 @@ class Game {
         console.log(`Random Setup for player #${playerNumber}`);
         let isLegal = false;
         let pick;
-        let convertedFrontRow;
+        let frontRow;
         let onDeckPiece;
 
         while (!isLegal) {
             pick = this.selectRandomSetup();
             console.log(`Pick: ${pick}`);
-            convertedFrontRow = [];
+            frontRow = [];
             onDeckPiece = null;
 
             for (let x = 0; x < pick.length; x++) {
                 if (x === 5) {
-                    onDeckPiece = pick[x];
+                    onDeckPiece = {color: playerNumber, type: pick[x]};
                 } else {
                     let y = playerNumber === colors.WHITE ? 0 : 4;
-                    convertedFrontRow.push({ x, y, type: pick[x] });
+                    frontRow.push({ x, y, color: playerNumber, type: pick[x] });
                 }
             }
 
@@ -814,15 +811,8 @@ class Game {
             return false;
         }
     
-        // Convert frontRow to the correct format
-        const convertedFrontRow = frontRow.map(piece => ({
-            x: piece.x,
-            y: piece.y,
-            type: this.getPieceTypeFromString(piece.type)
-        }));
-    
         // Check legality of the setup
-        if (!this.isSetupLegal(convertedFrontRow, this.getPieceTypeFromString(onDeck), playerColor)) {
+        if (!this.isSetupLegal(frontRow, onDeck, playerColor)) {
             console.log("Illegal setup");
             return false;
         }
@@ -855,12 +845,19 @@ class Game {
                 console.error(`Illegal setup: Pieces must be on row ${expectedRow}`);
                 return false;
             }
+            if (!(piece.type in pieces) || piece.type === pieces.UNKNOWN) {
+                console.error("Illegal setup: Unknown piece");
+                return false;
+            }
+            if (piece.color !== playerColor){
+                console.error("Illegal setup: Piece color mismatch");
+                return false;
+            }
             pieceCounts[piece.type]++;
             if (piece.type === pieces.KING) frontRowHasKing = true;
         }
-    
         // Check on deck piece
-        pieceCounts[onDeck]++;
+        pieceCounts[onDeck.type]++;
     
         if (!frontRowHasKing) {
             console.error("Illegal setup: exactly 1 King must be on the front row");

@@ -33,18 +33,6 @@ class GameCoordinator {
     logGameState() {
         return `#${this.gameNumber} - W:${this.users[0].username} vs B:${this.users[1].username}`
     }
-    convertLocationToXY(location) {
-        const [letter, number] = location.split('-');
-        const x = letter.charCodeAt(0) - 'A'.charCodeAt(0);
-        const y = parseInt(number) - 1;
-        return { x, y };
-    }
-
-    convertPieceToEngineFormat(piece) {
-        const color = piece.startsWith('White') ? 0 : 1;
-        const type = pieces[piece.replace(/White|Black/, '').toUpperCase()];
-        return { color, type };
-    }
     randomSetup(player){
         const thisPlayerGameState = this.game.randomSetup(this.game.getPlayerColorIndex(player.username));
         this.server.routeMessage(player.websocket,{type:"random-setup-complete", board:thisPlayerGameState})
@@ -52,27 +40,12 @@ class GameCoordinator {
     }
 
     submitSetup(player, data) {
-        let engineFrontRow = [];
-        let engineOnDeck = null;
-
-        // Convert frontRow
-        for (const [position, piece] of Object.entries(data.frontRow)) {
-            const { x, y } = this.convertLocationToXY(position);
-            const { type } = this.convertPieceToEngineFormat(piece);
-            engineFrontRow.push({ x, y, type });
-        }
-
-        // Convert onDeck
-        if (data.onDeck) {
-            const { type } = this.convertPieceToEngineFormat(data.onDeck);
-            engineOnDeck = type;
-        }
-        console.log("READY-----------")
-        console.log(engineFrontRow)
-        console.log(engineOnDeck)
+        console.log("READY-----------") 
+        console.log(data.frontRow)
+        console.log(data.onDeck)
         console.log(player.username)
 
-        if (!this.game.trySetup(player.username, engineFrontRow, engineOnDeck)) {
+        if (!this.game.trySetup(player.username, data.frontRow, data.onDeck)) {
             console.log("Illegal setup");
             this.server.routeMessage(player.websocket, { type: "setup-error", message: "Your setup was invalid. Please try again." });
         } else {

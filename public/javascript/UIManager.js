@@ -1,8 +1,33 @@
+const pieceStringNames = {
+    [colors.WHITE]: ['WhiteBomb', 'WhiteKing', 'WhiteKnight', 'WhiteBishop', 'WhiteRook','WhiteUnknown'],
+    [colors.BLACK]: ['BlackBomb', 'BlackKing', 'BlackKnight', 'BlackBishop', 'BlackRook','BlackUnknown']   
+};
+const colors = { // Color/Player constants
+	WHITE: 0, 
+	BLACK: 1
+}
+const pieces = { //Piece constants
+    BOMB:0,
+    KING:1,
+    KNIGHT:2,
+    BISHOP:3,
+    ROOK:4,
+    UNKNOWN:5
+}
+const pieceTypeNames = {
+    [pieces.BOMB]: 'Bomb',
+    [pieces.KING]: 'King',
+    [pieces.KNIGHT]: 'Knight',
+    [pieces.BISHOP]: 'Bishop',
+    [pieces.ROOK]: 'Rook',
+    [pieces.UNKNOWN]: 'Unknown'
+};
+
+
 class UIManager {
     constructor(webSocketManager) {
         this.webSocketManager = webSocketManager;
         this.username;
-        this.color;
         this.opponentName;
         this.board = null;
         this.allVisibles = ['first-row-highlight-gold', 'on-deck-cell-highlight-gold'
@@ -228,11 +253,9 @@ class UIManager {
             let canSelectPiece = false;
 
             // Check if the piece is the correct color
-            const pieceColor = e.target.src.includes('White') ? 'White' : 'Black';
-            const isPlayerPiece = (this.board.color === 0 && pieceColor === 'White') || (this.board.color === 1 && pieceColor === 'Black');
-
-            if (!isPlayerPiece) {
-                return; // Don't allow selection of opposite color pieces
+            const piece = this.convertPieceImageNameToEngineFormat(e.target.src);
+            if (this.board.color !== piece.color){
+                return;// Don't allow selection of opposite color pieces
             }
 
             if (parentElement.classList.contains('cell') && this.currentActions.includes('select-board-piece')) {
@@ -244,7 +267,7 @@ class UIManager {
             }
             if (canSelectPiece) {
                 this.draggedPiece = e.target;
-                this.originalParent = this.draggedPiece.parentElement;
+                this.originalParent = parentElement;
                 this.draggedPiece.classList.add('selected');
 
                 const rect = this.draggedPiece.getBoundingClientRect();
@@ -268,7 +291,7 @@ class UIManager {
     }
     getLegalMovePieceList(startCellId, targetCellId){
         const legalMovePieces = [];
-        ['King', 'Knight', 'Bishop', 'Rook'].forEach(pieceType => {
+        [pieces.KING, pieces.KNIGHT, pieces.BISHOP, pieces.ROOK].forEach(pieceType => {
             if (this.isLegalMove(startCellId, targetCellId, pieceType)) {
                 legalMovePieces.push(pieceType);
             }
@@ -309,7 +332,7 @@ class UIManager {
         legalMovePieces.forEach((pieceType, index) => {
             const facing = index === 0 ? 'left' : 'right';
             const bubbleImage = document.getElementById(`${facing}-${type.toLowerCase()}-bubble`);
-            bubbleImage.src = `/images/Bubble${type}${facing.charAt(0).toUpperCase() + facing.slice(1)}${pieceType}.svg`;
+            bubbleImage.src = `/images/Bubble${type}${facing.charAt(0).toUpperCase() + facing.slice(1)}${pieceTypeNames[pieceType]}.svg`;
 
             // Position the bubble relative to the dragged piece
             const pieceRect = targetPiece.getBoundingClientRect();
@@ -329,7 +352,6 @@ class UIManager {
         });
         this.updateUI();
     }
-
     isLegalMove(startCellId, targetCellId, pieceType) {
         const startCoords = this.cellIdToCoords(startCellId);
         const targetCoords = this.cellIdToCoords(targetCellId);
@@ -340,59 +362,53 @@ class UIManager {
             return false;
         }
         // Check if target has a friendly piece
-        const targetPiece = this.board.board[targetCoords.y][targetCoords.x];
-        if (targetPiece) { // cannot move onto your own pieces.
-            const targetPieceColor = (targetPiece.includes('White') ? 'White' : 'Black');
-            if (targetPiece && targetPieceColor === this.color) {
-                return false;
-            }
+        const targetPiece = this.convertPieceImageNameToEngineFormat(this.board.board[targetCoords.y][targetCoords.x]);
+        if (targetPiece && targetPiece.color === this.board.color) {
+            return false;
         }
         // Check for piece-specific movement rules
         switch (pieceType) {
-            case 'Rook':
+            case pieces.ROOK:
                 if (startCoords.x !== targetCoords.x && startCoords.y !== targetCoords.y) {
                     return false; // Rook can only move in straight lines
                 }
                 return this.isPathClear(startCoords, targetCoords);
-            case 'Bishop':
+            case pieces.BISHOP:
                 if (Math.abs(targetCoords.x - startCoords.x) !== Math.abs(targetCoords.y - startCoords.y)) {
                     return false; // Bishop can only move diagonally
                 }
                 return this.isPathClear(startCoords, targetCoords);
-            case 'King':
+            case pieces.KING:
                 // King can move one square in any direction
                 return Math.abs(targetCoords.x - startCoords.x) <= 1 && Math.abs(targetCoords.y - startCoords.y) <= 1;
-            case 'Knight':
+            case pieces.KNIGHT:
                 // Knight moves in an L-shape
                 return (dx === 1 && dy === 2) || (dx === 2 && dy === 1);
             default:
                 return false;
         }
     }
-
-    getPieceType(pieceElement) {
-        const src = pieceElement.src;
-        if (src.includes('Rook')) return 'Rook';
-        if (src.includes('Bishop')) return 'Bishop';
-        if (src.includes('King')) return 'King';
-        if (src.includes('Knight')) return 'Knight';
-        return null;
+    convertPieceImageNameToEngineFormat(ImageNamge) {
+        const pieceName = ImageNamge.replace(/\.svg$/, '').replace(/^Pawn/, '');
+        const color = pieceName.startsWith('White') ? colors.WHITE : colors.BLACK;
+        const type = pieces[pieceName.slice(5).toUpperCase()]; // Remove 'White' or 'Black' prefix
+        return { color, type };
+    };
+    getPieceImageNameFromEngineFormat(piece) {
+        return `images/Pawn${pieceStringNames[piece.color][piece.type]}.svg`;
     }
-
     cellIdToCoords(cellId) {
         const [letter, number] = cellId.split('-');
         const x = letter.charCodeAt(0) - 'A'.charCodeAt(0);
         const y =  parseInt(number) - 1;
         return { x, y };
     }
-
     coordsToCellId(coords) {
         const { x, y } = coords;
         const letter = String.fromCharCode('A'.charCodeAt(0) + x);
         const number = y + 1;
         return `${letter}-${number}`;
     }
-
     isPathClear(start, target) {
         const dx = Math.sign(target.x - start.x);
         const dy = Math.sign(target.y - start.y);
@@ -418,7 +434,7 @@ class UIManager {
         if (!this.draggedPiece) return;
 
         const target = this.getTargetElement(e);
-        const originalLocation = this.getLocationType(this.originalParent);
+        const originalLocationType = this.getLocationType(this.originalParent);
         const targetLocationType = this.getLocationType(target);
         // Check if the target is a cell on the board
         const isBoardCell = target && target.classList.contains('cell') && target.id.match(/^[A-E]-[1-5]$/);
@@ -436,7 +452,7 @@ class UIManager {
             }
         } 
         if (this.isValidTarget(target)) {
-            const moveAction = `move-${originalLocation}-to-${targetLocationType}`;
+            const moveAction = `move-${originalLocationType}-to-${targetLocationType}`;
             if (this.currentActions.includes(moveAction) && isLegalityPassed) {
                 this.handleValidPieceDrop(target,legalMovePieces);
             } else {
@@ -476,10 +492,10 @@ class UIManager {
         );
     }
     handleValidPieceDrop(target,legalMovePieces) {
-        const targetPiece = target.querySelector('.game-piece');
+        const targetPieceElement = target.querySelector('.game-piece');
         this.targetCell = target;
-        if (this.canSwap(target) && targetPiece) {
-            this.swapPieces(target, targetPiece);
+        if (this.canSwap(target) && targetPieceElement) {
+            this.swapPieces(target, targetPieceElement);
         } else {
             target.appendChild(this.draggedPiece);
             // Display legal moves after a valid move
@@ -493,7 +509,7 @@ class UIManager {
     }
     completeMove(declarationType){
         const leftBubble = document.getElementById('left-speech-bubble');
-        leftBubble.src = `/images/BubbleSpeechLeft${declarationType}.svg`;
+        leftBubble.src = `/images/BubbleSpeechLeft${pieceTypeNames[declarationType]}.svg`;
         console.log(`Displaying: ${leftBubble.src}`);
         this.setState('moveComplete');
         this.addState('leftSpeechBubble');
@@ -519,8 +535,8 @@ class UIManager {
             this.setState('movePlaced');
             const leftBubble = document.getElementById('left-thought-bubble');
             const rightBubble = document.getElementById('right-thought-bubble');
-            leftBubble.src = `/images/BubbleThoughtLeft${legalMovePieces[0]}.svg`;
-            rightBubble.src = `/images/BubbleThoughtRight${legalMovePieces[1]}.svg`;
+            leftBubble.src = `/images/BubbleThoughtLeft${pieceTypeNames[legalMovePieces[0]]}.svg`;
+            rightBubble.src = `/images/BubbleThoughtRight${pieceTypeNames[legalMovePieces[1]]}.svg`;
             this.addState('leftThoughtBubble');
             this.addState('rightThoughtBubble');
             this.updateUI();
@@ -540,12 +556,12 @@ class UIManager {
         return this.currentActions.includes('swap') && 
                target.querySelector('.game-piece');
     }
-    swapPieces(target, targetPiece) {
-        let targetPieceColor = targetPiece.src.includes('White') ? 'White' : 'Black';
-        let draggedPieceColor = this.draggedPiece.src.includes('White') ? 'White' : 'Black';
+    swapPieces(target, targetPieceElement) {
+        let targetPiece = this.convertPieceImageNameToEngineFormat(targetPieceElement.src);
+        let draggedPiece = this.convertPieceImageNameToEngineFormat(this.draggedPiece.src);
         
-        if (targetPieceColor === draggedPieceColor) {
-            this.originalParent.appendChild(targetPiece);
+        if (targetPiece.color === draggedPiece.color) {
+            this.originalParent.appendChild(targetPieceElement);
             target.appendChild(this.draggedPiece);
         } else {
             this.returnToOriginalParent();
@@ -594,8 +610,8 @@ class UIManager {
 
         // Check if one of the first-row pieces is a king
         const hasKingInFirstRow = Array.from(firstRowCells).some(cell => {
-            const piece = cell.querySelector('.game-piece');
-            return piece && piece.src.includes('King');
+            const piece = this.convertPieceImageNameToEngineFormat(cell.querySelector('.game-piece').src);
+            return piece && piece.type === pieces.KING;
         });
 
         // Update state based on cell occupancy and king presence
@@ -688,8 +704,9 @@ class UIManager {
         console.log(`Declaring: ${params}`);
         const bubbleElement = document.getElementById(params);
         const imageSrc = bubbleElement.src;
-        const pieceType = imageSrc.split('BubbleThought')[1].split('.')[0].replace(/Left|Right/, '');
-        console.log(`Declared Piece Type: ${pieceType}`);
+        const pieceTypeName = imageSrc.split('BubbleThought')[1].split('.')[0].replace(/Left|Right/, '');
+        const pieceType = this.convertPieceImageNameToEngineFormat(pieceTypeName);
+        console.log(`Declared Piece Type: ${pieceTypeName}`);
         this.legalActions = [pieceType];
         this.completeMove(pieceType);
     }
@@ -709,15 +726,16 @@ class UIManager {
         this.stopClockTick('player');
         this.setState('ready');
         // Generate JSON object with piece positions
-        let frontRow = {}
+        let frontRow = []
         let onDeck = null
 
         // Get front row squares
         const frontRowSquares = document.querySelectorAll('.first-row');
         frontRowSquares.forEach(square => {
-            const pieceElement = square.querySelector('.game-piece');
-            if (pieceElement) {
-                frontRow[square.id] = pieceElement.alt.replace('.svg', '').replace('Pawn', '');
+            const piece = this.convertPieceImageNameToEngineFormat(square.querySelector('.game-piece').src);
+            if (piece) {
+                const coords = this.cellIdToCoords(square.id);
+                frontRow.push({x:coords.x, y:coords.y, color:piece.color, type:piece.type});
             }
         });
 
@@ -725,7 +743,7 @@ class UIManager {
         const onDeckCell = document.querySelector('.on-deck-cell');
         const onDeckPiece = onDeckCell.querySelector('.game-piece');
         if (onDeckPiece) {
-            onDeck = onDeckPiece.alt.replace('.svg', '').replace('Pawn', '');
+            onDeck = this.convertPieceImageNameToEngineFormat(onDeckPiece.src);
         }
         console.log(frontRow);
         console.log(onDeck);
@@ -746,8 +764,8 @@ class UIManager {
 
         // Fill the back row with opponent's pawns
         const backRowSquares = document.querySelectorAll('.last-row');
-        console.log(`~~~~~~~~~~~~~~~~~my color is ${this.color}`)
-        const opponentColor = this.color === 'White' ? 'Black' : 'White';
+        console.log(`~~~~~~~~~~~~~~~~~my color is ${this.board.color}`)
+        const opponentColor = 1 - this.board.color;
         
         backRowSquares.forEach(square => {
             const pieceElement = document.createElement('img');
@@ -840,7 +858,6 @@ class UIManager {
         this.setState('boardState');
         console.log(data.board);
         this.board = data.board;
-        this.color = data.board.color === 0 ? 'White' : 'Black';
         this.opponentName = this.board.opponentName;
         if(!this.board.myTurn){
             this.setState('otherPlayerTurn');
