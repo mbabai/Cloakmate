@@ -505,6 +505,8 @@ class UIManager {
                     this.onDeck(this.draggedPiece);
                 } else if (isLegalityPassed) {
                     this.handleValidPieceDrop(target,legalMovePieces);
+                } else {
+                    this.returnToOriginalParent();
                 }
             } else {
                 this.returnToOriginalParent();
