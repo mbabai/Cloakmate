@@ -92,6 +92,19 @@ html, body {
 #floating-game-piece {
     pointer-events: none;
     display: none;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 90%;
+    height: 90%;
+    object-fit: contain;
+    user-select: none;
+    -webkit-user-drag: none;
+    -khtml-user-drag: none;
+    -moz-user-drag: none;
+    -o-user-drag: none;
+    z-index: 1000;
 }
 .game-piece.selected {
     background: radial-gradient(circle, rgba(65, 105, 225, 0.75) 0%, rgba(65, 105, 225, 0.35) 40%, transparent 80%);

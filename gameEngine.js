@@ -516,6 +516,7 @@ class Board {
                 break;
             case actions.CHALLENGE:  
                 if(lastAction.wasBluff && lastAction.type == actions.MOVE){ //Kill the bluffing piece, and the turn does NOT flip.
+                    action.wasSuccessful = true;
                     // 0 move -> 1 challenge (bluff) -> 1 move...
                     if(lastAction.wasCapture){ //If this was a capture, we undo it with a revive
                         this.reviveLastCapturedPieceAtXY(lastAction.x2,lastAction.y2)
@@ -528,6 +529,7 @@ class Board {
                     this.playerToOnDeck = lastAction.player; // the other player will select a new on-deck piece
                     this.swapDeckToBoard(lastAction.player,lastAction.x2,lastAction.y2)
                 } else if (lastAction.wasBluff && lastAction.type == actions.BOMB){ // A bomb was declared, and was a bluff
+                    action.wasSuccessful = true;
                     // 0 move -> 1 bomb -> 0 challenge (bluff) -> 1 sacrifices -> 1 move...
                     this.reviveLastCapturedPieceAtXY(twoActionsAgo.x2,twoActionsAgo.y2) //This undoes the bomb
                     this.playerToSacrifice = lastAction.player; // The bomb bluffer must still sacrifice yet another piece. 

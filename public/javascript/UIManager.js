@@ -1083,10 +1083,16 @@ class UIManager {
             const targetCellId = this.coordsToCellId({ x: lastMove.x2, y: lastMove.y2 });
             const targetCell = document.getElementById(targetCellId);
             rightBubble.src = 'images/BubbleSpeechRightChallenge.svg';
-            rightBubble.style.position = 'absolute';
-            rightBubble.style.left = `${targetCell.right - 73}px`;
-            rightBubble.style.top = `${targetCell.top - 60}px`;
+            rightBubble.style.position = 'fixed';
+            //move the speech bubble by the name.
             this.addState('rightSpeechBubble');
+            if (!lastAction.wasSuccessful && this.board.myTurn){ //we failed the challenge, and it's our turn to sacrifice
+                const floatingGamePiece = document.getElementById('floating-game-piece');
+                floatingGamePiece.src = this.getPieceImageNameFromEngineFormat({color: (1 - this.board.color), type: lastMove.declaration});
+                targetCell.appendChild(floatingGamePiece);
+                this.addState('floatingGamePiece');
+                //put in the red Xes.
+            }
         }
         this.updateUI();
     }
