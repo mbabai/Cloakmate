@@ -79,10 +79,8 @@ class GameCoordinator {
         const playerColorIndex = this.game.getPlayerColorIndex(player.username)
         const details = data.details
         const thisAction = new Action(data.action,playerColorIndex,details.x1,details.y1,details.declaration,details.x2,details.y2)
-        thisAction.board = this.game.board;
         const isActionSuccessful = this.game.board.takeAction(thisAction)
         if (isActionSuccessful) {
-            console.log("Action successful!!!!!!!!!!!!!!!!!!!!!!")
             this.updatePlayerTime(playerColorIndex)
             this.broadcastGameState()
         } else {

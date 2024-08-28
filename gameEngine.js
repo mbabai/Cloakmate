@@ -59,7 +59,6 @@ class Action {
             case actions.SACRIFICE:
                 this.x1 = x1;
                 this.y1 = y1;
-                this.piece = null
                 // declaration, x2, y2 not used for SACRIFICE
                 break;
             case actions.ONDECK:
@@ -169,7 +168,7 @@ class Action {
                 console.log(`BOMB!!${bluffMark}`)
                 break;
             case actions.SACRIFICE:
-                console.log(`Sacrifice  ${pieceSymbols[this.piece.player][this.piece.type]} at (${this.x1},${this.y1})`)
+                console.log(`Sacrifice: at (${this.x1},${this.y1})`)
                 break;
             case actions.ONDECK:
                 console.log(`On Deck  ${pieceSymbols[this.player][this.declaration]}`)
@@ -517,7 +516,7 @@ class Board {
             case actions.CHALLENGE:  
                 if(lastAction.wasBluff && lastAction.type == actions.MOVE){ //Kill the bluffing piece, and the turn does NOT flip.
                     action.wasSuccessful = true;
-                    // 0 move -> 1 challenge (bluff) -> 1 move...
+                    // 0 move -> 1 challenge (bluff) ->  1 move...
                     if(lastAction.wasCapture){ //If this was a capture, we undo it with a revive
                         this.reviveLastCapturedPieceAtXY(lastAction.x2,lastAction.y2)
                     }  else { //With no capture, we just have to lose the piece that just moved
@@ -551,7 +550,6 @@ class Board {
                 this.flipTurn()
                 break;
             case actions.SACRIFICE:
-                action.piece = this.getPieceAt(action.x1,action.y1)
                 this.playerToSacrifice = null;
                 this.captureAtXY(action.x1,action.y1)
                 if (!(twoActionsAgo.type == actions.BOMB && twoActionsAgo.wasBluff)){
@@ -719,7 +717,7 @@ class Game {
             } else if (this.board.playerToSacrifice === color) { //If we must sacrifice, nothing else matters
                 boardState.legalActions.push("sacrifice");
             } else if (this.board.playerToOnDeck === color) { //If we have to on-deck, nothing else matters.
-                boardState.legalActions.push("on-deck");
+                boardState.legalActions.push("onDeck");
             } else { //If it's neither of those two, we can move and perhaps challenge and/or bomb
                 boardState.legalActions.push("move");
                  // Check if challenge or bomb can be declared based on last action

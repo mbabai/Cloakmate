@@ -12,10 +12,10 @@
 </head>
 <body>
     <img id="left-speech-bubble"     class="bubble speech-bubble"/>
-    <img id="right-speech-bubble"    class="bubble speech-bubble"/>
     <img id="left-thought-bubble"    class="bubble thought-bubble"/>
     <img id="right-thought-bubble"   class="bubble thought-bubble"/>
     <div id="origin-highlight"       class="cell-marker"></div>
+    <div id="challenge-highlight"    class="cell-marker"></div>
     <img id="floating-game-piece"/>
     <div class="main">
         <div id="username-display" class="username-bar username-inline" style="display:none;"></div>
@@ -23,10 +23,12 @@
             <div id="left-clock" class="clock-container">
                 <div id="opponent-clock-time" class="clock black-clock">00:00</div>
                 <div id="opponent-name" class="player-name">Opponent</div>
+                <img id='opponent-challenge-image' class="challenge-image" src="/images/BubbleSpeechRightChallenge.svg"/>
             </div>
             <div id="right-clock" class="clock-container">
                 <div id="player-clock-time" class="clock white-clock">00:00</div>
                 <div id="player-name" class="player-name username-inline">Player</div>
+                <img id='player-challenge-image' class="challenge-image" src="/images/BubbleSpeechLeftChallenge.svg"/>
             </div>
         </div>
         <!-- <button id="readyButton" class="game-button" style="display: none; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index:10;">Ready!</button> -->

@@ -75,6 +75,9 @@ html, body {
 }
 
 .game-piece {
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
     position: absolute;
     top: 50%;
     left: 50%;
@@ -88,6 +91,39 @@ html, body {
     -moz-user-drag: none;
     -o-user-drag: none;
     z-index: 10
+}
+.sacrifice-icon{
+    position: absolute;
+    height:60%;
+    width:60%;
+    top:-10%;
+    right:-10%;
+    user-select: none;
+    -webkit-user-drag: none;
+    -khtml-user-drag: none;
+    -moz-user-drag: none;
+    -o-user-drag: none;
+    display: none;
+    pointer-events: none;
+}
+.challenge-image {
+    height: 150%;
+    top: -10%;
+    position: absolute;
+    -webkit-user-drag: none;
+    -khtml-user-drag: none;
+    -moz-user-drag: none;
+    -o-user-drag: none;
+    pointer-events: none;
+    display: none;
+}
+#opponent-challenge-image {
+    left: 18%;
+    transform: rotate(10deg);
+}
+#player-challenge-image {
+    right: 18%;
+    transform: rotate(-10deg);
 }
 #floating-game-piece {
     pointer-events: none;
@@ -107,10 +143,33 @@ html, body {
     z-index: 1000;
 }
 .game-piece.selected {
-    background: radial-gradient(circle, rgba(65, 105, 225, 0.75) 0%, rgba(65, 105, 225, 0.35) 40%, transparent 80%);
+    border-radius: 50%;
+    background-clip: content-box;
+    padding: 4px;
+    box-shadow: 0 0 0 4px transparent;
+    animation: pulsing-border 2s infinite;
+}
+
+@keyframes pulsing-border {
+    0% {
+        box-shadow: 0 0 0 0px rgba(4, 0, 255, 0.534);
+    }
+    50% {
+        box-shadow: 0 0 0 10px rgba(4, 0, 255, 0.986);
+    }
+    100% {
+        box-shadow: 0 0 0 0px rgba(4, 0, 255, 0.534);
+    }
+}
+#challenge-highlight{
+    background-color: rgba(184, 1, 1, 0.418);
+
 }
 #origin-highlight{
     background-color: rgba(1, 148, 67, 0.205);
+}
+.cell-marker{
+    position: absolute;
     top:50%;
     left:50%;
     width: 100%;
@@ -120,8 +179,8 @@ html, body {
     -khtml-user-drag: none; /* For Konqueror */
     -moz-user-drag: none; /* For Firefox */
     -o-user-drag: none; /* For Opera */
-    display: none;
     pointer-events: none;
+    display: none;
 }
 .bubble {
     width: 12vw;

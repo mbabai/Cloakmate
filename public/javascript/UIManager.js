@@ -34,6 +34,11 @@ const actions = {
     SACRIFICE: 3,
     ONDECK: 4
 };
+const highlightColors = {
+    BLUE: 'rgba(13, 47, 202, 0.450)',
+    RED: 'rgba(184, 1, 1, 0.418)',
+    GREEN:'rgba(1, 148, 67, 0.205)'
+}
 
 class UIManager {
     constructor(webSocketManager) {
@@ -42,6 +47,7 @@ class UIManager {
         this.opponentName;
         this.board = null;
         this.allVisibles = ['first-row-highlight-gold', 'on-deck-cell-highlight-gold', 'origin-highlight'
+            , 'opponent-challenge-image','player-challenge-image','challenge-highlight','sacrifice-icon'
             , 'lobby-container','name-entry','game-picker'
             ,'play-button','custom-options','ai-difficulty','cancel-button'
             ,'bomb-button','challenge-button','ready-button', 'random-setup-button'
@@ -129,8 +135,12 @@ class UIManager {
                 actions: []
             },
             sacrifice:{
-                visible: [],
+                visible: ['sacrifice-icon'],
                 actions: ['sacrifice']
+            },
+            onDeck:{    
+                visible: ['on-deck-cell-highlight-gold'],
+                actions: ['onDeck', 'move-stash-to-on-deck', 'select-stash-piece']
             },
             leftThoughtBubble:{
                 visible: ['left-thought-bubble'],
@@ -144,8 +154,12 @@ class UIManager {
                 visible: ['left-speech-bubble'],
                 actions: []
             },
-            rightSpeechBubble:{
-                visible: ['right-speech-bubble'],
+            playerChallenge:{
+                visible: ['player-challenge-image','challenge-highlight'],
+                actions: []
+            },
+            opponentChallenge:{
+                visible: ['opponent-challenge-image','challenge-highlight'],
                 actions: []
             },
             originHighlight:{
@@ -168,6 +182,7 @@ class UIManager {
         this.opponentTimerId = null;
     }
     addState(state){
+        console.log(`Adding state: ${state}`);
         this.currentState.push(state);
     }
     hasState(state){
@@ -210,9 +225,21 @@ class UIManager {
     hasAction(action){
         return this.currentActions.includes(action);
     }
+    setClassDisplays(visName){
+        const elements = document.querySelectorAll(`.${visName}`);
+        if(this.hasVisible(visName)){
+            elements.forEach(element => {
+                element.style.display = 'block';
+            });
+        } else {
+            elements.forEach(element => {
+                element.style.display = 'none';
+            });
+        }
+    }
     setElementDisplays(visName){
         if(this.hasVisible(visName)){
-            document.getElementById(visName).style.display = 'block';
+            document.getElementById(visName).style.display = 'block';        
         } else {
             document.getElementById(visName).style.display = 'none';
         }
@@ -247,11 +274,13 @@ class UIManager {
         this.allVisibles.forEach(visName => {
             if(document.getElementById(visName)){
                 this.setElementDisplays(visName);
+            } else if (document.getElementsByClassName(visName).length > 0){
+                this.setClassDisplays(visName);
             } else {
                 this.setElementHighlights(visName);
             }
         });        
-        // console.log(this)
+        console.log(this)
     }
     setupPieceMovement() {
         // Remove all existing event listeners from game pieces
@@ -273,7 +302,7 @@ class UIManager {
             let canSelectPiece = false;
 
             // Check if the piece is the correct color
-            const piece = this.convertPieceImageNameToEngineFormat(e.target.src);
+            const piece = this.convertPieceImageNameToEngineFormat(e.target.style.backgroundImage);
             if (this.board.color !== piece.color){
                 return;// Don't allow selection of opposite color pieces
             }
@@ -342,7 +371,6 @@ class UIManager {
     displayLegalMoves(legalMovePieces, type,targetPiece){
         // Remove all elements of class "declaration"
         this.removeState('leftSpeechBubble');
-        this.removeState('rightSpeechBubble');
         this.removeState('leftThoughtBubble');
         this.removeState('rightThoughtBubble');
         if (legalMovePieces.length > 2) {
@@ -408,8 +436,8 @@ class UIManager {
                 return false;
         }
     }
-    convertPieceImageNameToEngineFormat(ImageNamge) {
-        const pieceName = ImageNamge.replace(/\.svg$/, '').split('Pawn')[1];
+    convertPieceImageNameToEngineFormat(imageURL) {
+        const pieceName = imageURL.slice(5, -2).replace(/\.svg$/, '').split('Pawn')[1];
         const color = pieceName.startsWith('White') ? colors.WHITE : colors.BLACK; // Default to Black
         const type = pieces[pieceName.slice(5).toUpperCase()]; // Remove 'White' or 'Black' prefix
         return { color, type };
@@ -448,7 +476,6 @@ class UIManager {
     }
     releasePiece(e) {
         this.removeState('leftSpeechBubble');
-        this.removeState('rightSpeechBubble');
         this.removeState('leftThoughtBubble');
         this.removeState('rightThoughtBubble');
         if (!this.draggedPiece) return;
@@ -473,8 +500,12 @@ class UIManager {
         } 
         if (this.isValidTarget(target)) {
             const moveAction = `move-${originalLocationType}-to-${targetLocationType}`;
-            if (this.currentActions.includes(moveAction) && isLegalityPassed) {
-                this.handleValidPieceDrop(target,legalMovePieces);
+            if (this.currentActions.includes(moveAction)){
+                if (this.currentActions.includes('onDeck')){
+                    this.onDeck(this.draggedPiece);
+                } else if (isLegalityPassed) {
+                    this.handleValidPieceDrop(target,legalMovePieces);
+                }
             } else {
                 this.returnToOriginalParent();
             }
@@ -530,8 +561,8 @@ class UIManager {
         this.setState('moveComplete');
         this.addState('leftSpeechBubble');
         this.addState('originHighlight');
-        this.moveOriginHighlight(this.originalParent);
-        this.moveSpeechBubblesToTarget(this.targetCell);
+        this.moveTypeHighlight('origin',this.originalParent);
+        this.moveSpeechBubbleToTarget(this.targetCell);
         this.updateUI();
         // Send move information to the server
         
@@ -564,22 +595,19 @@ class UIManager {
             this.updateUI();
         }
     }
-    moveSpeechBubblesToTarget(target){
+    moveSpeechBubbleToTarget(target){
         const targetRect = target.getBoundingClientRect();
         const leftBubble = document.getElementById('left-speech-bubble');
-        const rightBubble = document.getElementById('right-speech-bubble');
         leftBubble.style.left = `${targetRect.left - 73}px`;
         leftBubble.style.top = `${targetRect.top - 60}px`;
-        rightBubble.style.left = `${targetRect.right - 73}px`;
-        rightBubble.style.top = `${targetRect.top - 60}px`;
     }
     canSwap(target) {
         return this.currentActions.includes('swap') && 
                target.querySelector('.game-piece');
     }
     swapPieces(target, targetPieceElement) {
-        let targetPiece = this.convertPieceImageNameToEngineFormat(targetPieceElement.src);
-        let draggedPiece = this.convertPieceImageNameToEngineFormat(this.draggedPiece.src);
+        let targetPiece = this.convertPieceImageNameToEngineFormat(targetPieceElement.style.backgroundImage);
+        let draggedPiece = this.convertPieceImageNameToEngineFormat(this.draggedPiece.style.backgroundImage);
         
         if (targetPiece.color === draggedPiece.color) {
             this.originalParent.appendChild(targetPieceElement);
@@ -633,7 +661,7 @@ class UIManager {
         const hasKingInFirstRow = Array.from(firstRowCells).some(cell => {
             const pieceElement = cell.querySelector('.game-piece');
             if (!pieceElement) return false;
-            const pieceImage = pieceElement.src;
+            const pieceImage = pieceElement.style.backgroundImage;
             const piece = this.convertPieceImageNameToEngineFormat(pieceImage);
             return piece && piece.type === pieces.KING;
         });
@@ -696,6 +724,16 @@ class UIManager {
         });
         document.getElementById('bomb-button').addEventListener('click', () => {
             this.doAction('bomb')
+        });
+
+    }
+    setupSacrificeFunction(){
+        const pieces = document.querySelectorAll('.game-piece');
+        pieces.forEach(piece => {
+            piece.addEventListener('click', (event) => {
+                this.doAction('sacrifice',{piece});
+                event.stopPropagation(); // Prevent event from bubbling up to the cell
+            });
         });
     }
     setupGameSelection() {
@@ -760,6 +798,20 @@ class UIManager {
     challenge(params){
        this.webSocketManager.routeMessage({type:'game-action', action:actions.CHALLENGE, details:{}});
     }
+    sacrifice(params){
+        console.log(`Sacrificing!`);
+        const parentCell = params.piece.parentElement;
+        if (!parentCell.classList.contains('cell')) {
+            return false;
+        }
+        const coords = this.cellIdToCoords(parentCell.id);
+        this.webSocketManager.routeMessage({type:'game-action', action:actions.SACRIFICE, details:{x1:coords.x, y1:coords.y}});
+    }
+    onDeck(pieceElement){
+        const piece = this.convertPieceImageNameToEngineFormat(pieceElement.style.backgroundImage)
+        console.log(`OnDeck: ${piece}`);
+        this.webSocketManager.routeMessage({type:'game-action', action:actions.ONDECK, details:{declaration:piece.type}});
+    }
     bomb(params){
         this.webSocketManager.routeMessage({type:'game-action', action:actions.BOMB, details:{}});
     }
@@ -774,7 +826,7 @@ class UIManager {
         // Get front row squares
         const frontRowSquares = document.querySelectorAll('.first-row');
         frontRowSquares.forEach(square => {
-            const piece = this.convertPieceImageNameToEngineFormat(square.querySelector('.game-piece').src);
+            const piece = this.convertPieceImageNameToEngineFormat(square.querySelector('.game-piece').style.backgroundImage);
             if (piece) {
                 const coords = this.cellIdToCoords(square.id);
                 frontRow.push({x:coords.x, y:coords.y, color:piece.color, type:piece.type});
@@ -785,7 +837,7 @@ class UIManager {
         const onDeckCell = document.querySelector('.on-deck-cell');
         const onDeckPiece = onDeckCell.querySelector('.game-piece');
         if (onDeckPiece) {
-            onDeck = this.convertPieceImageNameToEngineFormat(onDeckPiece.src);
+            onDeck = this.convertPieceImageNameToEngineFormat(onDeckPiece.style.backgroundImage);
         }
         console.log(frontRow);
         console.log(onDeck);
@@ -811,8 +863,7 @@ class UIManager {
         
         backRowSquares.forEach(square => {
             const pieceElement = document.createElement('img');
-            pieceElement.src = `images/Pawn${colorNames[opponentColor]}Unknown.svg`;
-            pieceElement.alt = `Pawn${colorNames[opponentColor]}Unknown`;
+            pieceElement.style.backgroundImage = `images/Pawn${colorNames[opponentColor]}Unknown.svg`;
             pieceElement.classList.add('game-piece');
             
             // Remove any existing piece in the square
@@ -898,7 +949,6 @@ class UIManager {
     //Board State
     updateBoardState(data){
         this.setState('boardState');
-        console.log(data.board);
         this.board = data.board;
         this.opponentName = this.board.opponentName;
         if(!this.board.myTurn){
@@ -949,6 +999,7 @@ class UIManager {
         this.updateLegalGameActions();
     }
     updateLegalGameActions(){
+        this.setupSacrificeFunction();
         this.board.legalActions.forEach(action => {
             this.addState(action);
         });
@@ -1004,11 +1055,18 @@ class UIManager {
             cell.style.position = 'relative';
         });
     }
+    placeSacrificeIcon(pieceImage){
+        const sacrificeIcon = document.createElement('img');
+        sacrificeIcon.src = '/images/SacrificePieceIcon.svg';
+        sacrificeIcon.className = 'sacrifice-icon';
+
+        pieceImage.appendChild(sacrificeIcon);
+    }
     createPieceImage(piece) {
-        const img = document.createElement('img');
-        img.src = this.getPieceImageNameFromEngineFormat(piece);
-        img.className = 'game-piece';
-        return img;
+        const div = document.createElement('div');
+        div.style.backgroundImage = `url(${this.getPieceImageNameFromEngineFormat(piece)})`;
+        div.className = 'game-piece';
+        return div;
     }
     placeStashPieces(currentBoard){
         const inventorySlots = document.querySelectorAll('.inventory-slot');
@@ -1044,6 +1102,9 @@ class UIManager {
                     const cell = document.getElementById(cellId);
                     if (cell) {
                         const pieceImage = this.createPieceImage(piece);
+                        if (piece.type !== pieces.UNKNOWN){
+                            this.placeSacrificeIcon(pieceImage)
+                        }
                         cell.appendChild(pieceImage);
                     }
                 }
@@ -1064,12 +1125,12 @@ class UIManager {
             const targetCellId = this.coordsToCellId({ x: lastMove.x2, y: lastMove.y2 });
             const targetCell = document.getElementById(targetCellId);
             if (startCell) {
-                this.moveOriginHighlight(startCell);
+                this.moveTypeHighlight('origin', startCell);
                 this.addState('originHighlight');
             }
             if (targetCell){
                 this.setSpeechBubbleImageType(lastMove.declaration);
-                this.moveSpeechBubblesToTarget(targetCell);
+                this.moveSpeechBubbleToTarget(targetCell);
                 this.addState('leftSpeechBubble');
             }
         }
@@ -1077,24 +1138,36 @@ class UIManager {
     }
     showLastAction(lastMove){
         let lastAction = this.board.actionHistory[this.board.actionHistory.length - 1];
-        if (lastAction && lastAction.type === actions.MOVE){return;}
-        if (lastAction && lastAction.type === actions.CHALLENGE){
-            const rightBubble = document.getElementById('right-speech-bubble');
-            const targetCellId = this.coordsToCellId({ x: lastMove.x2, y: lastMove.y2 });
-            const targetCell = document.getElementById(targetCellId);
-            rightBubble.src = 'images/BubbleSpeechRightChallenge.svg';
-            rightBubble.style.position = 'fixed';
-            //move the speech bubble by the name.
-            this.addState('rightSpeechBubble');
-            if (!lastAction.wasSuccessful && this.board.myTurn){ //we failed the challenge, and it's our turn to sacrifice
-                const floatingGamePiece = document.getElementById('floating-game-piece');
-                floatingGamePiece.src = this.getPieceImageNameFromEngineFormat({color: (1 - this.board.color), type: lastMove.declaration});
-                targetCell.appendChild(floatingGamePiece);
-                this.addState('floatingGamePiece');
-                //put in the red Xes.
+        if (!lastAction){return;}
+        const wasMyAction = lastAction.player === this.board.color;
+        console.log(`Was my action: ${wasMyAction}`);
+        if (lastAction.type === actions.MOVE){return;}
+        if (lastAction.type === actions.CHALLENGE){
+            if(wasMyAction){
+                this.addState('playerChallenge');
+            } else {
+                this.addState('opponentChallenge');
+            }
+            const targetCell = document.getElementById(this.coordsToCellId({x: lastMove.x2, y: lastMove.y2}));
+            this.moveTypeHighlight('challenge',targetCell);
+            if (!lastAction.wasSuccessful){ 
+                if(this.board.myTurn){//we failed the challenge, and it's our turn to sacrifice
+                    const floatingGamePiece = document.getElementById('floating-game-piece');
+                    floatingGamePiece.src = this.getPieceImageNameFromEngineFormat({color: (1 - this.board.color), type: lastMove.declaration});
+                    targetCell.appendChild(floatingGamePiece);
+                    this.addState('floatingGamePiece');
+                    this.changeTypeHighlightColor('challenge',highlightColors.RED);
+                } else {
+                    this.changeTypeHighlightColor('challenge',highlightColors.BLUE);
+                }
+            } else { //Challenge was successful, and the piece is removed.
+                if(this.board.myTurn){ //the challenge was successful, and it's our turn to move
+                    this.changeTypeHighlightColor('challenge',highlightColors.BLUE);
+                } else { //the challenge was successful, but it's not our turn to move
+                    this.changeTypeHighlightColor('challenge',highlightColors.RED);
+                }
             }
         }
-        this.updateUI();
     }
     setBoardPieces(currentBoard) {
         this.removeAllPieces();
@@ -1109,11 +1182,14 @@ class UIManager {
         const leftBubble = document.getElementById('left-speech-bubble');
         leftBubble.src = `/images/BubbleSpeechLeft${pieceTypeNames[declaration]}.svg`;
     }
-    moveOriginHighlight(cell){
-        const originHighlight = document.getElementById('origin-highlight');
-        originHighlight.style.position = 'absolute';
-        cell.appendChild(originHighlight); 
+    moveTypeHighlight(type,cell){
+        const highlight = document.getElementById(`${type}-highlight`);
+        cell.appendChild(highlight); 
     }   
+    changeTypeHighlightColor(type,color){
+        const highlight = document.getElementById(`${type}-highlight`);
+        highlight.style.backgroundColor = color;
+    }
     startClockTick(clockToStart) {
         
         const updateClock = (clockElement, isPlayer) => {
