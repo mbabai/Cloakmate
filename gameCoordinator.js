@@ -82,6 +82,7 @@ class GameCoordinator {
         thisAction.board = this.game.board;
         const isActionSuccessful = this.game.board.takeAction(thisAction)
         if (isActionSuccessful) {
+            console.log("Action successful!!!!!!!!!!!!!!!!!!!!!!")
             this.updatePlayerTime(playerColorIndex)
             this.broadcastGameState()
         } else {

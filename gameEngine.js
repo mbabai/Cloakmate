@@ -73,6 +73,7 @@ class Action {
     copy(){
         const newAction = new Action(this.type, this.player, this.x1, this.y1, this.declaration, this.x2, this.y2);
         newAction.wasCapture = this.wasCapture 
+        newAction.wasSuccessful = this.wasSuccessful
         return newAction;
     }
     isCapture(){

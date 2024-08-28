@@ -45,7 +45,8 @@ class UIManager {
             , 'lobby-container','name-entry','game-picker'
             ,'play-button','custom-options','ai-difficulty','cancel-button'
             ,'bomb-button','challenge-button','ready-button', 'random-setup-button'
-            ,'left-speech-bubble','right-speech-bubble','left-thought-bubble','right-thought-bubble']
+            ,'left-speech-bubble','right-speech-bubble','left-thought-bubble','right-thought-bubble'
+            , 'floating-game-piece']
         this.currentState = [];
         this.currentVisibles = [];
         this.currentActions = [];
@@ -114,6 +115,10 @@ class UIManager {
             challenge:{
                 visible: ['challenge-button'],
                 actions: ['challenge']
+            },
+            floatingGamePiece:{
+                visible: ['floating-game-piece'],
+                actions: []
             },
             readyable:{
                 visible: ['ready-button'],
@@ -686,6 +691,12 @@ class UIManager {
         document.getElementById('right-thought-bubble').addEventListener('click', () => {
             this.doAction('declareMove','right-thought-bubble')
         });
+        document.getElementById('challenge-button').addEventListener('click', () => {
+            this.doAction('challenge')
+        });
+        document.getElementById('bomb-button').addEventListener('click', () => {
+            this.doAction('bomb')
+        });
     }
     setupGameSelection() {
         const gameSelection = document.getElementById('game-selection');
@@ -745,6 +756,12 @@ class UIManager {
         const tempBoardState = params.board;
         this.setBoardPieces(tempBoardState);
         this.setState('ready');
+    }
+    challenge(params){
+       this.webSocketManager.routeMessage({type:'game-action', action:actions.CHALLENGE, details:{}});
+    }
+    bomb(params){
+        this.webSocketManager.routeMessage({type:'game-action', action:actions.BOMB, details:{}});
     }
     ready(params){
         // Stop the current player's clock
@@ -1055,15 +1072,31 @@ class UIManager {
                 this.moveSpeechBubblesToTarget(targetCell);
                 this.addState('leftSpeechBubble');
             }
-
         }
+        return lastMove;
+    }
+    showLastAction(lastMove){
+        let lastAction = this.board.actionHistory[this.board.actionHistory.length - 1];
+        if (lastAction && lastAction.type === actions.MOVE){return;}
+        if (lastAction && lastAction.type === actions.CHALLENGE){
+            const rightBubble = document.getElementById('right-speech-bubble');
+            const targetCellId = this.coordsToCellId({ x: lastMove.x2, y: lastMove.y2 });
+            const targetCell = document.getElementById(targetCellId);
+            rightBubble.src = 'images/BubbleSpeechRightChallenge.svg';
+            rightBubble.style.position = 'absolute';
+            rightBubble.style.left = `${targetCell.right - 73}px`;
+            rightBubble.style.top = `${targetCell.top - 60}px`;
+            this.addState('rightSpeechBubble');
+        }
+        this.updateUI();
     }
     setBoardPieces(currentBoard) {
         this.removeAllPieces();
         this.placeStashPieces(currentBoard);
         this.placeOnDeckPiece(currentBoard);
         this.placePiecesOnBoard(currentBoard);
-        this.showLastMove();
+        const lastMove = this.showLastMove();
+        this.showLastAction(lastMove);
         this.updateUI();
     }
     setSpeechBubbleImageType(declaration){
