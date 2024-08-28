@@ -19,9 +19,45 @@ class GameCoordinator {
         this.users = []
         this.users.push(this.nameToUser.get(this.game.players[0]))
         this.users.push(this.nameToUser.get(this.game.players[1]))
-        this.lastActionTime = null; //Use this to track the clock.
+        this.lastActionTime = Date.now(); //Use this to track the clock.
         this.server = server;
         this.broadcastGameState()
+        this.gameLoopInterval = null; // Add this line
+        this.startGameLoop(); // Add this line
+    }
+    startGameLoop() {
+        const gameLoop = () => {
+            if (this.game.board.phase === 'setup') {
+                this.checkSetupTimeout();
+            }
+            if (this.game.board.phase === 'playing') {
+                this.checkTurnTimeout();
+            }
+        };
+        this.gameLoopInterval = setInterval(gameLoop, 100); // Run the game loop 10x/second
+    }
+    checkSetupTimeout() {
+        if (Date.now() - this.lastActionTime >= 30100) {
+            this.checkAndCompleteSetups();
+        }
+    }
+    checkTurnTimeout() {
+        const currentPlayerIndex = this.game.getPlayerColorIndex(this.users[this.game.playerTurn].username);
+        const playerRemainingTime = this.game.playersTimeAvailable[currentPlayerIndex];
+        if (Date.now() - this.lastActionTime >= playerRemainingTime) {
+            console.log('Turn timeout reached. Ending game.');
+            this.game.declareWinner(this.game.getOtherPlayer(this.users[this.game.playerTurn].username))    
+            this.endGame();
+        }
+    }
+    stopGameLoop() {
+        if (this.animationFrameId !== null) {
+            cancelAnimationFrame(this.animationFrameId);
+            this.animationFrameId = null;
+        }
+    }
+    endGame() {
+        this.stopGameLoop();
     }
     sendColorState(color) {
         this.server.routeMessage(this.users[color].websocket,{type:"board-state",board:this.game.getColorState(color)})
@@ -70,6 +106,15 @@ class GameCoordinator {
             this.checkPlayerSetupCompletion(player)
         }
     }
+    checkAndCompleteSetups() {
+        for (let i = 0; i < 2; i++) {
+            if (!this.game.playersSetupComplete[i]) {
+                console.log(`Player ${this.users[i].username} has not completed setup. Submitting random setup.`);
+                this.randomSetup(this.users[i]);
+            }
+        }
+        this.lastActionTime = Date.now();
+    }
     checkPlayerSetupCompletion(player){
         console.log("Setup completed for", player.username);
         const otherPlayer = this.users.find(u => u.username !== player.username);
@@ -86,6 +131,7 @@ class GameCoordinator {
             this.server.routeMessage(otherPlayer.websocket, { type: "opponent-setup-complete", message: "Your opponent has completed their setup." });
         }
     }
+   
 }
 
 
