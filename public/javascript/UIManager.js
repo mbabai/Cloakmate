@@ -730,12 +730,21 @@ class UIManager {
 
     }
     setupSacrificeFunction(){
-        const pieces = document.querySelectorAll('.game-piece');
-        pieces.forEach(piece => {
-            piece.addEventListener('click', (event) => {
-                this.doAction('sacrifice',{piece});
-                event.stopPropagation(); // Prevent event from bubbling up to the cell
-            });
+        const gamePieces = document.querySelectorAll('.game-piece');
+        gamePieces.forEach(piece => {
+            const enginePiece = this.convertPieceImageNameToEngineFormat(piece.style.backgroundImage);
+            console.log(`Setting up Sacrifice Function for ${piece}`)
+            console.log(enginePiece)
+            console.log(`Piece Type: ${enginePiece.type}`)
+            console.log(`King Type : ${pieces.KING}`)
+            console.log(`Piece Color: ${enginePiece.color}`)
+            console.log(`Board Color: ${this.board.color}`)
+            if (enginePiece.type !== pieces.KING && enginePiece.color === this.board.color){
+                piece.addEventListener('click', (event) => {
+                    this.doAction('sacrifice',{piece});
+                    event.stopPropagation(); // Prevent event from bubbling up to the cell
+                });
+            }
         });
     }
     setupGameSelection() {
@@ -1104,7 +1113,7 @@ class UIManager {
                     const cell = document.getElementById(cellId);
                     if (cell) {
                         const pieceImage = this.createPieceImage(piece);
-                        if (piece.type !== pieces.UNKNOWN){
+                        if (piece.type !== pieces.UNKNOWN && piece.type !== pieces.KING){
                             this.placeSacrificeIcon(pieceImage)
                         }
                         cell.appendChild(pieceImage);
