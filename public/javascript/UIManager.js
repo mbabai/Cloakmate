@@ -733,12 +733,6 @@ class UIManager {
         const gamePieces = document.querySelectorAll('.game-piece');
         gamePieces.forEach(piece => {
             const enginePiece = this.convertPieceImageNameToEngineFormat(piece.style.backgroundImage);
-            console.log(`Setting up Sacrifice Function for ${piece}`)
-            console.log(enginePiece)
-            console.log(`Piece Type: ${enginePiece.type}`)
-            console.log(`King Type : ${pieces.KING}`)
-            console.log(`Piece Color: ${enginePiece.color}`)
-            console.log(`Board Color: ${this.board.color}`)
             if (enginePiece.type !== pieces.KING && enginePiece.color === this.board.color){
                 piece.addEventListener('click', (event) => {
                     this.doAction('sacrifice',{piece});
