@@ -162,6 +162,14 @@ class UIManager {
                 visible: ['opponent-challenge-image','challenge-highlight'],
                 actions: []
             },
+            playerBomb:{
+                visible: ['left-speech-bubble'],
+                actions: []
+            },
+            opponentBomb:{
+                visible: ['left-speech-bubble'],
+                actions: []
+            },
             originHighlight:{
                 visible: ['origin-highlight'],
                 actions: []
@@ -1147,30 +1155,52 @@ class UIManager {
         const wasMyAction = lastAction.player === this.board.color;
         console.log(`Was my action: ${wasMyAction}`);
         if (lastAction.type === actions.MOVE){return;}
+        const priorAction = this.board.actionHistory[this.board.actionHistory.length - 2];
         if (lastAction.type === actions.CHALLENGE){
-            if(wasMyAction){
-                this.addState('playerChallenge');
+            this.showChallenge(wasMyAction,lastMove,priorAction,lastAction)
+        } else if (lastAction.type === actions.BOMB){
+            this.showBomb(wasMyAction,priorAction,lastAction)
+        }
+    }
+    showBomb(wasMyAction,lastMove,lastAction){
+        const targetCell = document.getElementById(this.coordsToCellId({x: lastMove.x2, y: lastMove.y2}))
+        if(wasMyAction){
+            this.setSpeechBubbleImageType(lastAction.declaration);
+            this.moveSpeechBubbleToTarget(targetCell);
+            this.setState('playerBomb');
+        } else {
+            this.setSpeechBubbleImageType(lastAction.declaration);
+            this.moveSpeechBubbleToTarget(targetCell);
+            this.setState('opponentBomb');
+        }
+        this.addState('originHighlight');
+    }
+    showChallenge(wasMyAction,lastMove,challengedAction,lastAction){
+        if(wasMyAction){
+            this.addState('playerChallenge');
+        } else {
+            this.addState('opponentChallenge');
+        }
+        const coords = {x: lastMove.x2, y: lastMove.y2} ;
+        const targetCell = document.getElementById(this.coordsToCellId(coords));
+        this.moveTypeHighlight('challenge',targetCell);
+        if (!lastAction.wasSuccessful){
+            const floatingGamePiece = document.getElementById('floating-game-piece');
+                floatingGamePiece.src = this.getPieceImageNameFromEngineFormat({color: (1 - this.board.color), type: challengedAction.declaration});
+                targetCell.appendChild(floatingGamePiece);
+                this.setSpeechBubbleImageType(challengedAction.declaration);
+                this.addState('floatingGamePiece');
+            if(lastAction.player === this.board.color){//we failed the challenge, and it's our turn to sacrifice
+                this.changeTypeHighlightColor('challenge',highlightColors.RED);
             } else {
-                this.addState('opponentChallenge');
+                this.changeTypeHighlightColor('challenge',highlightColors.BLUE);
             }
-            const targetCell = document.getElementById(this.coordsToCellId({x: lastMove.x2, y: lastMove.y2}));
-            this.moveTypeHighlight('challenge',targetCell);
-            if (!lastAction.wasSuccessful){ 
-                if(this.board.myTurn){//we failed the challenge, and it's our turn to sacrifice
-                    const floatingGamePiece = document.getElementById('floating-game-piece');
-                    floatingGamePiece.src = this.getPieceImageNameFromEngineFormat({color: (1 - this.board.color), type: lastMove.declaration});
-                    targetCell.appendChild(floatingGamePiece);
-                    this.addState('floatingGamePiece');
-                    this.changeTypeHighlightColor('challenge',highlightColors.RED);
-                } else {
-                    this.changeTypeHighlightColor('challenge',highlightColors.BLUE);
-                }
-            } else { //Challenge was successful, and the piece is removed.
-                if(this.board.myTurn){ //the challenge was successful, and it's our turn to move
-                    this.changeTypeHighlightColor('challenge',highlightColors.BLUE);
-                } else { //the challenge was successful, but it's not our turn to move
-                    this.changeTypeHighlightColor('challenge',highlightColors.RED);
-                }
+        } else { //Challenge was successful, and the piece is removed.
+
+            if(lastAction.player === this.board.color){ //the challenge was successful, and it's our turn to move
+                this.changeTypeHighlightColor('challenge',highlightColors.BLUE);
+            } else { //the challenge was successful, but it's not our turn to move
+                this.changeTypeHighlightColor('challenge',highlightColors.RED);
             }
         }
     }

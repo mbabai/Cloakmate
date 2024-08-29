@@ -722,10 +722,11 @@ class Game {
                 boardState.legalActions.push("move");
                  // Check if challenge or bomb can be declared based on last action
                 const lastAction = this.board.actions[this.board.actions.length - 1];
-                if (lastAction && lastAction.type === actions.MOVE && lastAction.player !== color) {
+                if (lastAction && lastAction.player !== color && ((lastAction.type === actions.MOVE || lastAction.type === actions.BOMB)) ) {
                     boardState.legalActions.push("challenge");
                 }
-                if (lastAction && lastAction.wasCapture && lastAction.player !== color) {
+                if (lastAction && lastAction.wasCapture && lastAction.player !== color && lastAction.declaration !== pieces.KING) {
+                    //King is immune to bombs, cannot declare bomb on king.
                     boardState.legalActions.push("bomb");
                 }
             } 
