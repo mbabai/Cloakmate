@@ -1,6 +1,6 @@
 const precalcs = require('./precalcs');
 const utils = require('./utils');
-//////////////////////////////////////////////////////////
+
 const colors = { // Color/Player constants
 	WHITE: 0, 
 	BLACK: 1
@@ -25,6 +25,13 @@ const actions = {
     SACRIFICE: 3,
     ONDECK: 4
 };
+const winReasons = {    
+    CAPTURED_KING: 0,
+    THRONE: 1,
+    STASH: 2,
+    KING_SACRIFICE: 3,
+    TIMEOUT: 4      
+}
 
 const All = precalcs.createAllPiecesLookupTable()
 
@@ -191,6 +198,7 @@ class Board {
         this.playerToSacrifice = null;
         this.playerToOnDeck = null
         this.winner = null
+        this.winReason = null
         /* 
         format of bitboards:
             [height*width bits - location on board] 
@@ -225,9 +233,75 @@ class Board {
         }
         return count
     }
+    setWinner(player, reason){
+        this.winner = player;
+        this.winReason = reason;
+    }
 
     isGameOver(){
-        return this.countColorPiecesOnBoard(1 - this.playerTurn) == 0 && this.countColorPiecesOnBoard(this.playerTurn) > 0 && this.phase != "setup";
+        let isGameOver = false;
+        if (this.phase == 'play'){
+            if (this.isKingBluffVictory() || this.iskKingInOpponentThroneVictory() || this.IsCapturedKingVictory() || this.isKingSacrificeVictory()){
+                isGameOver = true;
+            } 
+        }
+        return isGameOver;
+    }
+    isKingSacrificeVictory(){
+        if (this.playerToSacrifice != null){
+        const piecesOnBoard = this.countColorPiecesOnBoard(this.playerToSacrifice);
+        if (piecesOnBoard === 1) {
+            this.setWinner(1 - this.playerToSacrifice, winReasons.FORCED_SACRIFICE);
+            return true;
+        }
+        return false;
+        }
+    }
+    IsCapturedKingVictory(){
+        // Handle captured pieces
+        if (this.capturedPieces.length > 0){    
+            const lastCapturedPiece = this.capturedPieces[this.capturedPieces.length-1];
+            if(lastCapturedPiece && lastCapturedPiece.type == pieces.KING){
+                if (lastCapturedPiece.color != this.playerTurn){
+                    const lastAction = this.actions[this.actions.length-1];
+                    if(!(lastAction.wasCapture || lastAction.type == actions.BOMB)){
+                        this.setWinner(1 - lastCapturedPiece.color, winReasons.CAPTURED_KING)
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
+    }
+    iskKingInOpponentThroneVictory(){
+        const colorTargetThrones = [{ x: 2, y: 4 },{ x: 2, y: 0 }];
+        // Check the last action
+        if (this.actions.length > 1) {
+            const kingMoveAction = this.actions[this.actions.length - 2];
+            const lastAction = this.actions[this.actions.length - 1];
+            if (kingMoveAction.declaration != pieces.KING){
+                return false;
+            } else if (kingMoveAction.x2 == colorTargetThrones[lastAction.player].x && kingMoveAction.y2 == colorTargetThrones[lastAction.player].y){
+                if (lastAction.type != actions.CHALLENGE || lastAction.wasSuccessful){
+                    this.setWinner(kingMoveAction.player, winReasons.THRONE)
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+    isKingBluffVictory(){
+        const whiteKingInStash = (this.bitboards[colors.WHITE][pieces.KING] & 0b11) > 0;
+        const blackKingInStash = (this.bitboards[colors.BLACK][pieces.KING] & 0b11) > 0;
+        let isGameOver = false;
+        if (whiteKingInStash) {
+            this.setWinner(colors.WHITE, winReasons.STASH)
+            isGameOver = true; // Game over if either player has a king in their stash
+        } else if (blackKingInStash) {
+            this.setWinner(colors.BLACK, winReasons.STASH)
+            isGameOver = true; // Game over if either player has a king in their stash
+        }
+        return isGameOver;
     }
 
     movePiece(x1, y1, x2, y2) {
@@ -541,6 +615,7 @@ class Board {
         this.turnNumber++; //increment the move
         this.actions.push(action) //Add this action to the list
         action.print()
+        this.isGameOver();
         this.printBoard()
         return true;
     }
@@ -629,10 +704,9 @@ class Board {
         console.log(`W-Stash: (${onDeck[colors.WHITE]}) ${stashes[colors.WHITE].join(' ')} `);
         console.log("...........")
         console.log(`Captured: last:${this.lastCapturedPiece != null ? `(${pieceSymbols[this.lastCapturedPiece.player][this.lastCapturedPiece.type]})`:`()`} ${captured.join(' ')}`); 
-        if(this.isGameOver()){
-            this.winner = this.playerTurn
-            console.log(`Game Over - Winner is ${this.playerTurn == colors.WHITE ? "White" : "Black"}!`)
-        }
+        if(this.winner != null){
+            console.log(`Game Over - Winner is ${this.winner == colors.WHITE ? "White" : "Black"}!`)
+        }   
         console.log("__________")
     }
 }
@@ -641,7 +715,6 @@ class Board {
 class Game {
     constructor(p1,p2,length) {
         this.players = [p1,p2] //0-index white, 1-index black
-        this.winner = null
         this.board = new Board(5,5) //default to 5x5 board.
         this.length = length;
         this.gameStartTime = Date.now();
@@ -669,7 +742,9 @@ class Game {
             myTurn: (this.board.playerTurn === color),
             legalActions: [],
             clocks:[this.playersTimeAvailable[0]-500,this.playersTimeAvailable[1]-500], // Not showing the extra half second.
-            actionHistory: this.board.actions.map(action => action.copy()) //Copying the action history to avoid showing if it was a bluff or not
+            actionHistory: this.board.actions.map(action => action.copy()), //Copying the action history to avoid showing if it was a bluff or not
+            winner: this.board.winner,
+            winReason: this.board.winReason
         };
 
         // Iterate over each cell on the board
@@ -874,9 +949,6 @@ class Game {
             return false
         }
         return this.players[1 - this.players.indexOf(playerName)] // gets the other index player name.
-    }
-    declareWinner(playerName){
-        this.winner = playerName;
     }
     randomizePlayerColor(){
         let i = 2;

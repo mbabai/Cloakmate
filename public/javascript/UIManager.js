@@ -39,6 +39,13 @@ const highlightColors = {
     RED: 'rgba(184, 1, 1, 0.418)',
     GREEN:'rgba(1, 148, 67, 0.205)'
 }
+const winReasons = {    
+    CAPTURED_KING: 0,
+    THRONE: 1,
+    STASH: 2,
+    KING_SACRIFICE: 3,
+    TIMEOUT: 4      
+}
 
 class UIManager {
     constructor(webSocketManager) {
@@ -999,7 +1006,34 @@ class UIManager {
         this.startCorrectClocks();
         this.setBoardSpaceLabels()
         this.setBoardPieces(this.board);
+        this.checkVictory()
         this.updateLegalGameActions();
+    }
+    checkVictory(){
+        if(this.board.winner != null){
+        const winnerName = this.board.winner === this.board.color ? this.username : this.opponentName;
+        let reason;
+        switch(this.board.winReason) {
+            case winReasons.CAPTURED_KING:
+                reason = " won by capturing the opponent's king!";
+                break;
+            case winReasons.THRONE:
+                reason = " won by moving their king to the opponent's throne!";
+                break;
+            case winReasons.STASH:
+                reason = " won as thing king move was unsuccessfully challenged!";
+                break;
+            case winReasons.KING_SACRIFICE:
+                reason = " won by forcing the opponent to sacrifice their king!";
+                break;
+            case winReasons.TIMEOUT:
+                reason = " won due to the opponent's time running out!";
+                break;
+            default:
+                reason = "won the game!";
+        }
+        alert(`${winnerName}${reason}!`);
+        }
     }
     updateLegalGameActions(){
         this.setupSacrificeFunction();

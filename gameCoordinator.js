@@ -1,4 +1,11 @@
 const { Game , Action , Board } = require('./gameEngine');
+const winReasons = {
+    CAPTURED_KING: 0,
+    THRONE: 1,
+    STASH: 2,
+    KING_SACRIFICE: 3,
+    TIMEOUT: 4      
+}
 const pieces = {
     BOMB: 0,
     KING: 1,
@@ -13,6 +20,7 @@ class GameCoordinator {
         this.nameToUser.set(user1.username,user1);
         this.nameToUser.set(user2.username,user2);
         this.length = length;
+        this.increment = 5000; // gain 5 seconds after completing a move.
         this.gameNumber = gameNumber;
         this.game = new Game(user1.username,user2.username,length);
         this.game.randomizePlayerColor()
@@ -46,7 +54,7 @@ class GameCoordinator {
         const playerRemainingTime = this.game.playersTimeAvailable[currentPlayerIndex];
         if (Date.now() - this.lastActionTime >= playerRemainingTime) {
             console.log('Turn timeout reached. Ending game.');
-            this.game.declareWinner(this.game.getOtherPlayer(this.users[this.game.playerTurn].username))    
+            this.game.board.setWinner(1 - currentPlayerIndex,winReasons.TIMEOUT) 
             this.endGame();
         }
     }
@@ -82,13 +90,16 @@ class GameCoordinator {
         const isActionSuccessful = this.game.board.takeAction(thisAction)
         if (isActionSuccessful) {
             this.updatePlayerTime(playerColorIndex)
+            if (this.board.isGameOver()){
+                this.endGame()
+            }
             this.broadcastGameState()
         } else {
             this.server.routeMessage(player.websocket, { type: "illegal-action", message: "Your action was illegal. Please try again." });
         }
     }
     updatePlayerTime(playerColorIndex){
-        const turnTime = Date.now() - this.lastActionTime;
+        const turnTime = Date.now() - this.lastActionTime - this.increment;
         this.game.playersTimeAvailable[playerColorIndex] -= turnTime;
         this.lastActionTime = Date.now();
     }
