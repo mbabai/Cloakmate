@@ -871,24 +871,14 @@ class UIManager {
 
         // Fill the back row with opponent's pawns
         const backRowSquares = document.querySelectorAll('.last-row');
-        console.log(`~~~~~~~~~~~~~~~~~my color is ${this.board.color}`)
-        const opponentColor = 1 - this.board.color;
-        
+        const piece = {color:(1 - this.board.color), type:pieces.UNKNOWN};
         backRowSquares.forEach(square => {
-            const pieceElement = document.createElement('img');
-            pieceElement.style.backgroundImage = `images/Pawn${colorNames[opponentColor]}Unknown.svg`;
+            const pieceElement = document.createElement('div');
+            pieceElement.style.backgroundImage = `url(${this.getPieceImageNameFromEngineFormat(piece)})`; 
             pieceElement.classList.add('game-piece');
-            
-            // Remove any existing piece in the square
-            const existingPiece = square.querySelector('.game-piece');
-            if (existingPiece) {
-                square.removeChild(existingPiece);
-            }
-            
             square.appendChild(pieceElement);
         });
 
-        console.log(`Opponent setup complete. Back row filled with ${colorNames[opponentColor]} pawns.`);
     }
     bothSetupComplete(data){
         this.updateBoardState(data);
@@ -1161,6 +1151,7 @@ class UIManager {
         } else if (lastAction.type === actions.BOMB){
             this.showBomb(wasMyAction,priorAction,lastAction)
         }
+        return lastAction;
     }
     showBomb(wasMyAction,lastMove,lastAction){
         const targetCell = document.getElementById(this.coordsToCellId({x: lastMove.x2, y: lastMove.y2}))
@@ -1211,7 +1202,34 @@ class UIManager {
         this.placePiecesOnBoard(currentBoard);
         const lastMove = this.showLastMove();
         this.showLastAction(lastMove);
+        this.showCapturedPieces();
         this.updateUI();
+    }
+    showCapturedPieces(){
+        const capturedPieces = this.board.captured;
+
+        const lostPieces = document.querySelectorAll('.lost-piece');
+        lostPieces.forEach(piece => {
+            piece.style.backgroundImage = 'none';
+            piece.style.border = 'none'; // Remove any border
+        });
+
+        let opponentLostPiecesCount = 0;
+        let playerLostPiecesCount = 0;
+        capturedPieces.forEach((piece) => { 
+            console.log(`Piece:----------------------------------- ${piece}`);
+            console.log(piece)
+            const pieceImageURL = this.getPieceImageNameFromEngineFormat(piece)
+            if (piece.color === this.board.color) {
+                playerLostPiecesCount++;
+                const lostPieceSlot = document.getElementById(`player-lost-piece-${playerLostPiecesCount}`);
+                lostPieceSlot.style.backgroundImage = `url(${pieceImageURL})`;
+            } else {
+                opponentLostPiecesCount++;
+                const lostPieceSlot = document.getElementById(`opponent-lost-piece-${opponentLostPiecesCount}`);
+                lostPieceSlot.style.backgroundImage = `url(${pieceImageURL})`;
+            }
+        });
     }
     setSpeechBubbleImageType(declaration){
         const leftBubble = document.getElementById('left-speech-bubble');

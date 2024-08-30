@@ -78,9 +78,10 @@ class Action {
     isCapture(){
         //must be called BEFORE the move is complete to be accurate
         if(this.type == actions.BOMB) {return true;} //Bombs are always capturing
-        if(this.type != actions.MOVE) {return false;} //Not a move? not a capture
-        if(this.board.getPieceAt(this.x2,this.y2)) return true; // there was a piece at the target location before the move was completed
-        return false;
+        if(this.type == actions.MOVE) {
+            if(this.board.getPieceAt(this.x2,this.y2)) return true;
+            return false;
+        } 
     }
 
     isBluff(){
@@ -203,6 +204,7 @@ class Board {
         ]
         this.actions = []
         this.startingBoard = []
+        this.capturedPieces = [] //Format: [{player, type}, {player, type}, ...] for showing to players
         this.lastCapturedPiece = null //{player, type} tracked for bluffs/bombs
         this.lastMoveLocation  = {} // {x,y} tracked for bluffs/bombs
 	}
@@ -295,36 +297,9 @@ class Board {
         this.bitboards[targetPieceInfo.player][targetPieceInfo.type] |= ((capturedCount) << 3); // Set the new captured count
         
         this.lastCapturedPiece = targetPieceInfo; // track this for the bomb/bluffs
+        this.capturedPieces.push({color:targetPieceInfo.player, type:targetPieceInfo.type});
         // console.log(`:::Capturing Piece(${pieceSymbols[targetPieceInfo.player][targetPieceInfo.type]}) at (${x},${y}) due to...`)
-    }
-    uncaptureAtXY(x, y) {
-        // Check if there is information about the last captured piece
-        if (!this.lastCapturedPiece) {
-            console.error("Error: No recently captured piece to uncapture.");
-            return;
-        }
-        
-        const {player, type} = this.lastCapturedPiece;
-        const posIndex = utils.getBitIndexFromXY(x, y);
-    
-        // Decrease the captured count for the piece's type and player
-        let capturedCount = Number((this.bitboards[player][type] & (0b11000)) >> 3);
-        if (capturedCount > 0) {
-            capturedCount -= 1;
-        } else {
-            console.error("Error: Captured count inconsistency.");
-            return;
-        }
-        this.bitboards[player][type] &= ~(0b11000); // Clear the old captured count
-        this.bitboards[player][type] |= (capturedCount << 3); // Set the new captured count
-    
-        // Set the piece back to its position on the board
-        this.bitboards[player][type] |= (1 << posIndex);
-    
-        // console.log(`:::Uncapturing Piece(${pieceSymbols[player][type]}) at (${x},${y})`);
-    }
-    
-    
+    }      
 
     placePiece(type, player, x, y) {
         const posIndex = utils.getBitIndexFromXY(x,y);
@@ -584,7 +559,7 @@ class Board {
             console.error("Error: No captured piece available to revive.");
             return;
         }
-    
+        this.capturedPieces.pop();
         const { player, type } = this.lastCapturedPiece;
         const posIndex = utils.getBitIndexFromXY(x, y); // Assumes utils.getBitIndexFromXY(x, y) is defined
     
@@ -689,7 +664,7 @@ class Game {
             phase: this.board.phase,
             board: Array.from(Array(this.board.height), () => Array(this.board.width).fill(null)),
             onDeck: null,
-            captured: [],
+            captured: this.board.capturedPieces.map(piece => ({color: piece.color, type: piece.type})),
             stash: [],
             myTurn: (this.board.playerTurn === color),
             legalActions: [],
@@ -738,17 +713,13 @@ class Game {
         }
 
         // Handle captured pieces
-        for (let player of [colors.WHITE, colors.BLACK]) {
-            for (let type = 0; type < this.board.bitboards[player].length; type++) {
-                const capturedCount = Number((this.board.bitboards[player][type] & (0b11000)) >> 3);
-                if (capturedCount > 0) {
-                    const thisPiece = {color: player, type: type} ;
-                    for (let i = 0; i < capturedCount; i++) {
-                        if (this.board.lastCapturedPiece && this.board.lastCapturedPiece.player === player && this.board.lastCapturedPiece.type === type && i === 0) {
-                            boardState.captured.push({color: otherColor, type: pieces.UNKNOWN} ); // Last captured piece shown as 'unknown'
-                        } else {
-                            boardState.captured.push(thisPiece);
-                        }
+        if (boardState.captured.length > 0){    
+            const lastCapturedPiece = boardState.captured[boardState.captured.length-1];
+            if(lastCapturedPiece){
+                if (lastCapturedPiece.color != boardState.color){
+                    const lastAction = boardState.actionHistory[boardState.actionHistory.length-1];
+                    if(lastAction.wasCapture || lastAction.type == actions.BOMB){
+                        lastCapturedPiece.type = pieces.UNKNOWN;    
                     }
                 }
             }
