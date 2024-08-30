@@ -7,6 +7,12 @@ html, body {
     align-items: center;
     background: Black;
     overflow: hidden; /* Prevent scrolling */
+    background: #666; /* Dark background for the main div */
+}
+
+div{
+    /* border: 1px solid rgb(0, 255, 0); */
+    box-sizing: border-box;
 }
 
 .main {
@@ -16,10 +22,8 @@ html, body {
     position: relative; /* Allows absolute positioning inside */
     width: 100vw;
     height: 100%;
-    /* height: 100vh; */
     max-height: calc(100vw * 1.6);
     max-width: calc(100vh / 1.6);
-    background: #666; /* Dark background for the main div */
 }
 
 .board-labels.left {
@@ -42,7 +46,7 @@ html, body {
     width: 95%;
     aspect-ratio: 1 / 1;
     position: absolute;
-    top: 40%;
+    top: 43%;
     left: 50%;
     transform: translate(-50%, -50%);
     display: grid;
@@ -200,7 +204,7 @@ html, body {
     position: absolute;
     width: 95%;
     height: 22%;
-    bottom: 5%;
+    bottom: 3%;
     left: 50%;
     transform: translateX(-50%);
 }
@@ -302,16 +306,16 @@ html, body {
     display: none;
 }
 /* GAME CLOCK */
-#game-clock-container {
+#game-stat-container {
     position: fixed;
-    top: 1%;
+    top: 1.5%;
     left: 50%;
     transform: translateX(-50%);
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
     width: 95%;
-    height: 8%;
+    height: 11%;
     max-width: calc(100vh / 1.6 * 0.95); /* Match the max-width of .main */
     z-index: 1000; /* Ensure it's above other elements */
     -webkit-user-drag: none; /* Specifically for WebKit */
@@ -320,19 +324,40 @@ html, body {
     -o-user-drag: none; /* For Opera */
     pointer-events: none;
 }
+#player-lost-pieces-container{
+    left: 0;
+}
+#opponent-lost-pieces-container{
+    right: 0;
+}
+.lost-pieces-container{
+    position: absolute;
+    bottom: 0%;
+    height: 32%;
+    width: 27%;
+    display: flex; /* Enable flexbox for horizontal layout */
+    flex-direction: row; /* Arrange children in a row */
+    justify-content: space-between; /* Spread out lost pieces evenly */
+}
 
-.clock-container {
+.lost-piece{
+    height: 100%;
+    width: 20%; /* Maintain width for each lost piece */
+    /* Removed flex-direction: column; as it's not needed for horizontal layout */
+}
+
+.stat-container {
     display: flex;
     flex-direction: column;
     max-width: 50%;
     align-items: center;
 }
 
-.clock-container:first-child {
+.stat-container:first-child {
     align-items: flex-start;
 }
 
-.clock-container:last-child {
+.stat-container:last-child {
     align-items: flex-end;
 }
 
@@ -347,12 +372,11 @@ html, body {
 
 }
 
-.player-name {
+.username-inline {
     color: white;
     width: 100%;
     font-size: 2cqh; /* Slightly smaller than the clock */
     text-align: center;
-    margin-bottom: 0.5cqh; /* Add some space between name and clock */
     white-space: nowrap; /* Prevent name from wrapping */
 }
 
@@ -408,7 +432,7 @@ html, body {
 #lobby-container {
     z-index:10;
     position: absolute;
-    top:15%;
+    top:18%;
     text-align: center;
     padding: 20px;
     box-shadow: 0 4px 8px rgba(0,0,0,0.1);
@@ -454,7 +478,6 @@ button {
     background-color: #007BFF;
     color: white;
     cursor: pointer;
-    margin: 10px;
     width: 100%;
 }
 
