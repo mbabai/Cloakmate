@@ -1219,7 +1219,7 @@ class UIManager {
         this.moveTypeHighlight('challenge',targetCell);
         if (!lastAction.wasSuccessful){
             const floatingGamePiece = document.getElementById('floating-game-piece');
-                floatingGamePiece.src = this.getPieceImageNameFromEngineFormat({color: (1 - this.board.color), type: challengedAction.declaration});
+                floatingGamePiece.src = this.getPieceImageNameFromEngineFormat({color: challengedAction.player, type: challengedAction.declaration});
                 targetCell.appendChild(floatingGamePiece);
                 this.setSpeechBubbleImageType(challengedAction.declaration);
                 this.addState('floatingGamePiece');
