@@ -303,15 +303,22 @@ class UIManager {
         const gamePieces = document.querySelectorAll('.game-piece');
         gamePieces.forEach(piece => {
             piece.removeEventListener('mousedown', this.handleMouseDown);
-            piece.removeEventListener('mousemove', this.movePiece);
-            piece.removeEventListener('mouseup', this.releasePiece);
+            piece.removeEventListener('touchstart', this.handleTouchStart);
         });
         // Add event listeners to game pieces
         gamePieces.forEach(piece => {
             piece.addEventListener('mousedown', this.handleMouseDown.bind(this));
+            piece.addEventListener('touchstart', this.handleTouchStart.bind(this));
         });
     }
     handleMouseDown(e) {
+        this.handleStart(e);
+    }
+    handleTouchStart(e) {
+        e.preventDefault(); // Prevent scrolling when touching elements
+        this.handleStart(e.touches[0]);
+    }
+    handleStart(e) {
         this.draggedPiece = null;
         if (e.target.classList.contains('game-piece')) {
             const parentElement = e.target.parentElement;
@@ -351,6 +358,8 @@ class UIManager {
 
                 document.addEventListener('mousemove', this.movePiece.bind(this), {passive: true});
                 document.addEventListener('mouseup', this.releasePiece.bind(this));
+                document.addEventListener('touchmove', this.handleTouchMove.bind(this), {passive: false});
+                document.addEventListener('touchend', this.handleTouchEnd.bind(this));
             }
         }
     }
@@ -382,6 +391,12 @@ class UIManager {
                     });
                 }
             }
+        }
+    }
+    handleTouchMove(e) {
+        e.preventDefault(); // Prevent scrolling when moving pieces
+        if (e.touches.length > 0) {
+            this.movePiece(e.touches[0]);
         }
     }
     displayLegalMoves(legalMovePieces, type,targetPiece){
@@ -491,6 +506,14 @@ class UIManager {
         return true;
     }
     releasePiece(e) {
+        this.handleRelease(e);
+    }
+    handleTouchEnd(e) {
+        // Use the last known touch position
+        const lastTouch = e.changedTouches[0];
+        this.handleRelease(lastTouch);
+    }
+    handleRelease(e) {
         this.removeState('leftSpeechBubble');
         this.removeState('leftThoughtBubble');
         this.removeState('rightThoughtBubble');
@@ -641,6 +664,8 @@ class UIManager {
     cleanupAfterDrag() {
         document.removeEventListener('mousemove', this.movePiece);
         document.removeEventListener('mouseup', this.releasePiece);
+        document.removeEventListener('touchmove', this.handleTouchMove);
+        document.removeEventListener('touchend', this.handleTouchEnd);
         this.draggedPiece.classList.remove('selected');
         this.draggedPiece = null;
         this.startLocation = null;
