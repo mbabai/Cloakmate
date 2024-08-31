@@ -1,6 +1,6 @@
 // Import required modules
 const express = require('express');
-const WebSocket = require('ws');
+const WebSocket = require('wss');
 const http = require('http');
 const LobbyManager = require('./lobbyManager');
 
