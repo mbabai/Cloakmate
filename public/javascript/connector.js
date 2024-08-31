@@ -6,7 +6,10 @@ class WebSocketManager {
     }
 
     initializeWebSocket() {
-        this.socket = new WebSocket('ws://localhost:8080');
+        const isLocalhost = window.location.hostname === 'localhost';
+        const wsProtocol = isLocalhost ? 'ws' : 'wss';
+        const wsHost = isLocalhost ? 'localhost:8080' : window.location.host;
+        this.socket = new WebSocket(`${wsProtocol}://${wsHost}`);
         this.socket.addEventListener('open', this.handleOpen.bind(this));
         this.socket.addEventListener('message', this.handleMessage.bind(this));
         this.socket.addEventListener('error', this.handleError.bind(this));

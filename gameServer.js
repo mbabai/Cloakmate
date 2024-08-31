@@ -17,10 +17,11 @@ class GameServer {
         this.app = express();
         this.server = http.createServer(this.app);
         this.port = process.env.PORT || 8080;
-        // this.app.use(express.static('public'));
+        this.app.use(express.static('public'));
         this.app.get('*', (req, res) => {
-            res.status(404).send('404 Not Found');
+            res.sendFile(path.join(__dirname, 'public', 'index.html'));
         });
+        
     }
 
     initializeWebSocket() {
