@@ -19,9 +19,8 @@ class GameServer {
         this.port = process.env.PORT || 8080;
         this.app.use(express.static('public'));
         this.app.get('*', (req, res) => {
-            res.sendFile(path.join(__dirname, 'public', 'index.html'));
+            res.status(404).send('404 Not Found');
         });
-        
     }
 
     initializeWebSocket() {

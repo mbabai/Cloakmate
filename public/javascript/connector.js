@@ -6,7 +6,7 @@ class WebSocketManager {
     }
 
     initializeWebSocket() {
-        this.socket = new WebSocket('wss://cloaksgambit.bymarcell.com');
+        this.socket = new WebSocket('ws://localhost:8080');
         this.socket.addEventListener('open', this.handleOpen.bind(this));
         this.socket.addEventListener('message', this.handleMessage.bind(this));
         this.socket.addEventListener('error', this.handleError.bind(this));
