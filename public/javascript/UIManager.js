@@ -1017,7 +1017,7 @@ class UIManager {
         let gameOver = false;
         if(this.board.winner != null){
             gameOver = true
-            const winnerMessage = this.board.winner === this.board.color ? "YOU WIN!" ? "YOU LOSE!"
+            const winnerMessage = this.board.winner === this.board.color ? "YOU WIN!" : "YOU LOSE!"
             const winnerName = this.board.winner === this.board.color ? this.username : this.opponentName;
             let reason;
             switch(this.board.winReason) {
