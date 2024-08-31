@@ -1,5 +1,5 @@
 {
-  "name": "Cloakmate",
+  "name": "cloaksgambit",
   "version": "1.0.0",
   "description": "Cloak's Gambit game server. Lobby for playing Cloak's Gambit online with other players.",
   "main": "gameServer.js",
