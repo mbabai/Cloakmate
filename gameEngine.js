@@ -30,7 +30,8 @@ const winReasons = {
     THRONE: 1,
     STASH: 2,
     FORCED_SACRIFICE: 3,
-    TIMEOUT: 4      
+    TIMEOUT: 4,
+    KING_BLUFF: 5      
 }
 
 const All = precalcs.createAllPiecesLookupTable()
@@ -239,13 +240,21 @@ class Board {
     }
 
     isGameOver(){
-        let isGameOver = false;
         if (this.phase == 'play'){
-            if (this.IsCapturedKingVictory() || this.iskKingInOpponentThroneVictory() || this.isTrueKingChallenged() ||  this.isKingSacrificeVictory()){
-                isGameOver = true;
+            if (this.IsCapturedKingVictory() || this.iskKingInOpponentThroneVictory() || this.isTrueKingChallenged() || this.isKingBluffedOut() || this.isKingSacrificeVictory()){
+                return true;
             } 
         }
-        return isGameOver;
+        return false;
+    }
+    isKingBluffedOut(){
+        if(this.actions.length < 2) return false;
+        const lastAction = this.actions[this.actions.length - 1];
+        const kingCaptureIndex = this.capturedPieces.findIndex(piece => piece.type === pieces.KING);
+        if(lastAction.type === actions.CHALLENGE && kingCaptureIndex != -1){
+            this.setWinner( 1 - this.capturedPieces[kingCaptureIndex].color, winReasons.KING_BLUFF)
+            return true;
+        }
     }
     isKingSacrificeVictory(){
         if (this.playerToSacrifice != null){

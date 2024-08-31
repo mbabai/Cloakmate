@@ -44,7 +44,8 @@ const winReasons = {
     THRONE: 1,
     STASH: 2,
     FORCED_SACRIFICE: 3,
-    TIMEOUT: 4      
+    TIMEOUT: 4,
+    KING_BLUFF: 5      
 }
 
 class UIManager {
@@ -1034,6 +1035,9 @@ class UIManager {
                     break;
                 case winReasons.TIMEOUT:
                     reason = " won due to the opponent's time running out!";
+                    break;
+                case winReasons.KING_BLUFF:
+                    reason = " won due to the opponent failing a bluff with their king!";
                     break;
                 default:
                     reason = " won the game!";
