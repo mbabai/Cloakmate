@@ -979,7 +979,6 @@ class UIManager {
         // Reset game selection to default empty value
         document.getElementById('game-selection').value = "";
         this.stopClockTick('both');
-        this.clearBoard();
     }
     clearBoard(){
         this.resetClocks();
@@ -1375,10 +1374,9 @@ class UIManager {
     resetClocks() {
         const playerClockElement = document.getElementById('player-clock-time');
         const opponentClockElement = document.getElementById('opponent-clock-time');
-        this.playerTime = 0;
-        this.opponentTime = 0;
-        playerClockElement.textContent = this.formatTime(this.board.clocks[this.board.color]);
-        opponentClockElement.textContent = this.formatTime(this.board.clocks[1 - this.board.color]);
+        playerClockElement.textContent = this.formatTime(0);
+        opponentClockElement.textContent = this.formatTime(0);
+        
     }
     formatTime(milliseconds) {
         const seconds = Math.floor(milliseconds / 1000);

@@ -6,13 +6,6 @@ const winReasons = {
     FORCED_SACRIFICE: 3,
     TIMEOUT: 4      
 }
-const pieces = {
-    BOMB: 0,
-    KING: 1,
-    KNIGHT: 2,
-    BISHOP: 3,
-    ROOK: 4
-};
 //Game Arena - coordinates games between players, converts between game engine style variables and frontend style variables
 class GameCoordinator {
     constructor(user1,user2,length,gameNumber,server) {
@@ -32,6 +25,7 @@ class GameCoordinator {
         this.broadcastGameState()
         this.gameLoopInterval = null; // Add this line
         this.startGameLoop(); // Add this line
+        this.isComplete = false;
     }
     startGameLoop() {
         const gameLoop = () => {
@@ -66,6 +60,7 @@ class GameCoordinator {
     }
     endGame() {
         this.stopGameLoop();
+        this.isComplete = true;
     }
     sendColorState(color) {
         this.server.routeMessage(this.users[color].websocket,{type:"board-state",board:this.game.getColorState(color)})

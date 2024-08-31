@@ -17,6 +17,22 @@ class LobbyManager {
       pulse(){
         this.logState()
         this.quickplayMatch()
+        this.cleanUpCompletedGames()
+      }
+      cleanUpCompletedGames(){
+        this.games = this.games.filter(game => {
+          if (game.isComplete) {
+            console.log(`Cleaning up completed game #${game.gameNumber}`);
+            this.wsToGame.delete(game.users[0].websocket);
+            this.wsToGame.delete(game.users[1].websocket);
+            game.users[0].isInGame = false;
+            game.users[1].isInGame = false;
+            return false;
+          }
+          return true;
+        });
+
+        
       }
 
       addUserToQueue(user){
@@ -189,16 +205,15 @@ class LobbyManager {
       }
 
       logState(){
-        // console.clear();
-        console.log(`\n\n\n\n\n`)
+        console.clear();
         console.log(`Current Lobby State (${new Date().toLocaleString()}):`)
-        console.log(`- Lobby (${this.lobby.size}): ${Array.from(this.lobby.values()).map(user => user.username).join(', ')}`);
+        console.log(`- Lobby (${this.lobby.size}): ${Array.from(this.lobby.values()).map(user => `${user.username}${user.isInGame ? "*": ""}`).join(', ')}`);
         console.log(`- Queue (${this.queue.length}): ${this.queue.map(user => user.username).join(', ')}`);
-        console.log(`- Games (${this.games.length}):`) // ${this.games.map(game => `${game.logGameState()}`).join('\n')}`);
-        this.games.forEach((game, index) => {
-          console.log(game.logGameState())
-          game.game.board.printBoard()
-        });
+        console.log(`- Games (${this.games.length}): ${this.games.map(game => `${game.logGameState()}`).join('\n\t')}`)
+        // this.games.forEach((game, index) => {
+        //   console.log(game.logGameState())
+        //   game.game.board.printBoard()
+        // });
       }
 }
 
