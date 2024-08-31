@@ -241,7 +241,7 @@ class Board {
     isGameOver(){
         let isGameOver = false;
         if (this.phase == 'play'){
-            if (this.isKingBluffVictory() || this.iskKingInOpponentThroneVictory() || this.IsCapturedKingVictory() || this.isKingSacrificeVictory()){
+            if (this.IsCapturedKingVictory() || this.iskKingInOpponentThroneVictory() || this.isTrueKingChallenged() ||  this.isKingSacrificeVictory()){
                 isGameOver = true;
             } 
         }
@@ -262,12 +262,9 @@ class Board {
         if (this.capturedPieces.length > 0){    
             const lastCapturedPiece = this.capturedPieces[this.capturedPieces.length-1];
             if(lastCapturedPiece && lastCapturedPiece.type == pieces.KING){
-                if (lastCapturedPiece.color != this.playerTurn){
-                    const lastAction = this.actions[this.actions.length-1];
-                    if(!(lastAction.wasCapture || lastAction.type == actions.BOMB)){
-                        this.setWinner(1 - lastCapturedPiece.color, winReasons.CAPTURED_KING)
-                        return true;
-                    }
+                if (lastCapturedPiece.color == this.playerToSacrifice){
+                    this.setWinner(1 - lastCapturedPiece.color, winReasons.CAPTURED_KING)
+                    return true;
                 }
             }
         }
@@ -290,7 +287,7 @@ class Board {
         }
         return false;
     }
-    isKingBluffVictory(){
+    isTrueKingChallenged(){
         const whiteKingInStash = (this.bitboards[colors.WHITE][pieces.KING] & 0b11) > 0;
         const blackKingInStash = (this.bitboards[colors.BLACK][pieces.KING] & 0b11) > 0;
         let isGameOver = false;
