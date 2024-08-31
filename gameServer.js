@@ -17,6 +17,10 @@ class GameServer {
         this.server = http.createServer(this.app);
         this.port = process.env.PORT || 3000;
         this.app.use(express.static('public'));
+        this.app.get('*', (req, res) => {
+            res.sendFile(path.join(__dirname, 'public', 'index.html'));
+        });
+        
     }
 
     initializeWebSocket() {
