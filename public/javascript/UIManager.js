@@ -43,7 +43,7 @@ const winReasons = {
     CAPTURED_KING: 0,
     THRONE: 1,
     STASH: 2,
-    KING_SACRIFICE: 3,
+    FORCED_SACRIFICE: 3,
     TIMEOUT: 4      
 }
 
@@ -1006,34 +1006,42 @@ class UIManager {
         this.startCorrectClocks();
         this.setBoardSpaceLabels()
         this.setBoardPieces(this.board);
-        this.checkVictory()
+        if (this.gameIsOver()){
+            this.endGame()
+            this.setState('lobby');
+            return;
+        }
         this.updateLegalGameActions();
     }
-    checkVictory(){
+    gameIsOver(){
+        let gameOver = false;
         if(this.board.winner != null){
-        const winnerName = this.board.winner === this.board.color ? this.username : this.opponentName;
-        let reason;
-        switch(this.board.winReason) {
-            case winReasons.CAPTURED_KING:
-                reason = " won by capturing the opponent's king!";
-                break;
-            case winReasons.THRONE:
-                reason = " won by moving their king to the opponent's throne!";
-                break;
-            case winReasons.STASH:
-                reason = " won as thing king move was unsuccessfully challenged!";
-                break;
-            case winReasons.KING_SACRIFICE:
-                reason = " won by forcing the opponent to sacrifice their king!";
-                break;
-            case winReasons.TIMEOUT:
-                reason = " won due to the opponent's time running out!";
-                break;
-            default:
-                reason = "won the game!";
+            gameOver = true
+            const winnerMessage = this.board.winner === this.board.color ? "YOU WIN!" ? "YOU LOSE!"
+            const winnerName = this.board.winner === this.board.color ? this.username : this.opponentName;
+            let reason;
+            switch(this.board.winReason) {
+                case winReasons.CAPTURED_KING:
+                    reason = " won by capturing the opponent's king!";
+                    break;
+                case winReasons.THRONE:
+                    reason = " won by moving their king to the opponent's throne!";
+                    break;
+                case winReasons.STASH:
+                    reason = " won as thing king move was unsuccessfully challenged!";
+                    break;
+                case winReasons.FORCED_SACRIFICE:
+                    reason = " won by forcing the opponent to sacrifice all their pieces!";
+                    break;
+                case winReasons.TIMEOUT:
+                    reason = " won due to the opponent's time running out!";
+                    break;
+                default:
+                    reason = " won the game!";
+            }
+            alert(`${winnerName}${reason}\n${winnerMessage}`);
         }
-        alert(`${winnerName}${reason}!`);
-        }
+        return gameOver
     }
     updateLegalGameActions(){
         this.setupSacrificeFunction();

@@ -29,7 +29,7 @@ const winReasons = {
     CAPTURED_KING: 0,
     THRONE: 1,
     STASH: 2,
-    KING_SACRIFICE: 3,
+    FORCED_SACRIFICE: 3,
     TIMEOUT: 4      
 }
 
@@ -281,7 +281,7 @@ class Board {
             const lastAction = this.actions[this.actions.length - 1];
             if (kingMoveAction.declaration != pieces.KING){
                 return false;
-            } else if (kingMoveAction.x2 == colorTargetThrones[lastAction.player].x && kingMoveAction.y2 == colorTargetThrones[lastAction.player].y){
+            } else if (kingMoveAction.x2 == colorTargetThrones[kingMoveAction.player].x && kingMoveAction.y2 == colorTargetThrones[kingMoveAction.player].y){
                 if (lastAction.type != actions.CHALLENGE || lastAction.wasSuccessful){
                     this.setWinner(kingMoveAction.player, winReasons.THRONE)
                     return true;

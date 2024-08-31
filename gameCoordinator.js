@@ -3,7 +3,7 @@ const winReasons = {
     CAPTURED_KING: 0,
     THRONE: 1,
     STASH: 2,
-    KING_SACRIFICE: 3,
+    FORCED_SACRIFICE: 3,
     TIMEOUT: 4      
 }
 const pieces = {
@@ -20,7 +20,7 @@ class GameCoordinator {
         this.nameToUser.set(user1.username,user1);
         this.nameToUser.set(user2.username,user2);
         this.length = length;
-        this.increment = 5000; // gain 5 seconds after completing a move.
+        this.increment = length == 1 ? 2000 : length == 5 ? 5000 : 10000; // miliseconds gained after moving.
         this.gameNumber = gameNumber;
         this.game = new Game(user1.username,user2.username,length);
         this.game.randomizePlayerColor()
@@ -38,7 +38,7 @@ class GameCoordinator {
             if (this.game.board.phase === 'setup') {
                 this.checkSetupTimeout();
             }
-            if (this.game.board.phase === 'playing') {
+            if (this.game.board.phase === 'play') {
                 this.checkTurnTimeout();
             }
         };
@@ -50,18 +50,18 @@ class GameCoordinator {
         }
     }
     checkTurnTimeout() {
-        const currentPlayerIndex = this.game.getPlayerColorIndex(this.users[this.game.playerTurn].username);
-        const playerRemainingTime = this.game.playersTimeAvailable[currentPlayerIndex];
+        const playerRemainingTime = this.game.playersTimeAvailable[this.game.board.playerTurn];
         if (Date.now() - this.lastActionTime >= playerRemainingTime) {
             console.log('Turn timeout reached. Ending game.');
-            this.game.board.setWinner(1 - currentPlayerIndex,winReasons.TIMEOUT) 
+            this.game.board.setWinner(1 - this.game.board.playerTurn,winReasons.TIMEOUT) 
             this.endGame();
+            this.broadcastGameState()
         }
     }
     stopGameLoop() {
-        if (this.animationFrameId !== null) {
-            cancelAnimationFrame(this.animationFrameId);
-            this.animationFrameId = null;
+        if (this.gameLoopInterval !== null) {
+            clearInterval(this.gameLoopInterval);
+            this.gameLoopInterval = null;
         }
     }
     endGame() {
@@ -90,7 +90,7 @@ class GameCoordinator {
         const isActionSuccessful = this.game.board.takeAction(thisAction)
         if (isActionSuccessful) {
             this.updatePlayerTime(playerColorIndex)
-            if (this.board.isGameOver()){
+            if (this.game.board.isGameOver()){
                 this.endGame()
             }
             this.broadcastGameState()
