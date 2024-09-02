@@ -779,10 +779,12 @@ class UIManager {
         gamePieces.forEach(piece => {
             const enginePiece = this.convertPieceImageNameToEngineFormat(piece.style.backgroundImage);
             if (enginePiece.type !== pieces.KING && enginePiece.color === this.board.color){
-                piece.addEventListener('click', (event) => {
-                    this.doAction('sacrifice',{piece});
+                const handleSacrifice = (event) => {
+                    this.doAction('sacrifice', {piece});
                     event.stopPropagation(); // Prevent event from bubbling up to the cell
-                });
+                };
+                piece.addEventListener('click', handleSacrifice);
+                piece.addEventListener('touchstart', handleSacrifice);
             }
         });
     }
