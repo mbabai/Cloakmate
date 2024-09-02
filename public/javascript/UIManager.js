@@ -415,8 +415,9 @@ class UIManager {
 
             // Position the bubble relative to the dragged piece
             const pieceRect = targetPiece.getBoundingClientRect();
-            const offsetTop = 60; // Adjust this value based on your image size
-            const offsetSide = 72.5;
+            const offsetTop = pieceRect.height * 0.7; // Adjust this value based on your image size
+            const aspectRatio = window.innerWidth / window.innerHeight;
+            const offsetSide = pieceRect.width * 0.56 * aspectRatio;
             
             if (index === 0) {
                 // Left bubble: up and to the left
@@ -637,10 +638,13 @@ class UIManager {
         }
     }
     moveSpeechBubbleToTarget(target){
-        const targetRect = target.getBoundingClientRect();
         const leftBubble = document.getElementById('left-speech-bubble');
-        leftBubble.style.left = `${targetRect.left - 73}px`;
-        leftBubble.style.top = `${targetRect.top - 60}px`;
+        const pieceRect = target.getBoundingClientRect();
+        const offsetTop = pieceRect.height * 0.7; // Adjust this value based on your image size
+        const aspectRatio = window.innerWidth / window.innerHeight;
+        const offsetSide = pieceRect.width * 0.56 * aspectRatio;
+        leftBubble.style.left = `${pieceRect.left - offsetSide}px`;
+        leftBubble.style.top = `${pieceRect.top - offsetTop}px`;
     }
     canSwap(target) {
         return this.currentActions.includes('swap') && 
