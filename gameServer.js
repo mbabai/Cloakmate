@@ -2,7 +2,11 @@
 const express = require('express');
 const path = require('path');
 const WebSocket = require('ws');
+const http = require('http');
 const https = require('https');
+const isProduction = process.env.NODE_ENV === 'production';
+
+
 const LobbyManager = require('./lobbyManager');
 
 // Define the gameServer class
@@ -15,7 +19,7 @@ class GameServer {
 
     initializeServer() {
         this.app = express();
-        this.server = https.createServer(this.app);
+        this.server = isProduction ? https.createServer(this.app) : http.createServer(this.app);
         this.port = process.env.PORT || 8080;
         this.app.use(express.static('public'));
         this.app.get('*', (req, res) => {
@@ -95,7 +99,7 @@ class GameServer {
 // Create an instance of the gameServer and start listening
 const myGameServer = new GameServer();
 myGameServer.server.listen(myGameServer.port, () => {
-    console.log(`GameServer is listening on port ${myGameServer.port}`);
+    console.log(`GameServer is listening on port ${myGameServer.port} in ${isProduction ? "Production" : "Development"} mode...`);
 });
 const myLobbyManager = new LobbyManager(myGameServer);
 myGameServer.addTypeListener('submit-username', (ws,data)=>{myLobbyManager.receiveUsername(ws,data)});
