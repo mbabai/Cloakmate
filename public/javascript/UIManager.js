@@ -51,6 +51,7 @@ const winReasons = {
 class UIManager {
     constructor(webSocketManager) {
         this.webSocketManager = webSocketManager;
+        this.audio = new AudioController()
         this.username;
         this.opponentName;
         this.board = null;
@@ -539,7 +540,7 @@ class UIManager {
             }
         } 
         if (this.isValidTarget(target)) {
-            playSound('knock');
+            this.audio.doSFX('knock');
             const moveAction = `move-${originalLocationType}-to-${targetLocationType}`;
             if (this.currentActions.includes(moveAction)){
                 if (this.currentActions.includes('onDeck')){
@@ -585,6 +586,9 @@ class UIManager {
     }
     handleValidPieceDrop(target,legalMovePieces) {
         const targetPieceElement = target.querySelector('.game-piece');
+        if (targetPieceElement){
+            this.audio.doSFX('capture')
+        }
         this.targetCell = target;
         if (this.canSwap(target) && targetPieceElement) {
             this.swapPieces(target, targetPieceElement);
@@ -606,6 +610,7 @@ class UIManager {
         this.addState('originHighlight');
         this.moveTypeHighlight('origin',this.originalParent);
         this.moveSpeechBubbleToTarget(this.targetCell);
+        this.audio.doSFX('declare')
         this.updateUI();
         // Send move information to the server
         
@@ -858,6 +863,7 @@ class UIManager {
             return false;
         }
         const coords = this.cellIdToCoords(parentCell.id);
+        this.audio.doSFX('sacrifice')
         this.webSocketManager.routeMessage({type:'game-action', action:actions.SACRIFICE, details:{x1:coords.x, y1:coords.y}});
     }
     onDeck(pieceElement){
@@ -991,30 +997,18 @@ class UIManager {
     }
     determineSound(){
         let sound = null;
-        if (this.board.lastAction){
-            if (this.board.lastAction.type === actions.BOMB){
-                sound = 'bomb';
-            }
-            if (this.board.myTurn){
-                if (this.board.lastAction.type === actions.MOVE){
-                    sound = 'knock';
-                } else  if (this.board.lastAction.type === actions.CHALLENGE){
-                    if (this.board.lastAction.wasSuccessful){
-                        sound = 'calledOut';
-                    } else {
-                        sound = 'safe';
-                    }
-                } else {
-                    if (this.board.lastAction.wasSuccessful){
-                        sound = 'challengeSuccess';
-                    } else {
-                        sound = 'challengeIncorrect';
-                    }
+        const lastAction = this.board.actionHistory[this.board.actionHistory.length - 1]
+        if (lastAction){
+            if (lastAction.type === actions.BOMB){
+                this.audio.doSFX('bomb')
+            } else if (this.board.myTurn && lastAction.type === actions.MOVE){
+                // Opponent just moved:
+                this.audio.doSFX('knock');
+                if(lastAction.wasCapture){
+                    this.audio.doSFX('capture')
                 }
             }
         }
-        console.log(`Playing sound::::::::::::::::: ${sound}`);
-        playSound(sound);
     }
     //Board State
     updateBoardState(data){
@@ -1068,7 +1062,9 @@ class UIManager {
         this.setBoardPieces(this.board);
         if (this.gameIsOver()){
             this.endGame()
-            this.setState('lobby');
+            setTimeout(() => {
+                this.setState('lobby');
+            },200)
             return;
         }
         this.updateLegalGameActions();
@@ -1077,32 +1073,55 @@ class UIManager {
         let gameOver = false;
         if(this.board.winner != null){
             gameOver = true
-            const winnerMessage = this.board.winner === this.board.color ? "YOU WIN!" : "YOU LOSE!"
+            const isPlayerWinner = this.board.winner === this.board.color;
             const winnerName = this.board.winner === this.board.color ? this.username : this.opponentName;
-            let reason;
+            const loserName = this.board.winner === this.board.color ? this.opponentName : this.username;
+            const winnerColor = colorNames[this.board.winner]
+            const loserColor = colorNames[1 - this.board.winner]
+            let winReason;
+            let loseReason;
             switch(this.board.winReason) {
                 case winReasons.CAPTURED_KING:
-                    reason = " won by capturing the opponent's king!";
+                    winReason = `You captured your opponent's, king!`;
+                    loseReason = `${winnerName} (${winnerColor}) captured your (${loserColor}) king...`
                     break;
                 case winReasons.THRONE:
-                    reason = " won by moving their king to the opponent's throne!";
+                    winReason = `You moved your king to the opponent's (${loserColor}) throne!`;
+                    loseReason = `${winnerName} (${winnerColor}) moved their king into your (${loserColor}) throne...`;
                     break;
                 case winReasons.STASH:
-                    reason = " won as thing king move was unsuccessfully challenged!";
+                    winReason = `${loserName} (${loserColor}) unsuccessfully challenged your (${winnerColor}) king move!`;
+                    loseReason = `You (${loserColor}) unsuccessfully challenged ${winnerName}'s (${winnerColor}) king move...`;
                     break;
                 case winReasons.FORCED_SACRIFICE:
-                    reason = " won by forcing the opponent to sacrifice all their pieces!";
+                    winReason = `You forced ${loserName} (${loserColor}) to sacrifice all their pieces!`;
+                    loseReason = `${winnerName} (${winnerColor}) forced you (${loserColor}) to sacrifice all your pieces...`;
                     break;
                 case winReasons.TIMEOUT:
-                    reason = " won due to the opponent's time running out!";
+                    winReason = `${loserName} (${loserColor}) ran out of time!`;
+                    loseReason = `You ran out of time...`;
                     break;
                 case winReasons.KING_BLUFF:
-                    reason = " won due to the opponent failing a bluff with their king!";
+                    winReason = ` ${loserName} (${loserColor}) revealed your king with a failed challenge!`;
+                    loseReason = `You revealed ${winnerName}'s (${winnerColor}) king with a failed challenge...`;
                     break;
                 default:
-                    reason = " won the game!";
+                    winReason = `You won the game!`;
+                    loseReason = `You lost the game...`;
+                    break;
             }
-            alert(`${winnerName}${reason}\n${winnerMessage}`);
+            if(isPlayerWinner){
+                this.audio.doSFX('victory');
+                setTimeout(() => {
+                    alert(`YOU WIN!! \n ${winReason}`);
+                }, 100);
+            } else {
+                this.audio.doSFX('defeat');
+                setTimeout(() => {
+                    alert(`YOU LOSE! \n ${loseReason}`);
+                }, 100);
+            }
+            
         }
         return gameOver
     }
@@ -1248,7 +1267,6 @@ class UIManager {
         let lastAction = this.board.actionHistory[this.board.actionHistory.length - 1];
         if (!lastAction){return;}
         const wasMyAction = lastAction.player === this.board.color;
-        console.log(`Was my action: ${wasMyAction}`);
         if (lastAction.type === actions.MOVE){return;}
         const priorAction = this.board.actionHistory[this.board.actionHistory.length - 2];
         if (lastAction.type === actions.CHALLENGE){
@@ -1287,15 +1305,19 @@ class UIManager {
                 this.setSpeechBubbleImageType(challengedAction.declaration);
                 this.addState('floatingGamePiece');
             if(lastAction.player === this.board.color){//we failed the challenge, and it's our turn to sacrifice
+                this.audio.doSFX('challengeIncorrect')
                 this.changeTypeHighlightColor('challenge',highlightColors.RED);
             } else {
+                this.audio.doSFX('safe')
                 this.changeTypeHighlightColor('challenge',highlightColors.BLUE);
             }
         } else { //Challenge was successful, and the piece is removed.
 
             if(lastAction.player === this.board.color){ //the challenge was successful, and it's our turn to move
+                this.audio.doSFX('challengeSuccess')
                 this.changeTypeHighlightColor('challenge',highlightColors.BLUE);
             } else { //the challenge was successful, but it's not our turn to move
+                this.audio.doSFX('calledOut')
                 this.changeTypeHighlightColor('challenge',highlightColors.RED);
             }
         }
@@ -1322,8 +1344,6 @@ class UIManager {
         let opponentLostPiecesCount = 0;
         let playerLostPiecesCount = 0;
         capturedPieces.forEach((piece) => { 
-            console.log(`Piece:----------------------------------- ${piece}`);
-            console.log(piece)
             const pieceImageURL = this.getPieceImageNameFromEngineFormat(piece)
             if (piece.color === this.board.color) {
                 playerLostPiecesCount++;
@@ -1454,30 +1474,4 @@ class UIManager {
             return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
         }
     }
-}
-
-function playSound(name) {
-    const wavPath = `/sounds/${name}.wav`;
-    const mp3Path = `/sounds/${name}.mp3`;
-
-    Promise.all([
-        fetch(wavPath).catch(() => ({ ok: false })),
-        fetch(mp3Path).catch(() => ({ ok: false }))
-    ])
-    .then(([wavResponse, mp3Response]) => {
-        if (wavResponse.ok) {
-            return wavPath;
-        } else if (mp3Response.ok) {
-            return mp3Path;
-        } else {
-            throw new Error('No valid audio file found');
-        }
-    })
-    .then(audioPath => {
-        const audio = new Audio(audioPath);
-        return audio.play();
-    })
-    .catch(error => {
-        console.error(`Failed to play sound ${name}:`, error);
-    });
 }
