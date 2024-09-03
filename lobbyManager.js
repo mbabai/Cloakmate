@@ -205,7 +205,7 @@ class LobbyManager {
       }
 
       logState(){
-        console.clear();
+        // console.clear();
         console.log(`Current Lobby State (${new Date().toLocaleString()}):`)
         console.log(`- Lobby (${this.lobby.size}): ${Array.from(this.lobby.values()).map(user => `${user.username}${user.isInGame ? "*": ""}`).join(', ')}`);
         console.log(`- Queue (${this.queue.length}): ${this.queue.map(user => user.username).join(', ')}`);
