@@ -270,7 +270,12 @@ class Board {
         // Handle captured pieces
         if (this.capturedPieces.length > 0){    
             const lastCapturedPiece = this.capturedPieces[this.capturedPieces.length-1];
-            if(lastCapturedPiece && lastCapturedPiece.type == pieces.KING){
+            const secondLastCapturedPiece = this.capturedPieces[this.capturedPieces.length-1];
+            const lastAction = this.actions[this.actions.length - 1]
+            if(secondLastCapturedPiece && secondLastCapturedPiece.type == pieces.KING && lastAction.type === actions.MOVE){
+                this.setWinner(1 - secondLastCapturedPiece.color, winReasons.CAPTURED_KING)
+                return true;
+            } else if (lastCapturedPiece && lastCapturedPiece.type == pieces.KING){
                 if (lastCapturedPiece.color == this.playerToSacrifice){
                     this.setWinner(1 - lastCapturedPiece.color, winReasons.CAPTURED_KING)
                     return true;
