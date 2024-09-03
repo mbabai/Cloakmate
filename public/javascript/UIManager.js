@@ -539,6 +539,7 @@ class UIManager {
             }
         } 
         if (this.isValidTarget(target)) {
+            playSound('knock');
             const moveAction = `move-${originalLocationType}-to-${targetLocationType}`;
             if (this.currentActions.includes(moveAction)){
                 if (this.currentActions.includes('onDeck')){
@@ -988,10 +989,38 @@ class UIManager {
     playAI(){
         alert('Sorry, AI is not implemented yet!');
     }
+    determineSound(){
+        let sound = null;
+        if (this.board.lastAction){
+            if (this.board.lastAction.type === actions.BOMB){
+                sound = 'bomb';
+            }
+            if (this.board.myTurn){
+                if (this.board.lastAction.type === actions.MOVE){
+                    sound = 'knock';
+                } else  if (this.board.lastAction.type === actions.CHALLENGE){
+                    if (this.board.lastAction.wasSuccessful){
+                        sound = 'calledOut';
+                    } else {
+                        sound = 'safe';
+                    }
+                } else {
+                    if (this.board.lastAction.wasSuccessful){
+                        sound = 'challengeSuccess';
+                    } else {
+                        sound = 'challengeIncorrect';
+                    }
+                }
+            }
+        }
+        console.log(`Playing sound::::::::::::::::: ${sound}`);
+        playSound(sound);
+    }
     //Board State
     updateBoardState(data){
         this.setState('boardState');
         this.board = data.board;
+        this.determineSound()
         this.opponentName = this.board.opponentName;
         if(!this.board.myTurn){
             this.setState('otherPlayerTurn');
@@ -1425,4 +1454,30 @@ class UIManager {
             return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
         }
     }
+}
+
+function playSound(name) {
+    const wavPath = `/sounds/${name}.wav`;
+    const mp3Path = `/sounds/${name}.mp3`;
+
+    Promise.all([
+        fetch(wavPath).catch(() => ({ ok: false })),
+        fetch(mp3Path).catch(() => ({ ok: false }))
+    ])
+    .then(([wavResponse, mp3Response]) => {
+        if (wavResponse.ok) {
+            return wavPath;
+        } else if (mp3Response.ok) {
+            return mp3Path;
+        } else {
+            throw new Error('No valid audio file found');
+        }
+    })
+    .then(audioPath => {
+        const audio = new Audio(audioPath);
+        return audio.play();
+    })
+    .catch(error => {
+        console.error(`Failed to play sound ${name}:`, error);
+    });
 }
