@@ -2,20 +2,20 @@
 <!-- Created with Inkscape (http://www.inkscape.org/) -->
 
 <svg
-   xmlns:dc="http://purl.org/dc/elements/1.1/"
-   xmlns:cc="http://creativecommons.org/ns#"
-   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
-   xmlns:svg="http://www.w3.org/2000/svg"
-   xmlns="http://www.w3.org/2000/svg"
-   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
-   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
    width="190mm"
    height="190mm"
    viewBox="0 0 190 190"
    version="1.1"
    id="svg8"
-   inkscape:version="0.92.4 (5da689c313, 2019-01-14)"
-   sodipodi:docname="WhitePawnFront.svg">
+   inkscape:version="1.2 (dc2aeda, 2022-05-15)"
+   sodipodi:docname="PawnWhiteUnknown.svg"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:dc="http://purl.org/dc/elements/1.1/">
   <defs
      id="defs2" />
   <sodipodi:namedview
@@ -26,16 +26,20 @@
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
      inkscape:zoom="0.98994949"
-     inkscape:cx="321.61329"
-     inkscape:cy="338.75074"
+     inkscape:cx="331.33004"
+     inkscape:cy="461.63971"
      inkscape:document-units="mm"
-     inkscape:current-layer="svg8"
+     inkscape:current-layer="layer2"
      showgrid="false"
-     inkscape:window-width="1920"
-     inkscape:window-height="1009"
-     inkscape:window-x="-8"
-     inkscape:window-y="303"
-     inkscape:window-maximized="1" />
+     inkscape:window-width="1515"
+     inkscape:window-height="820"
+     inkscape:window-x="101"
+     inkscape:window-y="50"
+     inkscape:window-maximized="0"
+     inkscape:showpageshadow="2"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#d1d1d1"
+     showguides="false" />
   <metadata
      id="metadata5">
     <rdf:RDF>
@@ -56,7 +60,7 @@
      transform="translate(0,-107)">
     <g
        id="g1589"
-       transform="translate(-1.2609594,0.414712)">
+       transform="matrix(1.5353637,0,0,0.9945227,-52.795587,1.5188742)">
       <g
          transform="translate(-9.621703,43.297663)"
          style="fill:#dadada;fill-opacity:1"
@@ -121,13 +125,13 @@
          inkscape:connector-curvature="0"
          id="path955"
          d="m 96.211627,124.37876 c -2.56034,2.57294 -5.18223,5.12125 -7.134297,7.9375 -1.221277,10.20553 -2.751824,11.74379 -2.55134,19.891 0.137694,4.18439 8.594917,7.81373 12.436617,10.20813 3.275793,-3.14159 7.453453,-8.69565 7.469203,-11.29343 0.1183,-6.25364 -1.93529,-9.27207 -2.61341,-18.42772 -1.58935,-2.77183 -4.876443,-5.63815 -7.606773,-8.31548 z"
-         style="fill:#000000;fill-opacity:1;stroke:#000000;stroke-width:0.26458332px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1" />
+         style="fill:#000000;fill-opacity:1;stroke:#000000;stroke-width:0.264583px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1" />
       <path
          sodipodi:nodetypes="cccc"
          inkscape:connector-curvature="0"
          id="path984"
          d="m 93.849277,186.83933 c -5.791394,-3.92908 -12.129231,-9.5413 -15.308036,-15.40254 1.985944,5.91504 9.000393,15.22868 11.433778,18.80432 z"
-         style="fill:#000000;fill-opacity:1;stroke:#000000;stroke-width:0.26458332px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1" />
+         style="fill:#000000;fill-opacity:1;stroke:#000000;stroke-width:0.264583px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1" />
     </g>
   </g>
 </svg>

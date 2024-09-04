@@ -2,20 +2,20 @@
 <!-- Created with Inkscape (http://www.inkscape.org/) -->
 
 <svg
-   xmlns:dc="http://purl.org/dc/elements/1.1/"
-   xmlns:cc="http://creativecommons.org/ns#"
-   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
-   xmlns:svg="http://www.w3.org/2000/svg"
-   xmlns="http://www.w3.org/2000/svg"
-   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
-   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
    width="190mm"
    height="190mm"
    viewBox="0 0 190 190"
    version="1.1"
    id="svg8"
-   inkscape:version="0.92.4 (5da689c313, 2019-01-14)"
-   sodipodi:docname="ThoughtBubbleRightRook.svg">
+   inkscape:version="1.2 (dc2aeda, 2022-05-15)"
+   sodipodi:docname="BubbleThoughtRightRook.svg"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:dc="http://purl.org/dc/elements/1.1/">
   <defs
      id="defs2" />
   <sodipodi:namedview
@@ -26,16 +26,19 @@
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
      inkscape:zoom="0.70710678"
-     inkscape:cx="343.65608"
-     inkscape:cy="342.19053"
+     inkscape:cx="333.7544"
+     inkscape:cy="246.07316"
      inkscape:document-units="mm"
      inkscape:current-layer="layer1"
      showgrid="false"
-     inkscape:window-width="1920"
-     inkscape:window-height="1009"
-     inkscape:window-x="-8"
-     inkscape:window-y="303"
-     inkscape:window-maximized="1" />
+     inkscape:window-width="1309"
+     inkscape:window-height="456"
+     inkscape:window-x="0"
+     inkscape:window-y="25"
+     inkscape:window-maximized="0"
+     inkscape:showpageshadow="2"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#d1d1d1" />
   <metadata
      id="metadata5">
     <rdf:RDF>
@@ -44,7 +47,7 @@
         <dc:format>image/svg+xml</dc:format>
         <dc:type
            rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
-        <dc:title></dc:title>
+        <dc:title />
       </cc:Work>
     </rdf:RDF>
   </metadata>
@@ -84,21 +87,19 @@
        inkscape:connector-curvature="0"
        sodipodi:nodetypes="ccccccccc" />
     <g
-       transform="translate(17.872075,-48.021876)"
-       style="display:inline;fill:#282828;fill-opacity:1"
-       id="g3103">
+       id="g6419"
+       transform="translate(19.847358,-57.038451)"
+       style="display:inline;fill:#292929;fill-opacity:1">
       <path
-         sodipodi:nodetypes="ccccccccccccc"
-         inkscape:connector-curvature="0"
-         id="path3060"
-         d="M 94.995278,175.44792 H 79.025785 v -4.56407 h 2.645836 l 8.202083,-47.4927 V 113.8 H 82.531516 V 97.461979 h 4.694407 l 0.04677,6.813021 h 4.694978 v -6.879167 h 3.032333"
-         style="fill:#282828;fill-opacity:1;stroke:none;stroke-width:0.26458332px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1" />
+         style="fill:#292929;fill-opacity:1;stroke:none;stroke-width:4.64701;stroke-linecap:round;stroke-opacity:1"
+         d="m 69.66523,161.14478 c -0.701598,-4.55593 5.304582,-7.49048 0,-10.23283 V 94.213003 H 80.138737 V 132.5238 h 7.632261 V 93.866083 h 9.108179 l 0.08523,81.254157 H 58.456178 c -3.155404,0 -2.727432,-13.97546 0,-13.97546 z"
+         id="path6393"
+         sodipodi:nodetypes="cccccccccccc" />
       <path
-         sodipodi:nodetypes="ccccccccccccc"
-         inkscape:connector-curvature="0"
-         id="path3060-1"
-         d="m 93.417224,175.44792 h 17.556996 v -4.56407 h -2.64584 l -8.20208,-47.4927 V 113.8 h 7.34219 V 97.461979 h -4.6944 l -0.0468,6.813021 h -4.928837 v -6.879167 h -3.691408"
-         style="fill:#282828;fill-opacity:1;stroke:none;stroke-width:0.26458332px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1" />
+         style="display:inline;fill:#292929;fill-opacity:1;stroke:none;stroke-width:4.64701;stroke-linecap:round;stroke-opacity:1"
+         d="m 119.63658,161.14478 c 0.7016,-4.55593 -5.30457,-7.49048 0,-10.23283 V 94.213001 h -10.4735 V 132.5238 h -7.63227 V 93.866081 h -9.108177 l -0.0852,81.254159 h 38.508207 c 3.1554,0 2.72743,-13.97546 0,-13.97546 z"
+         id="path6393-7"
+         sodipodi:nodetypes="cccccccccccc" />
     </g>
   </g>
 </svg>
