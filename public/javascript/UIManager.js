@@ -1315,10 +1315,10 @@ class UIManager {
                     this.addState('floatingGamePiece');
                 }
             if(lastAction.player === this.board.color){//we failed the challenge, and it's our turn to sacrifice
-                this.audio.doSFX('challengeIncorrect')
+                this.audio.doSFX('challengeFail')
                 this.changeTypeHighlightColor('challenge',highlightColors.RED);
             } else {
-                this.audio.doSFX('safe')
+                this.audio.doSFX('challengeSuccess')
                 this.changeTypeHighlightColor('challenge',highlightColors.BLUE);
             }
         } else { //Challenge was successful, and the piece is removed.
@@ -1326,7 +1326,7 @@ class UIManager {
                 this.audio.doSFX('challengeSuccess')
                 this.changeTypeHighlightColor('challenge',highlightColors.BLUE);
             } else { //the challenge was successful, but it's not our turn to move
-                this.audio.doSFX('calledOut')
+                this.audio.doSFX('challengeFail')
                 this.changeTypeHighlightColor('challenge',highlightColors.RED);
             }
         }
