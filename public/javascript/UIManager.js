@@ -1240,9 +1240,11 @@ class UIManager {
     }
     showLastMove(){
         let lastMove;
+        let wasLastMoveLastAction = false;
         for (let i = this.board.actionHistory.length - 1; i >= 0; i--) {
             if (this.board.actionHistory[i].type === actions.MOVE) {
                 lastMove = this.board.actionHistory[i];
+                if(i>=this.board.actionHistory.length-2){wasLastMoveLastAction = true;}
                 break;
             }
         }
@@ -1258,7 +1260,12 @@ class UIManager {
             if (targetCell){
                 this.setSpeechBubbleImageType(lastMove.declaration);
                 this.moveSpeechBubbleToTarget(targetCell);
-                this.addState('leftSpeechBubble');
+                if(wasLastMoveLastAction){
+                    this.addState('leftSpeechBubble');
+                } 
+                // else {
+                //     this.removeState('leftSpeechBubble');
+                // }
             }
         }
         return lastMove;
@@ -1298,12 +1305,15 @@ class UIManager {
         const coords = {x: lastMove.x2, y: lastMove.y2} ;
         const targetCell = document.getElementById(this.coordsToCellId(coords));
         this.moveTypeHighlight('challenge',targetCell);
+        this.removeState('leftSpeechBubble');
         if (!lastAction.wasSuccessful){
             const floatingGamePiece = document.getElementById('floating-game-piece');
                 floatingGamePiece.src = this.getPieceImageNameFromEngineFormat({color: challengedAction.player, type: challengedAction.declaration});
                 targetCell.appendChild(floatingGamePiece);
                 this.setSpeechBubbleImageType(challengedAction.declaration);
-                this.addState('floatingGamePiece');
+                if (wasMyAction){
+                    this.addState('floatingGamePiece');
+                }
             if(lastAction.player === this.board.color){//we failed the challenge, and it's our turn to sacrifice
                 this.audio.doSFX('challengeIncorrect')
                 this.changeTypeHighlightColor('challenge',highlightColors.RED);
@@ -1312,7 +1322,6 @@ class UIManager {
                 this.changeTypeHighlightColor('challenge',highlightColors.BLUE);
             }
         } else { //Challenge was successful, and the piece is removed.
-
             if(lastAction.player === this.board.color){ //the challenge was successful, and it's our turn to move
                 this.audio.doSFX('challengeSuccess')
                 this.changeTypeHighlightColor('challenge',highlightColors.BLUE);
