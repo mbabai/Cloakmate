@@ -14,6 +14,9 @@ div{
     /* border: 1px solid rgb(0, 255, 0); */
     box-sizing: border-box;
 }
+h3{
+    margin: 0px;
+}
 
 .main {
     display: flex;
@@ -405,17 +408,33 @@ div{
 
 
 /* LOBBY */
-#username-display {
+#menu-button {
     position: absolute;
-    top: 2%;
-    width: 100%;
-    text-align: center;
+    top: 1%;
+    left:50%;
+    transform: translateX(-50%);
+    width: 5%;
+    aspect-ratio: 1;
     font-size: 24px;
     color: white;
-    -webkit-user-drag: none; /* Specifically for WebKit */
-    -khtml-user-drag: none; /* For Konqueror */
-    -moz-user-drag: none; /* For Firefox */
-    -o-user-drag: none; /* For Opera */
+    z-index:9999;
+
+}
+#options-menu {
+    top:10%;
+    position:absolute;
+    width: 50%;
+    z-index:9999;
+    display: none;
+}
+#menu-button-image{
+    position:absolute;
+    top:50%;
+    left:50%;
+    transform: translate(-50%, -50%);
+    height: 80%;
+    width: 80%;
+    /* pointer-events: none; */
 }
 
 #opponent-name-input {
@@ -432,19 +451,29 @@ div{
 #lobby-container {
     z-index:100;
     position: absolute;
-    top:18%;
+    top:15%;
     text-align: center;
-    padding: 20px;
-    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-    border-radius: 8px;
-    background: #FFFD;
-    width: 80%; /* Responsive width */
+    width: 90%; /* Responsive width */
     max-width: 500px; /* Maximum size */
-    height:45%;
+    height:56%;
     -webkit-user-drag: none; /* Specifically for WebKit */
     -khtml-user-drag: none; /* For Konqueror */
     -moz-user-drag: none; /* For Firefox */
     -o-user-drag: none; /* For Opera */
+}
+.menu-box{
+    padding: 20px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    border-radius: 8px;
+    background: #FFFD;
+}
+
+.bottom-of-lobby {
+    position:absolute;
+    width:100%;
+    bottom: 2%;
+    left:50%;
+    transform: translateX(-50%);
 }
 
 #status-text {

@@ -18,6 +18,21 @@ class LobbyManager {
         this.logState()
         this.quickplayMatch()
         this.cleanUpCompletedGames()
+        this.broadcastLobbyState()
+      }
+      broadcastLobbyState(){
+        const lobbyState = {
+          lobbyCount: this.lobby.size,
+          queueCount: this.queue.length,
+          inGameCount: this.games.reduce((count, game) => count + game.users.length, 0)
+        };
+
+        this.lobby.forEach((user, ws) => {
+          this.server.routeMessage(ws, {
+            type: 'lobby-state-update',
+            lobbyState: lobbyState
+          });
+        });
       }
       cleanUpCompletedGames(){
         this.games = this.games.filter(game => {

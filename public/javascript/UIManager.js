@@ -1003,6 +1003,12 @@ class UIManager {
         this.setState('custom');
         this.webSocketManager.routeMessage({type:'cancel-invite'});
     }
+    postLobbyState(data){
+        const lobbyState = data.lobbyState
+        document.getElementById('in-lobby').innerHTML = `${lobbyState.lobbyCount}`
+        document.getElementById('in-queue').innerHTML = `${lobbyState.queueCount}`
+        document.getElementById('in-games').innerHTML = `${lobbyState.inGameCount}`
+    }
     playAI(){
         alert('Sorry, AI is not implemented yet!');
     }
@@ -1495,3 +1501,15 @@ class UIManager {
         }
     }
 }
+
+function toggleOptionsMenu(event) {
+    console.log("TOGGLE MENU!!!!!!!!!!!!!!")
+    var optionsMenu = document.getElementById('options-menu');
+    optionsMenu.style.display = (optionsMenu.style.display === 'none' || optionsMenu.style.display === '') ? 'block' : 'none';
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    var menuButton = document.getElementById('menu-button-image');
+    menuButton.addEventListener('click', toggleOptionsMenu);
+
+});

@@ -78,6 +78,8 @@ class WebSocketManager {
     }
 }
 
+
+
 document.addEventListener('DOMContentLoaded', function() {
     //Main function that actually runs on setup.
     let myWebSocketManager = new WebSocketManager();
@@ -97,6 +99,7 @@ document.addEventListener('DOMContentLoaded', function() {
     myWebSocketManager.addTypeListener('both-setup-complete', (data) => { myUIManager.bothSetupComplete(data) });
     myWebSocketManager.addTypeListener('random-setup-complete', (data) => { myUIManager.randomSetupComplete(data) });
     myWebSocketManager.addTypeListener('illegal-action', (data) => { myUIManager.illegalAction(data) });
+    myWebSocketManager.addTypeListener('lobby-state-update', (data) => { myUIManager.postLobbyState(data) });
     
 
 });
