@@ -284,20 +284,26 @@ class Board {
         }
     }
     IsCapturedKingVictory(){
+        console.log("LAST CAPTURED PIECE:::::::::::::::::::::::")
+        console.log(this.capturedPieces)
         // Handle captured pieces
         if (this.capturedPieces.length > 0){    
             const lastCapturedPiece = this.capturedPieces[this.capturedPieces.length-1];
             const secondLastCapturedPiece = this.capturedPieces[this.capturedPieces.length-2];
             const lastAction = this.actions[this.actions.length - 1]
-            if(secondLastCapturedPiece && secondLastCapturedPiece.type == pieces.KING && lastAction.type === actions.MOVE){
+            console.log(lastCapturedPiece)
+            console.log(lastCapturedPiece.type)
+            console.log(pieces.KING)
+            if(secondLastCapturedPiece && secondLastCapturedPiece.type == pieces.KING && (lastAction.type === actions.MOVE || lastAction.type === actions.PASS)){
                 this.setWinner(1 - secondLastCapturedPiece.color, winReasons.CAPTURED_KING)
                 return true;
             } else if (lastCapturedPiece && lastCapturedPiece.type == pieces.KING){
-                if (lastCapturedPiece.color == this.playerToSacrifice){
+                if (lastCapturedPiece.color === this.playerToSacrifice || lastAction.type === actions.PASS){
                     this.setWinner(1 - lastCapturedPiece.color, winReasons.CAPTURED_KING)
                     return true;
                 }
-            }
+            } 
+
         }
         return false;
     }
@@ -321,15 +327,14 @@ class Board {
     isTrueKingChallenged(){
         const whiteKingInStash = (this.bitboards[colors.WHITE][pieces.KING] & 0b11) > 0;
         const blackKingInStash = (this.bitboards[colors.BLACK][pieces.KING] & 0b11) > 0;
-        let isGameOver = false;
         if (whiteKingInStash) {
             this.setWinner(colors.WHITE, winReasons.STASH)
-            isGameOver = true; // Game over if either player has a king in their stash
+            return true; // Game over if either player has a king in their stash
         } else if (blackKingInStash) {
             this.setWinner(colors.BLACK, winReasons.STASH)
-            isGameOver = true; // Game over if either player has a king in their stash
+            return true; // Game over if either player has a king in their stash
         }
-        return isGameOver;
+        return false;
     }
 
     movePiece(x1, y1, x2, y2) {

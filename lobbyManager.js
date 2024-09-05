@@ -108,7 +108,6 @@ class LobbyManager {
             console.log(`User not found in lobby for the given WebSocket connection.`);
         }
       }
-
       getUserByName(name){
         return Array.from(this.lobby.values()).find(user => user.username === name);
       }
