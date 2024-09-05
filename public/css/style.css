@@ -263,7 +263,6 @@ div{
 .game-button {
     width: calc((100% / 5) * 1.7); /* Adjust the width to bring buttons closer to the middle */
     height: calc(100% / 5); /* Same height as the on-deck-cell */
-    background-color: darkgreen; /* Deep green background */
     color: white; /* White text */
     border: none; /* No border for a no-frills look */
     font-size: 3cqh; /* Adjust the font size to be viewport-responsive */
@@ -283,6 +282,16 @@ div{
 #bomb-button {
     font-size: 3.5cqh; /* Slightly larger font size for "Bomb!" since it's shorter */
     left: calc(50% - (100% / 5 * 0.6) - (100% / 5 * 1.7)); /* Recalculate the position to bring closer to center */
+    background-color: darkred;
+    display: none;
+}
+#pass-button {
+    font-size: 3.5cqh; /* Slightly larger font size for "Bomb!" since it's shorter */
+    left: calc(50% - (100% / 5 * 0.6) - (100% / 5 * 1.7)); /* Recalculate the position to bring closer to center */
+    display: none;
+}
+#challenge-button {
+    left: calc(50% + (100% / 5 * 0.6)); /* Recalculate the position to bring closer to center */
     display: none;
 }
 
@@ -302,10 +311,8 @@ div{
     display: none;
 }
 
-#challenge-button {
-    left: calc(50% + (100% / 5 * 0.6)); /* Recalculate the position to bring closer to center */
-    display: none;
-}
+
+
 /* GAME CLOCK */
 #game-stat-container {
     position: fixed;

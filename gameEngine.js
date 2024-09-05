@@ -23,7 +23,8 @@ const actions = {
     CHALLENGE: 1,
     BOMB: 2,
     SACRIFICE: 3,
-    ONDECK: 4
+    ONDECK: 4,
+    PASS: 5
 };
 const winReasons = {    
     CAPTURED_KING: 0,
@@ -71,6 +72,8 @@ class Action {
                 break;
             case actions.ONDECK:
                 this.declaration = declaration; // this is the piece that will go on deck.
+                break;
+            case actions.PASS:
                 break;
             default:
                 console.error("Invalid action type");
@@ -156,7 +159,18 @@ class Action {
                     console.error("Illegal On Deck: Player must NOT On Deck!")
                     return false;
                 } 
-                //Todo: Check if the piece declared is in the stash. 
+                // Check if the piece is in the stash
+                const stashCount = Number((this.board.bitboards[this.player][this.declaration] & (0b11 << 1)) >> 1);
+                if (stashCount === 0) {
+                    console.error("Illegal On Deck: The selected piece is not in the stash!");
+                    return false;
+                }
+                break;
+            case actions.PASS:
+                if (!lastAction || lastAction.type != actions.BOMB){
+                    console.error("Illegal Pass: last move was not a bomb!");
+                    return false;
+                }
                 break;
         }
         return true;
@@ -181,6 +195,9 @@ class Action {
                 break;
             case actions.ONDECK:
                 console.log(`On Deck  ${pieceSymbols[this.player][this.declaration]}`)
+                break;
+            case actions.PASS:
+                console.log("PASS...")
                 break;
         }
     }
@@ -622,6 +639,8 @@ class Board {
                 this.playerToOnDeck = null;
                 this.flipTurn()
                 break;
+            case actions.PASS:
+                this.flipTurn();
         }        
         this.turnNumber++; //increment the move
         this.actions.push(action) //Add this action to the list
@@ -780,11 +799,15 @@ class Game {
             } else if (this.board.playerToOnDeck === color) { //If we have to on-deck, nothing else matters.
                 boardState.legalActions.push("onDeck");
             } else { //If it's neither of those two, we can move and perhaps challenge and/or bomb
-                boardState.legalActions.push("move");
-                 // Check if challenge or bomb can be declared based on last action
                 const lastAction = this.board.actions[this.board.actions.length - 1];
+                if (!lastAction || lastAction.type != actions.BOMB){
+                    boardState.legalActions.push("move");
+                }
                 if (lastAction && lastAction.player !== color && ((lastAction.type === actions.MOVE || lastAction.type === actions.BOMB)) ) {
                     boardState.legalActions.push("challenge");
+                    if (lastAction.type === actions.BOMB){
+                        boardState.legalActions.push("pass")
+                    }
                 }
                 if (lastAction && lastAction.wasCapture && lastAction.player !== color && lastAction.declaration !== pieces.KING) {
                     //King is immune to bombs, cannot declare bomb on king.

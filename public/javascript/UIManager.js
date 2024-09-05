@@ -32,7 +32,8 @@ const actions = {
     CHALLENGE: 1,
     BOMB: 2,
     SACRIFICE: 3,
-    ONDECK: 4
+    ONDECK: 4,
+    PASS: 5
 };
 const highlightColors = {
     BLUE: 'rgba(13, 47, 202, 0.450)',
@@ -59,7 +60,7 @@ class UIManager {
             , 'opponent-challenge-image','player-challenge-image','challenge-highlight','sacrifice-icon'
             , 'lobby-container','name-entry','game-picker'
             ,'play-button','custom-options','ai-difficulty','cancel-button'
-            ,'bomb-button','challenge-button','ready-button', 'random-setup-button'
+            ,'bomb-button','challenge-button','ready-button', 'random-setup-button','pass-button'
             ,'left-speech-bubble','right-speech-bubble','left-thought-bubble','right-thought-bubble'
             , 'floating-game-piece']
         this.currentState = [];
@@ -178,6 +179,10 @@ class UIManager {
             opponentBomb:{
                 visible: ['left-speech-bubble'],
                 actions: []
+            },
+            pass:{
+                visible: ['pass-button'],
+                actions: ['pass']
             },
             originHighlight:{
                 visible: ['origin-highlight'],
@@ -778,6 +783,9 @@ class UIManager {
         document.getElementById('bomb-button').addEventListener('click', () => {
             this.doAction('bomb')
         });
+        document.getElementById('pass-button').addEventListener('click', () => {
+            this.doAction('pass')
+        });
 
     }
     setupSacrificeFunction(){
@@ -855,6 +863,9 @@ class UIManager {
     }
     challenge(params){
        this.webSocketManager.routeMessage({type:'game-action', action:actions.CHALLENGE, details:{}});
+    }
+    pass(params){
+        this.webSocketManager.routeMessage({type:'game-action', action:actions.PASS, details:{}});
     }
     sacrifice(params){
         console.log(`Sacrificing!`);
