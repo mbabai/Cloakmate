@@ -1503,7 +1503,6 @@ class UIManager {
 }
 
 function toggleOptionsMenu(event) {
-    console.log("TOGGLE MENU!!!!!!!!!!!!!!")
     var optionsMenu = document.getElementById('options-menu');
     optionsMenu.style.display = (optionsMenu.style.display === 'none' || optionsMenu.style.display === '') ? 'block' : 'none';
 }
