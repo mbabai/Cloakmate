@@ -29,11 +29,13 @@ class GameCoordinator {
     }
     startGameLoop() {
         const gameLoop = () => {
-            if (this.game.board.phase === 'setup') {
-                this.checkSetupTimeout();
-            }
-            if (this.game.board.phase === 'play') {
-                this.checkTurnTimeout();
+            if(!this.isComplete){
+                if (this.game.board.phase === 'setup') {
+                    this.checkSetupTimeout();
+                }
+                if (this.game.board.phase === 'play') {
+                    this.checkTurnTimeout();
+                }
             }
         };
         this.gameLoopInterval = setInterval(gameLoop, 100); // Run the game loop 10x/second

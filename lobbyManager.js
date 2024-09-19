@@ -211,6 +211,7 @@ class LobbyManager {
         game.randomSetup(player);
       }
       endGame(game){
+        game.endGame()
         this.games.splice(this.games.indexOf(game), 1);
         game.users[0].isInGame = false;
         game.users[1].isInGame = false;
