@@ -103,6 +103,9 @@ class LobbyManager {
       }
       checkNameIsTaken(username){
         //check if username is taken
+        if (['RandoBot', 'EasyBot', 'MediumBot', 'HardBot'].some(word => username.includes(word))) {
+            return false;
+        }
         return Array.from(this.lobby.values()).some(user => user.username === username);
       }
       generateCleanUsername(username){

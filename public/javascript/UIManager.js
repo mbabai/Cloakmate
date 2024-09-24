@@ -1158,6 +1158,20 @@ class UIManager {
     setBoardSpaceLabels() {
         const cells = document.querySelectorAll('.board .cell');
         const isWhite = this.board.color === 0;
+        // Set throne images based on player color
+        const topThroneImage = document.getElementById('topThroneImage');
+        const bottomThroneImage = document.getElementById('bottomThroneImage');
+
+        if (isWhite) {
+            topThroneImage.src = '/images/BlackThrone.svg';
+            bottomThroneImage.src = '/images/WhiteThrone.svg';
+        } else {
+            topThroneImage.src = '/images/WhiteThrone.svg';
+            bottomThroneImage.src = '/images/BlackThrone.svg';
+        }
+
+        // Rotate the top throne image
+        topThroneImage.style.transform = 'rotate(180deg)';
 
         cells.forEach((cell, index) => {
             const row = Math.floor(index / 5);
