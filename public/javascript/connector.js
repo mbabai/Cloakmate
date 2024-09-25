@@ -1,8 +1,11 @@
+var theWebSocketManager;
 class WebSocketManager {
     constructor() {
         this.typeListeners = {};
         this.messageQueue = [];
+        this.uiManager;
         this.initializeWebSocket();
+        this.uiManager;
     }
 
     initializeWebSocket() {
@@ -14,6 +17,34 @@ class WebSocketManager {
         this.socket.addEventListener('message', this.handleMessage.bind(this));
         this.socket.addEventListener('error', this.handleError.bind(this));
         this.socket.addEventListener('close', this.handleClose.bind(this));
+        if(this.uiManager){
+            this.uiManager.clearBoard()
+            this.uiManager.setState('lobby');
+            let username = this.uiManager.username
+            if(username){
+                this.routeMessage({type:'submit-username', username:username})
+            }
+        }
+        this.startConnectionCheck()
+    }
+    checkConnection() {
+        if (this.socket.readyState === WebSocket.CLOSED) {
+            console.log('WebSocket connection is closed. Attempting to reconnect...');
+            alert("Lost Connection!")
+            this.initializeWebSocket();
+        }
+    }
+
+    startConnectionCheck() {
+        this.connectionCheckInterval = setInterval(() => {
+            this.checkConnection();
+        }, 2000);
+    }
+
+    stopConnectionCheck() {
+        if (this.connectionCheckInterval) {
+            clearInterval(this.connectionCheckInterval);
+        }
     }
 
     handleOpen(event) {
@@ -78,14 +109,13 @@ class WebSocketManager {
     }
 }
 
-
-
 document.addEventListener('DOMContentLoaded', function() {
     //Main function that actually runs on setup.
     let myWebSocketManager = new WebSocketManager();
-
+    theWebSocketManager = myWebSocketManager;
     //UI functions
     let myUIManager = new UIManager(myWebSocketManager);
+    myWebSocketManager.uiManager = myUIManager;
     myWebSocketManager.addTypeListener('welcome', (data) => { myUIManager.welcome(data) });
     myWebSocketManager.addTypeListener('usernameTaken', (data) => { myUIManager.usernameTaken(data) });
     myWebSocketManager.addTypeListener('invite', (data) => { myUIManager.inviteReceived(data) });
