@@ -20,6 +20,7 @@ class WebSocketManager {
         if(this.uiManager){
             this.uiManager.clearBoard()
             this.uiManager.setState('lobby');
+            this.uiManager.setupGameSelection();
             let username = this.uiManager.username
             if(username){
                 this.routeMessage({type:'submit-username', username:username})
