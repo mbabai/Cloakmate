@@ -5,9 +5,8 @@ html, body {
     display: flex;
     justify-content: center;
     align-items: center;
-    background: Black;
     overflow: hidden; /* Prevent scrolling */
-    background: #666; /* Dark background for the main div */
+    background: #103025; /* Dark background for the main div */
 }
 
 div{
@@ -507,7 +506,7 @@ button {
     padding: 10px 20px;
     border: none;
     border-radius: 5px;
-    background-color: #007BFF;
+    background-color: #6f2c9c;
     color: white;
     cursor: pointer;
     width: 100%;
