@@ -1,5 +1,6 @@
 const LobbyUser = require('./lobbyUser')
 const GameCoordinator = require('./gameCoordinator')
+const AIBot = require('./AIBot')
 //lobby
 class LobbyManager {
     constructor(server) {
@@ -12,6 +13,7 @@ class LobbyManager {
         this.games = []
         this.gameNumber = 0
         this.heartbeat = setInterval(this.pulse.bind(this), 2000)
+        this.bots = ["EasyBot"]
       }   
 
       pulse(){
@@ -103,7 +105,7 @@ class LobbyManager {
       }
       checkNameIsTaken(username){
         //check if username is taken
-        if (['RandoBot', 'EasyBot', 'MediumBot', 'HardBot'].some(word => username.includes(word))) {
+        if (this.bots.some(word => username.includes(word))) {
             return false;
         }
         return Array.from(this.lobby.values()).some(user => user.username === username);
@@ -129,7 +131,6 @@ class LobbyManager {
       getUserByName(name){
         return Array.from(this.lobby.values()).find(user => user.username === name);
       }
-
       cancelInvite(ws,data){
         let thisUser = this.lobby.get(ws);
         let invite = this.invites.find(invite => invite.from === thisUser);
@@ -138,12 +139,17 @@ class LobbyManager {
           this.invites.splice(this.invites.indexOf(invite), 1);
         }
       }
-
       inviteOpponent(ws,data){
         let thisUser = this.lobby.get(ws);
         let opponentName = data.opponentName;
+        if(this.bots.includes(opponentName)){ //Check if the opponent is a bot.
+          let thisBot = new AIBot('ws://localhost:8080', opponentName);
+          console.log(`Sending Bot-game invite from ${thisUser.username} to ${opponentName}`);
+          this.server.routeMessage(thisBot.websocket, {type: 'invite', opponentName: thisUser.username, gameLength: 15});
+          this.invites.push({from:thisUser, to:thisBot, gameLength: 15}); //Bot games are always 15.
+          return;
+        }
         let opponent = this.getUserByName(opponentName);
-        console.log(`Inviting ${opponentName} to ${thisUser.username}'s game`);
         if (!opponent) {
           console.log(`User ${opponentName} not found in lobby.`);
           this.server.routeMessage(ws, {type: 'inviteFailed', message: `User ${opponentName} not found in lobby.`});

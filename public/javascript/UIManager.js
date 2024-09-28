@@ -1010,7 +1010,8 @@ class UIManager {
         document.getElementById('in-games').innerHTML = `${lobbyState.inGameCount}`
     }
     playAI(){
-        alert('Sorry, AI is not implemented yet!');
+        let botName = document.getElementById('ai-difficulty').value;
+        this.webSocketManager.routeMessage({type:'invite-opponent',opponentName:botName,gameLength:15 });
     }
     determineSound(){
         let sound = null;
