@@ -371,7 +371,6 @@ class AIBot {
         }
     }
 }
-
 // // Initialize the AI bot
 // const serverUrl = 'ws://localhost:8080'; // Replace with your server URL
 // const botName = 'AI_Bot';
