@@ -341,7 +341,6 @@ class AIBot {
         }
         return currentAction;
     }
-    
     determineAction() {
         let currentAction;
         if(this.currentBoard.legalActions.includes('onDeck')){
