@@ -292,6 +292,7 @@ button:hover {
     width: calc((100% / 5) * 1.7); /* Adjust the width to bring buttons closer to the middle */
     height: calc(100% / 5); /* Same height as the on-deck-cell */
     color: white; /* White text */
+    background-color: #4e7abd;
     border: none; /* No border for a no-frills look */
     font-size: 3cqh; /* Adjust the font size to be viewport-responsive */
     padding: 1cqh; /* Padding to ensure text is within the button bounds */
@@ -325,7 +326,7 @@ button:hover {
 
 #ready-button {
     font-size: 3.5cqh; 
-    left: 48%; /* Center the button horizontally */
+    left: 50%; /* Center the button horizontally */
     top: 40%;
     transform: translateX(-50%); /* Adjust for the button's width */
     display: none;
@@ -333,7 +334,7 @@ button:hover {
 #random-setup-button {
     background-color: darkred;
     font-size: 3.5cqh; 
-    left: 48%; /* Center the button horizontally */
+    left: 50%; /* Center the button horizontally */
     top: 40%;
     transform: translateX(-50%); /* Adjust for the button's width */
     display: none;
