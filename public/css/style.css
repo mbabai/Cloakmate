@@ -6,7 +6,7 @@ html, body {
     justify-content: center;
     align-items: center;
     overflow: hidden; /* Prevent scrolling */
-    background: #103025; /* Dark background for the main div */
+    background: #034132; /* Dark background for the main div */
 }
 
 div{
@@ -15,6 +15,18 @@ div{
 }
 h3{
     margin: 0px;
+}
+button {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 5px;
+    background-color: #511a75;
+    color: white;
+    cursor: pointer;
+    width: 100%;
+}
+button:hover {
+    filter: brightness(150%);
 }
 
 .main {
@@ -159,18 +171,29 @@ h3{
     box-shadow: 0 0 0 4px transparent;
     animation: pulsing-border 2s infinite;
 }
-
 @keyframes pulsing-border {
     0% {
-        box-shadow: 0 0 0 0px rgba(4, 0, 255, 0.534);
+        box-shadow: 0 0 0 4px rgba(205, 154, 0, 0.534);
     }
     50% {
-        box-shadow: 0 0 0 10px rgba(4, 0, 255, 0.986);
+        box-shadow: 0 0 0 12px rgba(255, 191, 1, 0.534);
     }
     100% {
-        box-shadow: 0 0 0 0px rgba(4, 0, 255, 0.534);
+        box-shadow: 0 0 0 4px  rgba(205, 154, 0, 0.534);
     }
 }
+
+#on-deck-indicator {
+    height: 100%;
+    width: 100%;
+    border-radius: 5%;
+    pointer-events: none;
+    background-clip: content-box;
+    animation: pulsing-border 1s infinite;
+}
+
+
+
 #challenge-highlight{
     background-color: rgba(184, 1, 1, 0.418);
 
@@ -274,8 +297,8 @@ h3{
     padding: 1cqh; /* Padding to ensure text is within the button bounds */
     font-weight: bold; /* Make the text bold */
     position: absolute;
-    top: calc(73%); /* Aligned with the on-deck-cell vertically */
-    height: 12%;
+    top: calc(74%); /* Aligned with the on-deck-cell vertically */
+    height: 13%;
     display: flex;
     justify-content: center; /* Center horizontally */
     align-items: center; /* Center vertically */
@@ -502,19 +525,7 @@ input[type="text"], select {
     box-sizing: border-box; /* Border and padding included in width */
 }
 
-button {
-    padding: 10px 20px;
-    border: none;
-    border-radius: 5px;
-    background-color: #6f2c9c;
-    color: white;
-    cursor: pointer;
-    width: 100%;
-}
 
-button:hover {
-    filter: brightness(85%);
-}
 
 /* Dialog Overlay */
 .dialog-overlay {

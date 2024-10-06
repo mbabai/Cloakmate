@@ -6,6 +6,7 @@ class LobbyManager {
     constructor(server) {
         this.server = server
         this.lobby = new Map() // ws -> user
+        this.activeBots = []
         this.queue = []
         this.anonID = 0
         this.invites = [] // {from:user, to:user}
@@ -24,7 +25,7 @@ class LobbyManager {
       }
       broadcastLobbyState(){
         const lobbyState = {
-          lobbyCount: this.lobby.size,
+          lobbyCount: this.lobby.size - this.activeBots.length, //count number of players in lobby, but don't count bots. 
           queueCount: this.queue.length,
           inGameCount: this.games.reduce((count, game) => count + game.users.length, 0)
         };
@@ -139,14 +140,26 @@ class LobbyManager {
           this.invites.splice(this.invites.indexOf(invite), 1);
         }
       }
+      startBotGame(user,botName){
+        let thisBot = new AIBot('ws://localhost:8080', botName);
+        this.lobby.set(thisBot.ws,thisBot)
+        this.activeBots.push(thisBot)
+        console.log(`Sending AI-Bot game invite: from ${user.username} to ${botName}`);
+        this.server.routeMessage(thisBot.ws, {type: 'invite', opponentName: user.username, gameLength: 15});
+        this.invites.push({from:user, to:thisBot, gameLength: 15}); //Bot games are always 15.
+      }
+      deleteBot(ws){
+        let thisBot = this.lobby.get(ws)
+        this.lobby.delete(ws)
+        if (this.activeBots.includes(thisBot)) {
+          this.activeBots.splice(this.queue.indexOf(thisBot), 1);
+        }
+      }
       inviteOpponent(ws,data){
         let thisUser = this.lobby.get(ws);
         let opponentName = data.opponentName;
         if(this.bots.includes(opponentName)){ //Check if the opponent is a bot.
-          let thisBot = new AIBot('ws://localhost:8080', opponentName);
-          console.log(`Sending Bot-game invite from ${thisUser.username} to ${opponentName}`);
-          this.server.routeMessage(thisBot.websocket, {type: 'invite', opponentName: thisUser.username, gameLength: 15});
-          this.invites.push({from:thisUser, to:thisBot, gameLength: 15}); //Bot games are always 15.
+          this.startBotGame(thisUser,opponentName)
           return;
         }
         let opponent = this.getUserByName(opponentName);

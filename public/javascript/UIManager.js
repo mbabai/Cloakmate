@@ -62,7 +62,7 @@ class UIManager {
             ,'play-button','custom-options','ai-difficulty','cancel-button'
             ,'bomb-button','challenge-button','ready-button', 'random-setup-button','pass-button'
             ,'left-speech-bubble','right-speech-bubble','left-thought-bubble','right-thought-bubble'
-            , 'floating-game-piece']
+            , 'floating-game-piece','on-deck-indicator']
         this.currentState = [];
         this.currentVisibles = [];
         this.currentActions = [];
@@ -149,7 +149,7 @@ class UIManager {
                 actions: ['sacrifice']
             },
             onDeck:{    
-                visible: ['on-deck-cell-highlight-gold'],
+                visible: ['on-deck-cell-highlight-gold','on-deck-indicator'],
                 actions: ['onDeck', 'move-stash-to-on-deck', 'select-stash-piece']
             },
             leftThoughtBubble:{
@@ -1249,7 +1249,7 @@ class UIManager {
     placeOnDeckPiece(currentBoard){
         if (currentBoard.onDeck) {
             const onDeckElement = document.querySelector('.on-deck-cell');
-            onDeckElement.innerHTML = '';
+            // onDeckElement.innerHTML = '';
             onDeckElement.appendChild(this.createPieceImage(currentBoard.onDeck)); 
         }
     }

@@ -7,31 +7,31 @@ class AIBot {
         this.ws = null;
         this.opponentName = null;
         this.currentBoard = null;
-        this.connect();
+        this.initializeWebSocket();
     }
-
-    connect() {
+    initializeWebSocket() {
         this.ws = new WebSocket(this.serverUrl);
-
-        this.ws.on('open', () => {
-            console.log(`${this.username} connected to the server.`);
-        });
-
-        this.ws.on('data', (message) => {
-            const data = JSON.parse(message);
-            this.handledata(data);
-        });
-
-        this.ws.on('close', () => {
-            console.log(`${this.botName} disconnected from the server.`);
-        });
-
-        this.ws.on('error', (error) => {
-            console.error(`WebSocket error: ${error}`);
-        });
+        this.ws.addEventListener('open', this.handleOpen.bind(this));
+        this.ws.addEventListener('message', this.handleData.bind(this));
+        this.ws.addEventListener('error', this.handleError.bind(this));
+        this.ws.addEventListener('close', this.handleClose.bind(this));
     }
-
-    handledata(data) {
+    handleOpen(event) {
+        console.log('AI-Bot: WebSocket connection opened');
+    }
+    handleMessage(event) {
+        const data = JSON.parse(event.data);
+        console.log('AI-Bot: Message from server:', data);
+        this.notifyListeners(data);
+    }
+    handleError(event) {
+        console.error('AI-Bot: WebSocket error:', event);
+    }
+    handleClose(event) {
+        console.log('AI-Bot: WebSocket connection closed');
+    }
+    handleData(message) {
+        const data = JSON.parse(message);
         switch (data.type) {
             case 'invite-opponent':
                 this.acceptInvite(data.opponentName)
