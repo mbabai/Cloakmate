@@ -1,5 +1,5 @@
 const WebSocket = require('ws');
-
+const { colors, pieces, actions } = require('./utils');
 class AIBot {
     constructor(serverUrl, botName,opponentName) {
         this.serverUrl = serverUrl;
@@ -61,9 +61,7 @@ class AIBot {
         this.currentBoard = data.board
         this.board = data.board;
         this.opponentName = this.board.opponentName;
-        if(!this.board.myTurn){
-            return;
-        } else {
+        if(this.board.myTurn || this.board.legalActions.includes('setup')){
             this.doAction()
         }
     }
@@ -111,7 +109,9 @@ class AIBot {
         for (let y = 0; y < this.currentBoard.board.length; y++) {
             for (let x = 0; x < this.currentBoard.board[y].length; x++) {
                 const piece = this.currentBoard.board[y][x];
-                validPieces.push({type:piece.type,location:{x, y},color:this.currentBoard.color});
+                if(piece){
+                    validPieces.push({type:piece.type,location:{x, y},color:this.currentBoard.color});
+                }
            }
         }
         return validPieces
