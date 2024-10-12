@@ -49,8 +49,6 @@ class LobbyManager {
           }
           return true;
         });
-
-        
       }
 
       addUserToQueue(user){
@@ -140,13 +138,19 @@ class LobbyManager {
           this.invites.splice(this.invites.indexOf(invite), 1);
         }
       }
-      startBotGame(user,botName){
-        let thisBot = new AIBot('ws://localhost:8080', botName);
-        this.lobby.set(thisBot.ws,thisBot)
+      botReadyForGame(ws,data){
+        let thisBot = data.bot;
+        thisBot.websocket = ws;
+        let user = this.getUserByName(data.opponentName);
+        this.lobby.set(ws,  thisBot)
         this.activeBots.push(thisBot)
-        console.log(`Sending AI-Bot game invite: from ${user.username} to ${botName}`);
-        this.server.routeMessage(thisBot.ws, {type: 'invite', opponentName: user.username, gameLength: 15});
+        console.log(`Sending AI-Bot game invite: from ${user.username} to ${thisBot.username}`);
+        this.server.routeMessage(thisBot.websocket, {type: 'invite', opponentName: user.username, gameLength: 15});
         this.invites.push({from:user, to:thisBot, gameLength: 15}); //Bot games are always 15.
+      }
+      createBotForBotGame(user,botName){
+        let thisBot = new AIBot('ws://localhost:8080', botName, user.username);
+        return thisBot;
       }
       deleteBot(ws){
         let thisBot = this.lobby.get(ws)
@@ -159,7 +163,7 @@ class LobbyManager {
         let thisUser = this.lobby.get(ws);
         let opponentName = data.opponentName;
         if(this.bots.includes(opponentName)){ //Check if the opponent is a bot.
-          this.startBotGame(thisUser,opponentName)
+          this.createBotForBotGame(thisUser,opponentName)
           return;
         }
         let opponent = this.getUserByName(opponentName);

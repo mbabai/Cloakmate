@@ -1,28 +1,31 @@
 const WebSocket = require('ws');
 
 class AIBot {
-    constructor(serverUrl, botName) {
+    constructor(serverUrl, botName,opponentName) {
         this.serverUrl = serverUrl;
         this.username = botName;
+        this.opponentName = opponentName;
         this.ws = null;
-        this.opponentName = null;
         this.currentBoard = null;
         this.initializeWebSocket();
     }
     initializeWebSocket() {
         this.ws = new WebSocket(this.serverUrl);
-        this.ws.addEventListener('open', this.handleOpen.bind(this));
-        this.ws.addEventListener('message', this.handleData.bind(this));
-        this.ws.addEventListener('error', this.handleError.bind(this));
-        this.ws.addEventListener('close', this.handleClose.bind(this));
+        this.ws.onopen = this.handleOpen.bind(this);
+        this.ws.onmessage = this.handleMessage.bind(this);
+        this.ws.onerror = this.handleError.bind(this);
+        this.ws.onclose = this.handleClose.bind(this);
     }
     handleOpen(event) {
         console.log('AI-Bot: WebSocket connection opened');
+        this.sendMessage({type:'bot-ready', bot: {username:this.username},opponentName:this.opponentName})
     }
     handleMessage(event) {
         const data = JSON.parse(event.data);
-        console.log('AI-Bot: Message from server:', data);
-        this.notifyListeners(data);
+        if (data.type != 'lobby-state-update'){
+            console.log(`AI-Bot: Message from server (${new Date().toLocaleString()}):`, data);
+        }
+        this.handleData(data);
     }
     handleError(event) {
         console.error('AI-Bot: WebSocket error:', event);
@@ -30,10 +33,10 @@ class AIBot {
     handleClose(event) {
         console.log('AI-Bot: WebSocket connection closed');
     }
-    handleData(message) {
-        const data = JSON.parse(message);
+    handleData(data) {
         switch (data.type) {
-            case 'invite-opponent':
+            case 'invite':
+                console.log("GOT AN INVITE")
                 this.acceptInvite(data.opponentName)
                 break;
             case 'board-state':
@@ -50,8 +53,8 @@ class AIBot {
         }
     }
     sendMessage(data) {      
-        if (this.socket.readyState === WebSocket.OPEN) {
-            this.socket.send(JSON.stringify(data));
+        if (this.ws.readyState === WebSocket.OPEN) {
+            this.ws.send(JSON.stringify(data));
         }
     }
     updateBoardState(data){
