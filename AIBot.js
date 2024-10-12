@@ -23,7 +23,7 @@ class AIBot {
     handleMessage(event) {
         const data = JSON.parse(event.data);
         if (data.type != 'lobby-state-update'){
-            console.log(`AI-Bot: Message from server (${new Date().toLocaleString()}):`, data);
+            // console.log(`AI-Bot: Message from server (${new Date().toLocaleString()}):`, data);
         }
         this.handleData(data);
     }
@@ -73,7 +73,7 @@ class AIBot {
         } else if (this.currentBoard.myTurn){
             let currentAction = this.determineAction()
             setTimeout(() => {
-                this.sendMessage({type:'game-action', action:currentAction.type, details:currentAction.moveData})
+                this.sendMessage({type:'game-action', action:currentAction.action, details:currentAction.details})
             }, 1000)
         }
     }
@@ -110,7 +110,7 @@ class AIBot {
             for (let x = 0; x < this.currentBoard.board[y].length; x++) {
                 const piece = this.currentBoard.board[y][x];
                 if(piece){
-                    validPieces.push({type:piece.type,location:{x, y},color:this.currentBoard.color});
+                    validPieces.push({type:piece.type,location:{x, y},color:piece.color});
                 }
            }
         }
@@ -211,6 +211,7 @@ class AIBot {
                     allMyThreats.push({
                         from: myPiece.location,
                         to: opponentPiece.location,
+                        type: myPiece.type,
                         wouldBeBluff: false
                     })
                 } else {
@@ -220,7 +221,8 @@ class AIBot {
                             allMyThreats.push({
                                 from: bluffPiece.location,
                                 to: opponentPiece.location,
-                                wouldBeBluff: true
+                                type: bluffType,
+                                wouldBeBluff: true  
                             })
                         }
                     }
@@ -243,7 +245,7 @@ class AIBot {
                 y1: move.from.y,
                 x2: move.to.x,
                 y2: move.to.y,
-                declaration: move.piece.type
+                declaration: move.type
             }
         }
     }
@@ -273,7 +275,7 @@ class AIBot {
                         moves.push({
                             from: piece.location,
                             to: targetLocation,
-                            piece: piece,
+                            type: bluffPiece.type,
                             wouldBeBluff: type !== piece.type
                         });
                     }
@@ -286,6 +288,7 @@ class AIBot {
         let currentAction = {}
         let realThreats = this.getRealThreats()
         let bluffThreats = this.getBluffThreats()
+        let myPieces = this.getMyPieces()
         // If there are possible captures, randomly select one
         if (realThreats.length > 0 && bluffThreats.length > 0) {
             // 80% chance of moving a real threat, 20% chance of moving a bluff threat
@@ -299,9 +302,9 @@ class AIBot {
             // If there are only bluff threats, move a bluff threat
             const randomThreat = bluffThreats[Math.floor(Math.random() * bluffThreats.length)];
             currentAction = this.getMoveAction(randomThreat)
-        } else if(this.getMyPieces().length == 1){
+        } else if(myPieces.length == 1){
             //We only have a king, so we should move it to the throne
-            let king = this.getMyPieces()[0];
+            let king = myPieces[0];
             let targetThrone = this.currentBoard.color === colors.WHITE ? { x: 2, y: 4 } : { x: 2, y: 0 };
             let possibleMoves = this.getPieceLegalMoves(king, this.getAllPieces());
             
@@ -357,7 +360,7 @@ class AIBot {
             return currentAction;
         } else if (this.currentBoard.legalActions.includes('bomb')){
             if(this.shouldDeclareBomb()){
-                currentAction = {action:actions.BOMB,details:{declaration:piece.BOMB}}
+                currentAction = {action:actions.BOMB,details:{declaration:pieces.BOMB}}
                 return currentAction;
             }
         }
@@ -369,6 +372,7 @@ class AIBot {
         }
         if (this.currentBoard.legalActions.includes('move')){
             currentAction = this.moveRandomPiece()
+            console.log("AI-Bot: Moving piece", currentAction)
             return currentAction;
         }
     }
