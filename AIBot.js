@@ -172,7 +172,8 @@ class AIBot {
     }
     shouldChallenge(){
         let lastAction = this.currentBoard.actionHistory[this.currentBoard.actionHistory.length -1]
-        if (lastAction.wasCapture){
+        console.log("lastAction",lastAction)
+        if (lastAction.wasCapture || lastAction.declaration == pieces.BOMB){
             return Math.random < 0.45
         } else {
             return  Math.random < 0.16
@@ -326,10 +327,16 @@ class AIBot {
                 currentAction = this.getMoveAction(bestMove.move);
             }
         } else if (realThreats.length > 0 && bluffThreats.length > 0) {
-            // 80% chance of moving a real threat, 20% chance of moving a bluff threat
-            const randomThreat = Math.random() < 0.8 ? realThreats[Math.floor(Math.random() * realThreats.length)] : bluffThreats[Math.floor(Math.random() * bluffThreats.length)];
-            currentAction = this.getMoveAction(randomThreat)
-        } else if (realThreats.length > 0) {
+            //30% chance of just moving a random piece forward.
+            let lastAction = this.currentBoard.actionHistory[this.currentBoard.actionHistory.length -1]
+            if (Math.random() < 0.6 && !lastAction.wasCapture){
+                currentAction = this.moveRandomBackPiece()
+            } else {
+                // 80% chance of moving a real threat, 20% chance of moving a bluff threat
+                let randomThreat = Math.random() < 0.8 ? realThreats[Math.floor(Math.random() * realThreats.length)] : bluffThreats[Math.floor(Math.random() * bluffThreats.length)];
+                currentAction = this.getMoveAction(randomThreat)
+            }
+        }else if (realThreats.length > 0) {
             // If there are only real threats, move a real threat
             const randomThreat = realThreats[Math.floor(Math.random() * realThreats.length)];
             currentAction = this.getMoveAction(randomThreat)
@@ -338,31 +345,37 @@ class AIBot {
             const randomThreat = bluffThreats[Math.floor(Math.random() * bluffThreats.length)];
             currentAction = this.getMoveAction(randomThreat)
         } else {
-                // If no threats are possible, move one of the furthest back pieces forward
-            let selectedPiece = this.getRandomBackPiece();
-            // Get all possible forward moves for the selected piece
-            let desireableMoves = this.getPieceLegalMoves(selectedPiece,this.getAllPieces()).filter(move => {
-                if (this.currentBoard.color === colors.BLACK) {
-                    return move.to.y <= selectedPiece.location.y;
-                } else {
-                    return move.to.y >= selectedPiece.location.y;
-                }
-            });
-            // If there are possible moves, randomly select one
-            let bluffMoves = desireableMoves.filter(move => move.wouldBeBluff)
-            let realMoves = desireableMoves.filter(move => !move.wouldBeBluff)
-            if (realMoves.length > 0 && bluffMoves.length > 0){
-                let randomMove = Math.random() < 0.8 ? realMoves[Math.floor(Math.random() * realMoves.length)] : bluffMoves[Math.floor(Math.random() * bluffMoves.length)]
-                currentAction = this.getMoveAction(randomMove)
-            } else if (realMoves.length > 0){
-                let randomMove = realMoves[Math.floor(Math.random() * realMoves.length)]
-                currentAction = this.getMoveAction(randomMove)
-            } else if (bluffMoves.length > 0){
-                let randomMove = bluffMoves[Math.floor(Math.random() * bluffMoves.length)]
-                currentAction = this.getMoveAction(randomMove)
-            }
-        }
+            // If no threats are possible, move one of the furthest back pieces forward
+            currentAction = this.moveRandomBackPiece()
+        }    
+        console.log("AI-Bot: Moving piece", currentAction)
         return currentAction;
+    }
+    moveRandomBackPiece(){
+        let currentAction = {}
+        let selectedPiece = this.getRandomBackPiece();
+        // Get all possible forward moves for the selected piece
+        let desireableMoves = this.getPieceLegalMoves(selectedPiece,this.getAllPieces()).filter(move => {
+            if (this.currentBoard.color === colors.BLACK) {
+                return move.to.y <= selectedPiece.location.y;
+            } else {
+                return move.to.y >= selectedPiece.location.y;
+            }
+        });
+        // If there are possible moves, randomly select one
+        let bluffMoves = desireableMoves.filter(move => move.wouldBeBluff)
+        let realMoves = desireableMoves.filter(move => !move.wouldBeBluff)
+        if (realMoves.length > 0 && bluffMoves.length > 0){
+            let randomMove = Math.random() < 0.8 ? realMoves[Math.floor(Math.random() * realMoves.length)] : bluffMoves[Math.floor(Math.random() * bluffMoves.length)]
+            currentAction = this.getMoveAction(randomMove)
+        } else if (realMoves.length > 0){
+            let randomMove = realMoves[Math.floor(Math.random() * realMoves.length)]
+            currentAction = this.getMoveAction(randomMove)
+        } else if (bluffMoves.length > 0){
+            let randomMove = bluffMoves[Math.floor(Math.random() * bluffMoves.length)]
+            currentAction = this.getMoveAction(randomMove)
+        }
+        return currentAction
     }
     determineAction() {
         let currentAction;
@@ -394,7 +407,6 @@ class AIBot {
             return currentAction;
         }
         let lastMove = this.currentBoard.actionHistory[this.currentBoard.actionHistory.length - 1];
-        console.log("lastMove",lastMove)
         if (lastMove && lastMove.declaration === pieces.KING) {
             let myColorYcoordinate = this.currentBoard.color === colors.WHITE ? 0 : 4
             if (lastMove.x2 == 2 && lastMove.y2 == myColorYcoordinate){
