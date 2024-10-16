@@ -251,16 +251,11 @@ class Board {
         }
     }
     IsCapturedKingVictory(){
-        console.log("LAST CAPTURED PIECE:::::::::::::::::::::::")
-        console.log(this.capturedPieces)
         // Handle captured pieces
         if (this.capturedPieces.length > 0){    
             const lastCapturedPiece = this.capturedPieces[this.capturedPieces.length-1];
             const secondLastCapturedPiece = this.capturedPieces[this.capturedPieces.length-2];
             const lastAction = this.actions[this.actions.length - 1]
-            console.log(lastCapturedPiece)
-            console.log(lastCapturedPiece.type)
-            console.log(pieces.KING)
             if(secondLastCapturedPiece && secondLastCapturedPiece.type == pieces.KING && (lastAction.type === actions.MOVE || lastAction.type === actions.PASS)){
                 this.setWinner(1 - secondLastCapturedPiece.color, winReasons.CAPTURED_KING)
                 return true;

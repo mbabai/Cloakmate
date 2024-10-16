@@ -52,6 +52,12 @@ class AIBot {
                 break;
         }
     }
+    leaveLobby(){
+        setTimeout(() => {
+            this.ws.close() // this should be all we need to leave the lobby
+            delete this
+        },1000);
+    }
     sendMessage(data) {      
         if (this.ws.readyState === WebSocket.OPEN) {
             this.ws.send(JSON.stringify(data));
@@ -59,14 +65,15 @@ class AIBot {
     }
     updateBoardState(data){
         this.currentBoard = data.board
-        this.board = data.board;
-        this.opponentName = this.board.opponentName;
-        if(this.board.myTurn || this.board.legalActions.includes('setup')){
+        this.opponentName = this.currentBoard.opponentName;
+        if (this.currentBoard.winner != null){
+            this.leaveLobby()
+        } else if(this.currentBoard.myTurn || this.currentBoard.legalActions.includes('setup')){
             this.doAction()
-        }
+        } 
     }
     doAction(){
-        if(this.board.legalActions.includes('setup')){
+        if(this.currentBoard.legalActions.includes('setup')){
             setTimeout(() => {
                 this.sendMessage({type:'random-setup'})
             }, 1000)
@@ -78,7 +85,7 @@ class AIBot {
         }
     }
     handleOpponentDisconnected(data){
-        //Placeholder if anything needs to be done.
+        this.leaveLobby()
     }
 
     acceptInvite(opponentName) {

@@ -6,7 +6,6 @@ class LobbyManager {
     constructor(server) {
         this.server = server
         this.lobby = new Map() // ws -> user
-        this.activeBots = []
         this.queue = []
         this.anonID = 0
         this.invites = [] // {from:user, to:user}
@@ -23,9 +22,18 @@ class LobbyManager {
         this.cleanUpCompletedGames()
         this.broadcastLobbyState()
       }
+      countActiveBots() {
+        let botCount = 0;
+        this.lobby.forEach((user, ws) => {
+          if (this.bots.includes(user.username)) {
+            botCount++;
+          }
+        });
+        return botCount;
+      }
       broadcastLobbyState(){
         const lobbyState = {
-          lobbyCount: this.lobby.size - this.activeBots.length, //count number of players in lobby, but don't count bots. 
+          lobbyCount: this.lobby.size - this.countActiveBots(), //count number of players in lobby, but don't count bots. 
           queueCount: this.queue.length,
           inGameCount: this.games.reduce((count, game) => count + game.users.length, 0)
         };
@@ -143,7 +151,6 @@ class LobbyManager {
         thisBot.websocket = ws;
         let user = this.getUserByName(data.opponentName);
         this.lobby.set(ws,  thisBot)
-        this.activeBots.push(thisBot)
         console.log(`Sending AI-Bot game invite: from ${user.username} to ${thisBot.username}`);
         this.server.routeMessage(thisBot.websocket, {type: 'invite', opponentName: user.username, gameLength: 15});
         this.invites.push({from:user, to:thisBot, gameLength: 15}); //Bot games are always 15.
@@ -151,13 +158,6 @@ class LobbyManager {
       createBotForBotGame(user,botName){
         let thisBot = new AIBot('ws://localhost:8080', botName, user.username);
         return thisBot;
-      }
-      deleteBot(ws){
-        let thisBot = this.lobby.get(ws)
-        this.lobby.delete(ws)
-        if (this.activeBots.includes(thisBot)) {
-          this.activeBots.splice(this.queue.indexOf(thisBot), 1);
-        }
       }
       inviteOpponent(ws,data){
         let thisUser = this.lobby.get(ws);
