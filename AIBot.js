@@ -48,6 +48,10 @@ class AIBot {
             case 'both-setup-complete':
                 this.updateBoardState(data);
                 break;
+            case 'illegal-action':
+                console.log("AI-Bot trying a new action after illegal action.")
+                this.doAction()
+                break;
             default:
                 break;
         }
@@ -56,7 +60,7 @@ class AIBot {
         setTimeout(() => {
             this.ws.close() // this should be all we need to leave the lobby
             delete this
-        },1000);
+        },2000);
     }
     sendMessage(data) {      
         if (this.ws.readyState === WebSocket.OPEN) {
