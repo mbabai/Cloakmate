@@ -110,6 +110,12 @@ class AIBot {
     }
     passOrChallengeBomb(){
         let currentAction = {}
+        let lastCapturedPiece = this.currentBoard.captured[this.currentBoard.captured.length - 1];
+        if (lastCapturedPiece && lastCapturedPiece.type === pieces.KING && lastCapturedPiece.color === this.currentBoard.color) {
+            currentAction.action = actions.CHALLENGE;
+            currentAction.details = {};
+            return currentAction;
+        }
         currentAction.action = Math.random() < 0.5 ? actions.PASS : actions.CHALLENGE;
         currentAction.details = {}
         return currentAction
@@ -381,11 +387,36 @@ class AIBot {
                 return currentAction;
             }
         }
+        let lastCapturedPiece = this.currentBoard.captured[this.currentBoard.captured.length - 1];
+        // If our king has been captured
+        if (lastCapturedPiece && lastCapturedPiece.type === pieces.KING && lastCapturedPiece.color === this.currentBoard.color) {
+            currentAction = this.lastDitchKingSave()
+            return currentAction;
+        }
+        let lastMove = this.currentBoard.actionHistory[this.currentBoard.actionHistory.length - 1];
+        console.log("lastMove",lastMove)
+        if (lastMove && lastMove.declaration === pieces.KING) {
+            let myColorYcoordinate = this.currentBoard.color === colors.WHITE ? 0 : 4
+            if (lastMove.x2 == 2 && lastMove.y2 == myColorYcoordinate){
+                currentAction = {action: actions.CHALLENGE, details: {}};
+                return currentAction;
+            }
+        }
         if (this.currentBoard.legalActions.includes('move')){
             currentAction = this.moveRandomPiece()
             console.log("AI-Bot: Moving piece", currentAction)
             return currentAction;
         }
+    }
+    lastDitchKingSave(){
+        let currentAction = {}
+        currentAction.action = actions.CHALLENGE;
+        currentAction.details = {};
+        if (this.currentBoard.legalActions.includes('bomb') && Math.random() < 0.25){
+            currentAction.action = actions.BOMB;
+            currentAction.details.declaration = pieces.BOMB;
+        }
+        return currentAction;
     }
 }
 // // Initialize the AI bot
