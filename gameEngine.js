@@ -278,7 +278,7 @@ class Board {
             if (kingMoveAction.declaration != pieces.KING){
                 return false;
             } else if (kingMoveAction.x2 == colorTargetThrones[kingMoveAction.player].x && kingMoveAction.y2 == colorTargetThrones[kingMoveAction.player].y){
-                if (lastAction.type != actions.CHALLENGE || lastAction.wasSuccessful){
+                if (lastAction.type != actions.CHALLENGE || !lastAction.wasSuccessful){
                     this.setWinner(kingMoveAction.player, winReasons.THRONE)
                     return true;
                 }
