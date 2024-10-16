@@ -307,7 +307,25 @@ class AIBot {
         let bluffThreats = this.getBluffThreats()
         let myPieces = this.getMyPieces()
         // If there are possible captures, randomly select one
-        if (realThreats.length > 0 && bluffThreats.length > 0) {
+        if(myPieces.length == 1){
+            //We only have a king, so we should move it to the throne
+            let king = myPieces[0];
+            let targetThrone = this.currentBoard.color === colors.WHITE ? { x: 2, y: 4 } : { x: 2, y: 0 };
+            let possibleMoves = this.getPieceLegalMoves(king, this.getAllPieces());
+            let possibleKingMoves = possibleMoves.filter(move => move.type === pieces.KING)
+            // Find the move that gets closest to the target throne
+            let bestMove = possibleKingMoves.reduce((best, move) => {
+                let distanceToThrone = Math.abs(move.to.x - targetThrone.x) + Math.abs(move.to.y - targetThrone.y);
+                if (distanceToThrone < best.distance) {
+                    return { move: move, distance: distanceToThrone };
+                }
+                return best;
+            }, { move: null, distance: Infinity });
+
+            if (bestMove.move) {
+                currentAction = this.getMoveAction(bestMove.move);
+            }
+        } else if (realThreats.length > 0 && bluffThreats.length > 0) {
             // 80% chance of moving a real threat, 20% chance of moving a bluff threat
             const randomThreat = Math.random() < 0.8 ? realThreats[Math.floor(Math.random() * realThreats.length)] : bluffThreats[Math.floor(Math.random() * bluffThreats.length)];
             currentAction = this.getMoveAction(randomThreat)
@@ -319,24 +337,6 @@ class AIBot {
             // If there are only bluff threats, move a bluff threat
             const randomThreat = bluffThreats[Math.floor(Math.random() * bluffThreats.length)];
             currentAction = this.getMoveAction(randomThreat)
-        } else if(myPieces.length == 1){
-            //We only have a king, so we should move it to the throne
-            let king = myPieces[0];
-            let targetThrone = this.currentBoard.color === colors.WHITE ? { x: 2, y: 4 } : { x: 2, y: 0 };
-            let possibleMoves = this.getPieceLegalMoves(king, this.getAllPieces());
-            
-            // Find the move that gets closest to the target throne
-            let bestMove = possibleMoves.reduce((best, move) => {
-                let distanceToThrone = Math.abs(move.to.x - targetThrone.x) + Math.abs(move.to.y - targetThrone.y);
-                if (distanceToThrone < best.distance) {
-                    return { move: move, distance: distanceToThrone };
-                }
-                return best;
-            }, { move: null, distance: Infinity });
-
-            if (bestMove.move) {
-                currentAction = this.getMoveAction(bestMove.move);
-            }
         } else {
                 // If no threats are possible, move one of the furthest back pieces forward
             let selectedPiece = this.getRandomBackPiece();
