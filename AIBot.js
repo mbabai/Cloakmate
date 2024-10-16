@@ -173,9 +173,9 @@ class AIBot {
     shouldChallenge(){
         let lastAction = this.currentBoard.actionHistory[this.currentBoard.actionHistory.length -1]
         if (lastAction.wasCapture){
-            return Math.random < 0.33
+            return Math.random < 0.45
         } else {
-            return  Math.random < 0.11
+            return  Math.random < 0.16
         }
     }
     isAThreateningB(pieceA,pieceB,allPieces){
