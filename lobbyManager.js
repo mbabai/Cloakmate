@@ -1,5 +1,6 @@
 const LobbyUser = require('./lobbyUser')
 const GameCoordinator = require('./gameCoordinator')
+const AIBot = require('./AIBot')
 //lobby
 class LobbyManager {
     constructor(server) {
@@ -12,6 +13,7 @@ class LobbyManager {
         this.games = []
         this.gameNumber = 0
         this.heartbeat = setInterval(this.pulse.bind(this), 2000)
+        this.bots = ["EasyBot"]
       }   
 
       pulse(){
@@ -20,9 +22,18 @@ class LobbyManager {
         this.cleanUpCompletedGames()
         this.broadcastLobbyState()
       }
+      countActiveBots() {
+        let botCount = 0;
+        this.lobby.forEach((user, ws) => {
+          if (this.bots.includes(user.username)) {
+            botCount++;
+          }
+        });
+        return botCount;
+      }
       broadcastLobbyState(){
         const lobbyState = {
-          lobbyCount: this.lobby.size,
+          lobbyCount: this.lobby.size - this.countActiveBots(), //count number of players in lobby, but don't count bots. 
           queueCount: this.queue.length,
           inGameCount: this.games.reduce((count, game) => count + game.users.length, 0)
         };
@@ -46,8 +57,6 @@ class LobbyManager {
           }
           return true;
         });
-
-        
       }
 
       addUserToQueue(user){
@@ -103,7 +112,7 @@ class LobbyManager {
       }
       checkNameIsTaken(username){
         //check if username is taken
-        if (['RandoBot', 'EasyBot', 'MediumBot', 'HardBot'].some(word => username.includes(word))) {
+        if (this.bots.some(word => username.includes(word))) {
             return false;
         }
         return Array.from(this.lobby.values()).some(user => user.username === username);
@@ -129,7 +138,6 @@ class LobbyManager {
       getUserByName(name){
         return Array.from(this.lobby.values()).find(user => user.username === name);
       }
-
       cancelInvite(ws,data){
         let thisUser = this.lobby.get(ws);
         let invite = this.invites.find(invite => invite.from === thisUser);
@@ -138,12 +146,27 @@ class LobbyManager {
           this.invites.splice(this.invites.indexOf(invite), 1);
         }
       }
-
+      botReadyForGame(ws,data){
+        let thisBot = data.bot;
+        thisBot.websocket = ws;
+        let user = this.getUserByName(data.opponentName);
+        this.lobby.set(ws,  thisBot)
+        console.log(`Sending AI-Bot game invite: from ${user.username} to ${thisBot.username}`);
+        this.server.routeMessage(thisBot.websocket, {type: 'invite', opponentName: user.username, gameLength: 15});
+        this.invites.push({from:user, to:thisBot, gameLength: 15}); //Bot games are always 15.
+      }
+      createBotForBotGame(user,botName){
+        let thisBot = new AIBot('ws://localhost:8080', botName, user.username);
+        return thisBot;
+      }
       inviteOpponent(ws,data){
         let thisUser = this.lobby.get(ws);
         let opponentName = data.opponentName;
+        if(this.bots.includes(opponentName)){ //Check if the opponent is a bot.
+          this.createBotForBotGame(thisUser,opponentName)
+          return;
+        }
         let opponent = this.getUserByName(opponentName);
-        console.log(`Inviting ${opponentName} to ${thisUser.username}'s game`);
         if (!opponent) {
           console.log(`User ${opponentName} not found in lobby.`);
           this.server.routeMessage(ws, {type: 'inviteFailed', message: `User ${opponentName} not found in lobby.`});

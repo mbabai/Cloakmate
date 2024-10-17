@@ -21,7 +21,47 @@ function millisecondsToClock(duration){
     return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
 }
 
+const colors = { // Color/Player constants
+	WHITE: 0, 
+	BLACK: 1
+}
+const pieces = { //Piece constants
+    BOMB:0,
+    KING:1,
+    KNIGHT:2,
+    BISHOP:3,
+    ROOK:4,
+    UNKNOWN:5
+}
+const pieceSymbols = { //queen is BOMB
+    [colors.WHITE]: ['♛', '♚', '♞', '♝', '♜','♟'],
+    [colors.BLACK]: ['♕', '♔', '♘', '♗', '♖','♙'] 
+};
+
+const actions = {
+    MOVE: 0,
+    CHALLENGE: 1,
+    BOMB: 2,
+    SACRIFICE: 3,
+    ONDECK: 4,
+    PASS: 5
+};
+const winReasons = {    
+    CAPTURED_KING: 0,
+    THRONE: 1,
+    STASH: 2,
+    FORCED_SACRIFICE: 3,
+    TIMEOUT: 4,
+    KING_BLUFF: 5      
+}
+
 module.exports = { 
     getBitIndexFromXY, 
     getXYFromBitIndex,
-    millisecondsToClock};
+    millisecondsToClock,
+    colors,
+    pieces,
+    pieceSymbols,
+    actions,
+    winReasons
+};

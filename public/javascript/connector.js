@@ -19,8 +19,6 @@ class WebSocketManager {
     checkConnection() {
         if (this.socket.readyState === WebSocket.CLOSED) {
             console.log('WebSocket connection is closed. Attempting to reconnect...');
-            
-            
         }
     }
     handleOpen(event) {

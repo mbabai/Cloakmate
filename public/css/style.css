@@ -5,9 +5,8 @@ html, body {
     display: flex;
     justify-content: center;
     align-items: center;
-    background: Black;
     overflow: hidden; /* Prevent scrolling */
-    background: #666; /* Dark background for the main div */
+    background: #034132; /* Dark background for the main div */
 }
 
 div{
@@ -16,6 +15,18 @@ div{
 }
 h3{
     margin: 0px;
+}
+button {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 5px;
+    background-color: #511a75;
+    color: white;
+    cursor: pointer;
+    width: 100%;
+}
+button:hover {
+    filter: brightness(150%);
 }
 
 .main {
@@ -160,18 +171,29 @@ h3{
     box-shadow: 0 0 0 4px transparent;
     animation: pulsing-border 2s infinite;
 }
-
 @keyframes pulsing-border {
     0% {
-        box-shadow: 0 0 0 0px rgba(4, 0, 255, 0.534);
+        box-shadow: 0 0 0 4px rgba(205, 154, 0, 0.534);
     }
     50% {
-        box-shadow: 0 0 0 10px rgba(4, 0, 255, 0.986);
+        box-shadow: 0 0 0 12px rgba(255, 191, 1, 0.534);
     }
     100% {
-        box-shadow: 0 0 0 0px rgba(4, 0, 255, 0.534);
+        box-shadow: 0 0 0 4px  rgba(205, 154, 0, 0.534);
     }
 }
+
+#on-deck-indicator {
+    height: 100%;
+    width: 100%;
+    border-radius: 5%;
+    pointer-events: none;
+    background-clip: content-box;
+    animation: pulsing-border 1s infinite;
+}
+
+
+
 #challenge-highlight{
     background-color: rgba(184, 1, 1, 0.418);
 
@@ -270,13 +292,14 @@ h3{
     width: calc((100% / 5) * 1.7); /* Adjust the width to bring buttons closer to the middle */
     height: calc(100% / 5); /* Same height as the on-deck-cell */
     color: white; /* White text */
+    background-color: #4e7abd;
     border: none; /* No border for a no-frills look */
     font-size: 3cqh; /* Adjust the font size to be viewport-responsive */
     padding: 1cqh; /* Padding to ensure text is within the button bounds */
     font-weight: bold; /* Make the text bold */
     position: absolute;
-    top: calc(73%); /* Aligned with the on-deck-cell vertically */
-    height: 12%;
+    top: calc(74%); /* Aligned with the on-deck-cell vertically */
+    height: 13%;
     display: flex;
     justify-content: center; /* Center horizontally */
     align-items: center; /* Center vertically */
@@ -303,7 +326,7 @@ h3{
 
 #ready-button {
     font-size: 3.5cqh; 
-    left: 48%; /* Center the button horizontally */
+    left: 50%; /* Center the button horizontally */
     top: 40%;
     transform: translateX(-50%); /* Adjust for the button's width */
     display: none;
@@ -311,7 +334,7 @@ h3{
 #random-setup-button {
     background-color: darkred;
     font-size: 3.5cqh; 
-    left: 48%; /* Center the button horizontally */
+    left: 50%; /* Center the button horizontally */
     top: 40%;
     transform: translateX(-50%); /* Adjust for the button's width */
     display: none;
@@ -503,19 +526,7 @@ input[type="text"], select {
     box-sizing: border-box; /* Border and padding included in width */
 }
 
-button {
-    padding: 10px 20px;
-    border: none;
-    border-radius: 5px;
-    background-color: #007BFF;
-    color: white;
-    cursor: pointer;
-    width: 100%;
-}
 
-button:hover {
-    filter: brightness(85%);
-}
 
 /* Dialog Overlay */
 .dialog-overlay {

@@ -1,39 +1,6 @@
 const precalcs = require('./precalcs');
 const utils = require('./utils');
-
-const colors = { // Color/Player constants
-	WHITE: 0, 
-	BLACK: 1
-}
-const pieces = { //Piece constants
-    BOMB:0,
-    KING:1,
-    KNIGHT:2,
-    BISHOP:3,
-    ROOK:4,
-    UNKNOWN:5
-}
-const pieceSymbols = { //queen is BOMB
-    [colors.WHITE]: ['♛', '♚', '♞', '♝', '♜','♟'],
-    [colors.BLACK]: ['♕', '♔', '♘', '♗', '♖','♙'] 
-};
-
-const actions = {
-    MOVE: 0,
-    CHALLENGE: 1,
-    BOMB: 2,
-    SACRIFICE: 3,
-    ONDECK: 4,
-    PASS: 5
-};
-const winReasons = {    
-    CAPTURED_KING: 0,
-    THRONE: 1,
-    STASH: 2,
-    FORCED_SACRIFICE: 3,
-    TIMEOUT: 4,
-    KING_BLUFF: 5      
-}
+const { colors, pieces, pieceSymbols, actions, winReasons } = require('./utils');
 
 const All = precalcs.createAllPiecesLookupTable()
 
@@ -284,16 +251,11 @@ class Board {
         }
     }
     IsCapturedKingVictory(){
-        console.log("LAST CAPTURED PIECE:::::::::::::::::::::::")
-        console.log(this.capturedPieces)
         // Handle captured pieces
         if (this.capturedPieces.length > 0){    
             const lastCapturedPiece = this.capturedPieces[this.capturedPieces.length-1];
             const secondLastCapturedPiece = this.capturedPieces[this.capturedPieces.length-2];
             const lastAction = this.actions[this.actions.length - 1]
-            console.log(lastCapturedPiece)
-            console.log(lastCapturedPiece.type)
-            console.log(pieces.KING)
             if(secondLastCapturedPiece && secondLastCapturedPiece.type == pieces.KING && (lastAction.type === actions.MOVE || lastAction.type === actions.PASS)){
                 this.setWinner(1 - secondLastCapturedPiece.color, winReasons.CAPTURED_KING)
                 return true;
@@ -316,7 +278,7 @@ class Board {
             if (kingMoveAction.declaration != pieces.KING){
                 return false;
             } else if (kingMoveAction.x2 == colorTargetThrones[kingMoveAction.player].x && kingMoveAction.y2 == colorTargetThrones[kingMoveAction.player].y){
-                if (lastAction.type != actions.CHALLENGE || lastAction.wasSuccessful){
+                if (lastAction.type != actions.CHALLENGE || !lastAction.wasSuccessful){
                     this.setWinner(kingMoveAction.player, winReasons.THRONE)
                     return true;
                 }
