@@ -216,8 +216,8 @@ button:hover {
     display: none;
 }
 .bubble {
-    width: 12vw;
     height: 12vh;
+    aspect-ratio: 0.8;
     z-index: 20;
     position: fixed;
     display: none;

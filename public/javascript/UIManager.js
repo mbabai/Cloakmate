@@ -421,18 +421,17 @@ class UIManager {
 
             // Position the bubble relative to the dragged piece
             const pieceRect = targetPiece.getBoundingClientRect();
-            const offsetTop = pieceRect.height * 0.7; // Adjust this value based on your image size
-            const aspectRatio = window.innerWidth / window.innerHeight;
-            const offsetSide = pieceRect.width * 0.56 * aspectRatio;
-            
+
             if (index === 0) {
-                // Left bubble: up and to the left
-                bubbleImage.style.left = `${pieceRect.left - offsetSide}px`;
-                bubbleImage.style.top = `${pieceRect.top - offsetTop}px`;
+                // Left bubble
+                bubbleImage.style.left = `${pieceRect.left}px`;
+                bubbleImage.style.top = `${pieceRect.top}px`;
+                bubbleImage.style.transform = 'translate(-55%, -60%)';
             } else {
-                // Right bubble: up and to the right
-                bubbleImage.style.left = `${pieceRect.right - offsetSide}px`;
-                bubbleImage.style.top = `${pieceRect.top - offsetTop}px`;
+                // Right bubble
+                bubbleImage.style.left = `${pieceRect.right}px`;
+                bubbleImage.style.top = `${pieceRect.top}px`;
+                bubbleImage.style.transform = 'translate(-45%, -60%)';
             }
             this.addState(`${facing}${type}Bubble`);
         });
@@ -649,13 +648,11 @@ class UIManager {
         }
     }
     moveSpeechBubbleToTarget(target){
-        const leftBubble = document.getElementById('left-speech-bubble');
+        const bubbleImage = document.getElementById('left-speech-bubble');
         const pieceRect = target.getBoundingClientRect();
-        const offsetTop = pieceRect.height * 0.7; // Adjust this value based on your image size
-        const aspectRatio = window.innerWidth / window.innerHeight;
-        const offsetSide = pieceRect.width * 0.56 * aspectRatio;
-        leftBubble.style.left = `${pieceRect.left - offsetSide}px`;
-        leftBubble.style.top = `${pieceRect.top - offsetTop}px`;
+        bubbleImage.style.left = `${pieceRect.left}px`;
+        bubbleImage.style.top = `${pieceRect.top}px`;
+        bubbleImage.style.transform = 'translate(-55%, -60%)';
     }
     canSwap(target) {
         return this.currentActions.includes('swap') && 
