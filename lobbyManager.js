@@ -35,7 +35,7 @@ class LobbyManager {
         const lobbyState = {
           lobbyCount: this.lobby.size - this.countActiveBots(), //count number of players in lobby, but don't count bots. 
           queueCount: this.queue.length,
-          inGameCount: this.games.reduce((count, game) => count + game.users.length, 0)
+          inGameCount: this.games.reduce((count, game) => count + game.users.length, 0) - this.countActiveBots()
         };
 
         this.lobby.forEach((user, ws) => {
