@@ -1,15 +1,12 @@
 class LobbyUser{
-    constructor(username, userID, websocket){
+    constructor(username, userID){
         this.username = username;
-        this.websocket = websocket;
+        this.isConnected = true;
+        this.lastConnected;
         this.isInQueue = false;
         this.isInGame = false;
         this.userID = userID;
     }
-    setWebsocket(websocket){
-        this.websocket = websocket;
-    }
-    
 }
 
 module.exports = LobbyUser

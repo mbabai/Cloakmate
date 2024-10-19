@@ -1,9 +1,20 @@
 var theWebSocketManager;
 class WebSocketManager {
     constructor() {
+        this.userID = this.getUserIDFromCookie();
         this.typeListeners = {};
         this.messageQueue = [];
         this.initializeWebSocket();
+    }
+
+    getUserIDFromCookie() {
+        const cookies = document.cookie.split('; ');
+        const userIDCookie = cookies.find(cookie => cookie.startsWith('userID='));
+        return userIDCookie ? userIDCookie.split('=')[1] : null;
+    }
+    setUserID(userID){
+        this.userID = userID;
+        document.cookie = `userID=${userID}; path=/; max-age=31536000`; // Set cookie to expire in 1 year
     }
 
     initializeWebSocket() {
@@ -28,7 +39,7 @@ class WebSocketManager {
     }
 
     sendInitialMessage() {
-        this.sendMessage({type: "Server", message: "Server Open"});
+        this.sendMessage({type: "connect", userID: this.userID});
     }
 
     processPendingMessages() {
@@ -89,6 +100,7 @@ document.addEventListener('DOMContentLoaded', function() {
     //Main function that actually runs on setup.
     let myWebSocketManager = new WebSocketManager();
     theWebSocketManager = myWebSocketManager;
+    myWebSocketManager.addTypeListener('userID', (data) => { myWebSocketManager.setUserID(data.userID) });
     //UI functions
     let myUIManager = new UIManager(myWebSocketManager);
     myWebSocketManager.addTypeListener('welcome', (data) => { myUIManager.welcome(data) });
@@ -104,6 +116,4 @@ document.addEventListener('DOMContentLoaded', function() {
     myWebSocketManager.addTypeListener('random-setup-complete', (data) => { myUIManager.randomSetupComplete(data) });
     myWebSocketManager.addTypeListener('illegal-action', (data) => { myUIManager.illegalAction(data) });
     myWebSocketManager.addTypeListener('lobby-state-update', (data) => { myUIManager.postLobbyState(data) });
-    
-
 });
