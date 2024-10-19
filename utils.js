@@ -1,3 +1,9 @@
+const { v4: uuidv4 } = require('uuid');
+
+function generateUniqueUserID(){
+    return 'user-' + uuidv4();
+}
+
 function getBitIndexFromXY(x, y, height = 5, width = 5) {
     // Calculate the linear index of the (x, y) position on a 5x5 board
     // Note: Assumes (0, 0) is the bottom-left of the board
@@ -55,10 +61,13 @@ const winReasons = {
     KING_BLUFF: 5      
 }
 
+
+
 module.exports = { 
     getBitIndexFromXY, 
     getXYFromBitIndex,
     millisecondsToClock,
+    generateUniqueUserID,
     colors,
     pieces,
     pieceSymbols,
