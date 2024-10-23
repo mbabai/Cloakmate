@@ -1117,8 +1117,8 @@ class UIManager {
                     loseReason = `You ran out of time...`;
                     break;
                 case winReasons.KING_BLUFF:
-                    winReason = ` ${loserName} (${loserColor}) revealed your king with a failed challenge!`;
-                    loseReason = `You revealed ${winnerName}'s (${winnerColor}) king with a failed challenge...`;
+                    winReason = `You captured ${loserName}'s (${loserColor}) king with a challenge!`;
+                    loseReason = `${winnerName} (${winnerColor}) captured your king with a challenge...`;
                     break;
                 default:
                     winReason = `You won the game!`;
