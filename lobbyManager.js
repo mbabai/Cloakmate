@@ -153,7 +153,7 @@ class LobbyManager {
           return;
         }
         this.server.setUserIDName(userID,username)
-        let thisUser = this.server.usedIDs.get(userID)
+        let thisUser = this.server.userIDs.get(userID)
         this.addUserToLobby(thisUser);
         this.server.routeMessage(userID, {type: 'welcome', username});
       }

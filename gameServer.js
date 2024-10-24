@@ -65,8 +65,8 @@ class GameServer {
     }
 
     routeMessage(userID,message){
-        let websocket = this.userIDs.get(userID).websocket;
-        this.sendMessage({websocket, message});
+        let user = this.userIDs.get(userID);
+        this.sendMessage({websocket: user.websocket, message});
     }
 
     // Method to add a listener for a specific message type
@@ -84,9 +84,13 @@ class GameServer {
 
     handleMessage(websocket,json) {
         // Handle the message based on its content
-        let userID = this.wsToUser.get(websocket).userID;
+        let user = this.wsToUser.get(websocket);
+        if (!user){
+            this.connect(websocket,json)
+            return;
+        }
         if (this.typeListeners[json.type]) {
-            this.typeListeners[json.type].forEach(listener => listener(userID,json));
+            this.typeListeners[json.type].forEach(listener => listener(user.userID,json));
         }
     }
 
@@ -97,17 +101,17 @@ class GameServer {
 
     connect(ws,data){
         let userID = data.userID;
-        if(userID == null){
+        if(!userID || !this.userIDs.has(userID)){
             userID = generateUniqueUserID();
             this.createUser(userID, ws);
-            this.server.routeMessage(userID, {type: 'userID', userID: userID});
+            this.routeMessage(userID, {type: 'userID', userID: userID});
         } 
         this.setUserIDWebsocket(userID, ws);
         let json = {type:"user-connect",userID:userID}
         this.handleMessage(ws,json)
     }
     createUser(userID, ws){
-        let thisUser = new LobbyUser()
+        let thisUser = new LobbyUser(userID, ws)
         this.userIDs.set(userID, thisUser);
         this.wsToUser.set(ws, thisUser);
     }
@@ -117,7 +121,7 @@ class GameServer {
         this.wsToUser.set(ws, thisUser);
     }
     setUserIDName(userID,username){
-        this.userID.get(userID).username = username;
+        this.userIDs.get(userID).username = username;
     }
 }
 
@@ -128,7 +132,7 @@ myGameServer.server.listen(myGameServer.port, () => {
     console.log(`GameServer is listening on port ${myGameServer.port} in ${isProduction ? "Production" : "Development"} mode...`);
 });
 const myLobbyManager = new LobbyManager(myGameServer);
-myGameServer.addTypeListener('connect', (userID,data)=>{myGameServer.connect(userID,data)});
+// myGameServer.addTypeListener('connect', (userID,data)=>{myGameServer.connect(userID,data)});
 myGameServer.addTypeListener('user-connect', (userID,data)=>{myLobbyManager.userConnects(userID,data)});
 myGameServer.addTypeListener('submit-username', (userID,data)=>{myLobbyManager.receiveUsername(userID,data)});
 myGameServer.addTypeListener('disconnect', (userID,data)=>{myLobbyManager.disconnect(userID,data)});
