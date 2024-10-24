@@ -1,11 +1,12 @@
 class LobbyUser{
-    constructor(username, userID){
+    constructor(userID, websocket, username=null){
         this.username = username;
         this.isConnected = true;
         this.lastConnected;
         this.isInQueue = false;
         this.isInGame = false;
         this.userID = userID;
+        this.websocket = websocket;
     }
 }
 

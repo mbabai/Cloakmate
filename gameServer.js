@@ -9,12 +9,13 @@ const { generateUniqueUserID } = require('./utils');
 
 
 const LobbyManager = require('./lobbyManager');
+const LobbyUser = require('./lobbyUser');
 
 // Define the gameServer class
 class GameServer {
     constructor() {
-        this.userIDs = new Map() // userID -> ws
-        this.wsToUserID = new Map() // ws -> userID
+        this.userIDs = new Map() // userID -> user
+        this.wsToUser = new Map() // ws -> user
         this.initializeServer();
         this.initializeWebSocket();
         this.setupMessageHandling();
@@ -59,13 +60,13 @@ class GameServer {
         this.typeListeners = {};
     }
 
-    sendMessage({ws, message}) {
-        ws.send(JSON.stringify(message));
+    sendMessage({websocket, message}) {
+        websocket.send(JSON.stringify(message));
     }
 
     routeMessage(userID,message){
-        let ws = this.userIDs.get(userID);
-        this.sendMessage({ws, message});
+        let websocket = this.userIDs.get(userID).websocket;
+        this.sendMessage({websocket, message});
     }
 
     // Method to add a listener for a specific message type
@@ -81,9 +82,9 @@ class GameServer {
         this.typeListeners[type] = this.typeListeners[type].filter(l => l !== listener);
     }
 
-    handleMessage(ws,json) {
+    handleMessage(websocket,json) {
         // Handle the message based on its content
-        let userID = this.wsToUserID.get(ws);
+        let userID = this.wsToUser.get(websocket).userID;
         if (this.typeListeners[json.type]) {
             this.typeListeners[json.type].forEach(listener => listener(userID,json));
         }
@@ -106,12 +107,17 @@ class GameServer {
         this.handleMessage(ws,json)
     }
     createUser(userID, ws){
-        this.userIDs.set(userID, ws);
-        this.wsToUserID.set(ws, userID);
+        let thisUser = new LobbyUser()
+        this.userIDs.set(userID, thisUser);
+        this.wsToUser.set(ws, thisUser);
     }
     setUserIDWebsocket(userID, ws){
-        this.userIDs.set(userID, ws);
-        this.wsToUserID.set(ws, userID);
+        let thisUser = this.userIDs.get(userID)
+        thisUser.websocket = ws;
+        this.wsToUser.set(ws, thisUser);
+    }
+    setUserIDName(userID,username){
+        this.userID.get(userID).username = username;
     }
 }
 

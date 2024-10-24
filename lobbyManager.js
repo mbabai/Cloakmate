@@ -152,7 +152,9 @@ class LobbyManager {
           this.server.routeMessage(userID, {type: 'usernameTaken', username:username});
           return;
         }
-        this.addUserToLobby(new LobbyUser(userID, username));
+        this.server.setUserIDName(userID,username)
+        let thisUser = this.server.usedIDs.get(userID)
+        this.addUserToLobby(thisUser);
         this.server.routeMessage(userID, {type: 'welcome', username});
       }
       checkNameIsTaken(username){

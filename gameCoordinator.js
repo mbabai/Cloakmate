@@ -65,7 +65,7 @@ class GameCoordinator {
         this.isComplete = true;
     }
     sendColorState(color) {
-        this.server.routeMessage(this.users[color].websocket,{type:"board-state",board:this.game.getColorState(color)})
+        this.server.routeMessage(this.users[color].userID,{type:"board-state",board:this.game.getColorState(color)})
     }
     broadcastGameState() {
         console.log(`Broadcasting game #${this.gameNumber} state...`)
@@ -77,7 +77,7 @@ class GameCoordinator {
     }
     randomSetup(player){
         const thisPlayerGameState = this.game.randomSetup(this.game.getPlayerColorIndex(player.username));
-        this.server.routeMessage(player.websocket,{type:"random-setup-complete", board:thisPlayerGameState})
+        this.server.routeMessage(player.userID,{type:"random-setup-complete", board:thisPlayerGameState})
         this.checkPlayerSetupCompletion(player)
     }
     gameAction(player,data){
@@ -92,7 +92,7 @@ class GameCoordinator {
             }
             this.broadcastGameState()
         } else {
-            this.server.routeMessage(player.websocket, { type: "illegal-action", message: "Your action was illegal. Please try again." });
+            this.server.routeMessage(player.userID, { type: "illegal-action", message: "Your action was illegal. Please try again." });
         }
     }
     updatePlayerTime(playerColorIndex){
@@ -108,7 +108,7 @@ class GameCoordinator {
 
         if (!this.game.trySetup(player.username, data.frontRow, data.onDeck)) {
             console.log("Illegal setup");
-            this.server.routeMessage(player.websocket, { type: "setup-error", message: "Your setup was invalid. Please try again." });
+            this.server.routeMessage(player.userID, { type: "setup-error", message: "Your setup was invalid. Please try again." });
         } else {
             this.checkPlayerSetupCompletion(player)
         }
@@ -132,10 +132,10 @@ class GameCoordinator {
             const otherPlayerBoardState = this.game.getColorState(this.game.getPlayerColorIndex(otherPlayer.username));
             this.game.playStartTime = Date.now();
             this.lastActionTime = Date.now();
-            this.server.routeMessage(player.websocket, { type: "both-setup-complete", board: playerBoardState });
-            this.server.routeMessage(otherPlayer.websocket, { type: "both-setup-complete", board: otherPlayerBoardState });
+            this.server.routeMessage(player.userID, { type: "both-setup-complete", board: playerBoardState });
+            this.server.routeMessage(otherPlayer.userID, { type: "both-setup-complete", board: otherPlayerBoardState });
         } else {
-            this.server.routeMessage(otherPlayer.websocket, { type: "opponent-setup-complete", message: "Your opponent has completed their setup." });
+            this.server.routeMessage(otherPlayer.userID, { type: "opponent-setup-complete", message: "Your opponent has completed their setup." });
         }
     }
    
