@@ -132,7 +132,6 @@ myGameServer.server.listen(myGameServer.port, () => {
     console.log(`GameServer is listening on port ${myGameServer.port} in ${isProduction ? "Production" : "Development"} mode...`);
 });
 const myLobbyManager = new LobbyManager(myGameServer);
-// myGameServer.addTypeListener('connect', (userID,data)=>{myGameServer.connect(userID,data)});
 myGameServer.addTypeListener('user-connect', (userID,data)=>{myLobbyManager.userConnects(userID,data)});
 myGameServer.addTypeListener('submit-username', (userID,data)=>{myLobbyManager.receiveUsername(userID,data)});
 myGameServer.addTypeListener('disconnect', (userID,data)=>{myLobbyManager.disconnect(userID,data)});

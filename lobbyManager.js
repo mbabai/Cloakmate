@@ -23,6 +23,7 @@ class LobbyManager {
         this.cleanUpCompletedGames()
         this.broadcastLobbyState()
         this.cullDisconnectedUsers()
+        // console.log(this.server.userIDs)
       }
       cullDisconnectedUsers(){
         this.lobby.forEach((user, userID) => {
@@ -111,6 +112,7 @@ class LobbyManager {
             user.isConnected = true;
             user.lastConnected = null;
             console.log(`User ${user.username} reconnected.`);
+            this.server.routeMessage(userID, {type: 'welcome', username:user.username});
         }
         const game = this.userIDToGame.get(userID);
         if (game){
@@ -128,6 +130,7 @@ class LobbyManager {
       }
       disconnect(userID){
         let user = this.lobby.get(userID)
+        if (!user) return;
         this.removeUserFromQueue(user);
         user.isConnected = false;
         user.lastConnected = new Date();
