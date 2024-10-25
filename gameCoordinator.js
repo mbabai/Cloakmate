@@ -40,13 +40,20 @@ class GameCoordinator {
         }
     }
     checkTurnTimeout() {
-        const playerRemainingTime = this.game.playersTimeAvailable[this.game.board.playerTurn];
-        if (Date.now() - this.lastActionTime >= playerRemainingTime) {
-            console.log('Turn timeout reached. Ending game.');
-            let username = this.game.players[1 - this.game.board.playerTurn].username
-            console.log(username)
-            this.endGame(username,winReasons.TIMEOUT);
-            this.broadcastGameState()
+        if (this.game.board.phase === 'play') {
+            this.updateCurrentPlayerTime();
+            const playerRemainingTime = this.game.playersTimeAvailable[this.game.board.playerTurn];
+            if (playerRemainingTime <= 0) {
+                console.log('Turn timeout reached. Ending game.');
+                let username = this.game.players[1 - this.game.board.playerTurn].username
+                console.log(username)
+                this.endGame(username, winReasons.TIMEOUT);
+                this.broadcastGameState()
+            }
+        } else if (this.game.board.phase === 'setup') {
+            if (Date.now() - this.lastActionTime >= 30100) {
+                this.checkAndCompleteSetups();
+            }
         }
     }
     stopGameLoop() {
@@ -68,6 +75,7 @@ class GameCoordinator {
     }
     broadcastGameState() {
         console.log(`Broadcasting game #${this.gameNumber} state...`)
+        this.updateCurrentPlayerTime();
         this.sendColorState(0)
         this.sendColorState(1)
     }
@@ -95,8 +103,11 @@ class GameCoordinator {
         }
     }
     updatePlayerTime(playerColorIndex){
-        const turnTime = Date.now() - this.lastActionTime - this.increment;
-        this.game.playersTimeAvailable[playerColorIndex] -= turnTime;
+        if (this.game.board.phase === 'play') {
+            const turnTime = Date.now() - this.lastActionTime;
+            this.game.playersTimeAvailable[playerColorIndex] -= turnTime;
+            this.game.playersTimeAvailable[playerColorIndex] += this.increment;
+        }
         this.lastActionTime = Date.now();
     }
     submitSetup(player, data) {
@@ -138,8 +149,32 @@ class GameCoordinator {
         }
     }
    
+    updateCurrentPlayerTime() {
+        if (this.game.board.phase === 'play') {
+            const currentPlayerIndex = this.game.board.playerTurn;
+            const elapsedTime = Date.now() - this.lastActionTime;
+            this.game.playersTimeAvailable[currentPlayerIndex] -= elapsedTime;
+            this.lastActionTime = Date.now();
+        } else if (this.game.board.phase === 'setup') {
+            // During setup, we only need to update the lastActionTime
+            this.lastActionTime = Date.now();
+        }
+    }
+
+    reconnectUserToGame(user) {
+        const playerIndex = this.game.getPlayerColorIndex(user.username);
+        if (playerIndex !== -1) {
+            this.updateCurrentPlayerTime();
+            const boardState = this.game.getColorState(playerIndex);
+            let messageType = "board-state";
+            // if (this.game.board.phase === 'setup') {
+            //     messageType = this.game.playersSetupComplete[playerIndex] ? "opponent-setup-complete" : "reconnect-setup";
+            // }
+            this.server.routeMessage(user.userID, { type: messageType, board: boardState });
+        } else {
+            console.error(`User ${user.username} not found in game ${this.gameNumber}`);
+        }
+    }
 }
-
-
 
 module.exports = GameCoordinator;

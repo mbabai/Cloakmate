@@ -125,7 +125,9 @@ class LobbyManager {
         console.log(`Reconnecting user ${userID} to game #${game.gameNumber}`);
         const playerIndex = game.users.findIndex(user => user.userID === userID);
         if (playerIndex !== -1) {
-          game.sendColorState(playerIndex);
+          let thisUser = this.lobby.get(userID)
+          game.reconnectUserToGame(thisUser)
+          // game.sendColorState(playerIndex);
         } else {
           console.error(`User ${userID} not found in game #${game.gameNumber}`);
         }
