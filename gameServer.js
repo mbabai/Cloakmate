@@ -106,9 +106,15 @@ class GameServer {
             this.createUser(userID, ws);
             this.routeMessage(userID, {type: 'userID', userID: userID});
         } 
+        this.setUserConnected(userID)
         this.setUserIDWebsocket(userID, ws);
         let json = {type:"user-connect",userID:userID}
         this.handleMessage(ws,json)
+    }
+    setUserConnected(userID){
+        let user = this.userIDs.get(userID)
+        user.isConnected = true
+        user.lastConnected = null;
     }
     createUser(userID, ws){
         let thisUser = new LobbyUser(userID, ws)

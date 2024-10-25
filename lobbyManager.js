@@ -1,6 +1,8 @@
 const LobbyUser = require('./lobbyUser')
 const GameCoordinator = require('./gameCoordinator')
 const AIBot = require('./AIBot')
+const { colors, pieces, pieceSymbols, actions, winReasons } = require('./utils');
+
 //lobby
 class LobbyManager {
     constructor(server) {
@@ -33,20 +35,20 @@ class LobbyManager {
         });
       }
       removeUserFromLobby(userID){
-        this.lobby.delete(userID);
         this.removeUserFromQueue(userID);
-        let game = this.userIDToGame.delete(userID);
+        let game = this.userIDToGame.get(userID);
         if (game){
           const opponent = game.users.find(u => u.userID !== userID); 
           if (opponent) {
               // Send disconnect message to the opponent
               this.server.routeMessage(opponent.userID, {
                   type: 'opponent-disconnected',
-                  message: `${user.username} has disconnected from the game.`
+                  message: `Your opponent, has disconnected from the game! (you win by default)`
               });
           }
-          this.endGame(game);
+          this.endGame(game,opponent.username,winReasons.DISCONNECT);
         }
+        this.lobby.delete(userID);
       }
       countActiveBots() {
         let botCount = 0;
@@ -134,19 +136,6 @@ class LobbyManager {
         this.removeUserFromQueue(user);
         user.isConnected = false;
         user.lastConnected = new Date();
-        // Check if the user is in any games
-        if (this.userIDToGame.has(userID)) {
-          const game = this.userIDToGame.get(userID);
-          const opponent = game.users.find(u => u.userID !== userID);
-          
-          if (opponent) {
-            // Send disconnect message to the opponent
-            this.server.routeMessage(opponent.userID, {
-                type: 'opponent-disconnected',
-                message: `Waiting for ${user.username} to reconnect.`
-            });
-          }
-        }
       }
       receiveUsername(userID, message){
         console.log(`Received username: ${message.username}`);
@@ -286,8 +275,8 @@ class LobbyManager {
         let player = this.getPlayerFromUserID(userID);
         game.randomSetup(player);
       }
-      endGame(game){
-        game.endGame()
+      endGame(game=null, username=null,winReason=null){
+        game.endGame(username,winReason)
         this.games.splice(this.games.indexOf(game), 1);
         game.users[0].isInGame = false;
         game.users[1].isInGame = false;

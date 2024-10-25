@@ -1,11 +1,5 @@
 const { Game , Action , Board } = require('./gameEngine');
-const winReasons = {
-    CAPTURED_KING: 0,
-    THRONE: 1,
-    STASH: 2,
-    FORCED_SACRIFICE: 3,
-    TIMEOUT: 4      
-}
+const { colors, pieces, pieceSymbols, actions, winReasons } = require('./utils');
 //Game Arena - coordinates games between players, converts between game engine style variables and frontend style variables
 class GameCoordinator {
     constructor(user1,user2,length,gameNumber,server) {
@@ -49,8 +43,9 @@ class GameCoordinator {
         const playerRemainingTime = this.game.playersTimeAvailable[this.game.board.playerTurn];
         if (Date.now() - this.lastActionTime >= playerRemainingTime) {
             console.log('Turn timeout reached. Ending game.');
-            this.game.board.setWinner(1 - this.game.board.playerTurn,winReasons.TIMEOUT) 
-            this.endGame();
+            let username = this.game.players[1 - this.game.board.playerTurn].username
+            console.log(username)
+            this.endGame(username,winReasons.TIMEOUT);
             this.broadcastGameState()
         }
     }
@@ -60,7 +55,11 @@ class GameCoordinator {
             this.gameLoopInterval = null;
         }
     }
-    endGame() {
+    endGame(username=null,winReason=null) {
+        if(winReason){
+            let winnerIndex = this.game.getPlayerColorIndex(username)
+            this.game.board.setWinner(winnerIndex,winReasons) 
+        }
         this.stopGameLoop();
         this.isComplete = true;
     }
