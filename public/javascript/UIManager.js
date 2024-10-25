@@ -325,6 +325,9 @@ class UIManager {
         this.handleStart(e.touches[0]);
     }
     handleStart(e) {
+        if(this.draggedPiece){
+            this.releasePiece().bind(this)
+        }
         this.draggedPiece = null;
         if (e.target.classList.contains('game-piece')) {
             const parentElement = e.target.parentElement;
