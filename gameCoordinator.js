@@ -150,14 +150,13 @@ class GameCoordinator {
     }
    
     updateCurrentPlayerTime() {
+        const elapsedTime = Date.now() - this.lastActionTime;
         if (this.game.board.phase === 'play') {
             const currentPlayerIndex = this.game.board.playerTurn;
-            const elapsedTime = Date.now() - this.lastActionTime;
             this.game.playersTimeAvailable[currentPlayerIndex] -= elapsedTime;
             this.lastActionTime = Date.now();
         } else if (this.game.board.phase === 'setup') {
-            // During setup, we only need to update the lastActionTime
-            this.lastActionTime = Date.now();
+            
         }
     }
 

@@ -717,8 +717,10 @@ class Game {
         this.gameStartTime = Date.now();
         this.playStartTime;
         this.gameEndTime;
-        this.playersTimeAvailable = [30*1000+500,30*1000+500] // Setup time, plus half a second to account for lag time. 
+        this.setupTimeAllotted = 30*1000
+        this.playersTimeAvailable = [this.setupTimeAllotted+500,this.setupTimeAllotted+500] // Setup time, plus half a second to account for lag time. 
         this.playersSetupComplete = [false,false]
+        this.playerSetupTimes = [-1,-1]
     };
     log(){
         let clock = this.length == 1 ? "Blitz" : this.length == 5 ? "Standard" : "Classic";
@@ -730,7 +732,7 @@ class Game {
         const otherColor = 1 - color; 
         const boardState = {
             color: color,
-            opponentName: this.players[1-color],
+            opponentName: this.players[otherColor],
             phase: this.board.phase,
             board: Array.from(Array(this.board.height), () => Array(this.board.width).fill(null)),
             onDeck: null,
@@ -741,7 +743,11 @@ class Game {
             clocks:[this.playersTimeAvailable[0]-500,this.playersTimeAvailable[1]-500], // Not showing the extra half second.
             actionHistory: this.board.actions.map(action => action.copy()), //Copying the action history to avoid showing if it was a bluff or not
             winner: this.board.winner,
-            winReason: this.board.winReason
+            winReason: this.board.winReason,
+            mySetupTimeRemaining: this.playersSetupComplete[color] ? this.playerSetupTimes[color] : this.setupTimeAllotted - (Date.now() - this.gameStartTime),
+            opponentSetupTimeRemaining:  this.playersSetupComplete[otherColor] ? this.playerSetupTimes[otherColor] : this.setupTimeAllotted - (Date.now() - this.gameStartTime),
+            mySetupComplete: this.playersSetupComplete[color],
+            opponentSetupComplete: this.playersSetupComplete[otherColor]
         };
 
         // Iterate over each cell on the board
@@ -933,6 +939,7 @@ class Game {
     }
     completePlayerSetup(playerName){
         this.playersSetupComplete[this.players.indexOf(playerName)] = true
+        this.playerSetupTimes[this.players.indexOf(playerName)] = this.setupTimeAllotted - (Date.now() - this.gameStartTime) 
         if (this.isSetupComplete()){
             this.board.phase = "play"
             this.board.playerTurn = colors.WHITE
