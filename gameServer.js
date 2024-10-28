@@ -5,13 +5,17 @@ const WebSocket = require('ws');
 const http = require('http');
 const https = require('https');
 const isProduction = process.env.NODE_ENV === 'production';
+const { generateUniqueUserID } = require('./utils');
 
 
 const LobbyManager = require('./lobbyManager');
+const LobbyUser = require('./lobbyUser');
 
 // Define the gameServer class
 class GameServer {
     constructor() {
+        this.userIDs = new Map() // userID -> user
+        this.wsToUser = new Map() // ws -> user
         this.initializeServer();
         this.initializeWebSocket();
         this.setupMessageHandling();
@@ -25,15 +29,12 @@ class GameServer {
         this.app.get('*', (req, res) => {
             res.sendFile(path.join(__dirname, 'public', 'index.html'));
         });
-        
     }
-
     initializeWebSocket() {
         this.wss = new WebSocket.Server({ server: this.server });
         this.activeConnections = new Set();
         this.setupWebSocketHandlers();
     }
-
     setupWebSocketHandlers() {
         this.wss.on('connection', (ws, req) => {
             const ip = req.socket.remoteAddress;
@@ -44,13 +45,11 @@ class GameServer {
             ws.on('close', () => this.handleConnectionClose(ws));
         });
     }
-
     handleIncomingMessage(ws,message) {
         console.log('Received: %s', message);
         const json = JSON.parse(message);
         this.handleMessage(ws,json);
     }
-
     handleConnectionClose(ws) {
         this.activeConnections.delete(ws);
         let json = {type:"disconnect",ws}
@@ -61,12 +60,13 @@ class GameServer {
         this.typeListeners = {};
     }
 
-    sendMessage({ws, message}) {
-        ws.send(JSON.stringify(message));
+    sendMessage({websocket, message}) {
+        websocket.send(JSON.stringify(message));
     }
 
-    routeMessage(ws,message){
-        this.sendMessage({ws, message});
+    routeMessage(userID,message){
+        let user = this.userIDs.get(userID);
+        this.sendMessage({websocket: user.websocket, message});
     }
 
     // Method to add a listener for a specific message type
@@ -82,16 +82,53 @@ class GameServer {
         this.typeListeners[type] = this.typeListeners[type].filter(l => l !== listener);
     }
 
-    handleMessage(ws,json) {
+    handleMessage(websocket,json) {
         // Handle the message based on its content
+        let user = this.wsToUser.get(websocket);
+        if (!user){
+            this.connect(websocket,json)
+            return;
+        }
         if (this.typeListeners[json.type]) {
-            this.typeListeners[json.type].forEach(listener => listener(ws,json));
+            this.typeListeners[json.type].forEach(listener => listener(user.userID,json));
         }
     }
 
     // Method to get all active connections
     getActiveConnections() {
         return Array.from(this.activeConnections);
+    }
+
+    connect(ws,data){
+        let userID = data.userID;
+        if(!userID || !this.userIDs.has(userID)){
+            userID = generateUniqueUserID();
+            this.createUser(userID, ws);
+            this.routeMessage(userID, {type: 'userID', userID: userID});
+        } 
+        this.setUserConnected(userID)
+        this.setUserIDWebsocket(userID, ws);
+        let json = {type:"user-connect",userID:userID}
+        this.handleMessage(ws,json)
+    }
+    setUserConnected(userID){
+        let user = this.userIDs.get(userID)
+        user.isConnected = true
+        user.lastConnected = null;
+    }
+    createUser(userID, ws){
+        let thisUser = new LobbyUser(userID, ws)
+        this.userIDs.set(userID, thisUser);
+        this.wsToUser.set(ws, thisUser);
+        return thisUser;
+    }
+    setUserIDWebsocket(userID, ws){
+        let thisUser = this.userIDs.get(userID)
+        thisUser.websocket = ws;
+        this.wsToUser.set(ws, thisUser);
+    }
+    setUserIDName(userID,username){
+        this.userIDs.get(userID).username = username;
     }
 }
 
@@ -102,15 +139,17 @@ myGameServer.server.listen(myGameServer.port, () => {
     console.log(`GameServer is listening on port ${myGameServer.port} in ${isProduction ? "Production" : "Development"} mode...`);
 });
 const myLobbyManager = new LobbyManager(myGameServer);
-myGameServer.addTypeListener('submit-username', (ws,data)=>{myLobbyManager.receiveUsername(ws,data)});
-myGameServer.addTypeListener('disconnect', (ws,data)=>{myLobbyManager.disconnect(ws,data)});
-myGameServer.addTypeListener('enter-queue', (ws,data)=>{myLobbyManager.enterQueue(ws,data)});
-myGameServer.addTypeListener('exit-queue', (ws,data)=>{myLobbyManager.exitQueue(ws,data)});
-myGameServer.addTypeListener('invite-opponent', (ws,data)=>{myLobbyManager.inviteOpponent(ws,data)});
-myGameServer.addTypeListener('cancel-invite', (ws,data)=>{myLobbyManager.cancelInvite(ws,data)});
-myGameServer.addTypeListener('accept-invite', (ws,data)=>{myLobbyManager.acceptInvite(ws,data)});
-myGameServer.addTypeListener('decline-invite', (ws,data)=>{myLobbyManager.declineInvite(ws,data)});
-myGameServer.addTypeListener('submit-setup', (ws,data)=>{myLobbyManager.submitSetup(ws,data)});
-myGameServer.addTypeListener('random-setup', (ws,data)=>{myLobbyManager.randomSetup(ws,data)});
-myGameServer.addTypeListener('game-action', (ws,data)=>{myLobbyManager.gameAction(ws,data)});
-myGameServer.addTypeListener('bot-ready', (ws,data)=>{myLobbyManager.botReadyForGame(ws,data)});
+myGameServer.addTypeListener('user-connect', (userID,data)=>{myLobbyManager.userConnects(userID,data)});
+myGameServer.addTypeListener('leave-lobby', (userID,data)=>{myLobbyManager.leaveLobby(userID,data)});
+myGameServer.addTypeListener('submit-username', (userID,data)=>{myLobbyManager.receiveUsername(userID,data)});
+myGameServer.addTypeListener('disconnect', (userID,data)=>{myLobbyManager.disconnect(userID,data)});
+myGameServer.addTypeListener('enter-queue', (userID,data)=>{myLobbyManager.enterQueue(userID,data)});
+myGameServer.addTypeListener('exit-queue', (userID,data)=>{myLobbyManager.exitQueue(userID,data)});
+myGameServer.addTypeListener('invite-opponent', (userID,data)=>{myLobbyManager.inviteOpponent(userID,data)});
+myGameServer.addTypeListener('cancel-invite', (userID,data)=>{myLobbyManager.cancelInvite(userID,data)});
+myGameServer.addTypeListener('accept-invite', (userID,data)=>{myLobbyManager.acceptInvite(userID,data)});
+myGameServer.addTypeListener('decline-invite', (userID,data)=>{myLobbyManager.declineInvite(userID,data)});
+myGameServer.addTypeListener('submit-setup', (userID,data)=>{myLobbyManager.submitSetup(userID,data)});
+myGameServer.addTypeListener('random-setup', (userID,data)=>{myLobbyManager.randomSetup(userID,data)});
+myGameServer.addTypeListener('game-action', (userID,data)=>{myLobbyManager.gameAction(userID,data)});
+myGameServer.addTypeListener('bot-ready', (userID,data)=>{myLobbyManager.botReadyForGame(userID,data)});

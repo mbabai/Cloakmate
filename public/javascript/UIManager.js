@@ -1028,6 +1028,20 @@ class UIManager {
             }
         }
     }
+    handleSetupReconnect(){
+        //Reconnecting player to the game. 
+        if (this.board.phase === 'setup') {
+            if (this.board.mySetupComplete) {
+                this.stopClockTick('player');
+                this.setState('ready');
+            }
+            if (this.board.opponentSetupComplete) {
+                this.opponentSetupComplete();
+            }
+            document.getElementById('player-clock-time').textContent = this.formatTime(this.board.mySetupTimeRemaining);
+            document.getElementById('opponent-clock-time').textContent = this.formatTime(this.board.opponentSetupTimeRemaining);
+        }
+    }
     //Board State
     updateBoardState(data){
         this.setState('boardState');
@@ -1086,6 +1100,7 @@ class UIManager {
             return;
         }
         this.updateLegalGameActions();
+        this.handleSetupReconnect()
     }
     gameIsOver(){
         let gameOver = false;
@@ -1413,7 +1428,13 @@ class UIManager {
         
         const updateClock = (clockElement, isPlayer) => {
             const startTime = performance.now();
-            const initialTime = isPlayer ? this.playerTime : this.opponentTime;
+            let initialTime;
+            
+            if (this.board.phase === 'setup') {
+                initialTime = isPlayer ? this.board.mySetupTimeRemaining : this.board.opponentSetupTimeRemaining;
+            } else {
+                initialTime = isPlayer ? this.playerTime : this.opponentTime;
+            }
             
             const tick = (currentTime) => {
                 const elapsedTime = currentTime - startTime;
@@ -1425,7 +1446,13 @@ class UIManager {
                     this.opponentTime = totalTime;
                 }
                 
-                const remainingTime = Math.max(0, this.board.clocks[isPlayer ? this.board.color : 1 - this.board.color] - totalTime);
+                let remainingTime;
+                if (this.board.phase === 'setup') {
+                    remainingTime = Math.max(0, (isPlayer ? this.board.mySetupTimeRemaining : this.board.opponentSetupTimeRemaining) - elapsedTime);
+                } else {
+                    remainingTime = Math.max(0, this.board.clocks[isPlayer ? this.board.color : 1 - this.board.color] - totalTime);
+                }
+                
                 clockElement.textContent = this.formatTime(remainingTime);
                 
                 if (remainingTime > 0) {

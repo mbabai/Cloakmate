@@ -1,12 +1,13 @@
 const WebSocket = require('ws');
 const { colors, pieces, actions } = require('./utils');
 class AIBot {
-    constructor(serverUrl, botName,opponentName) {
+    constructor(serverUrl,botName,opponentName) {
         this.serverUrl = serverUrl;
         this.username = botName;
         this.opponentName = opponentName;
         this.ws = null;
         this.currentBoard = null;
+        this.userID;
         this.initializeWebSocket();
     }
     initializeWebSocket() {
@@ -18,7 +19,7 @@ class AIBot {
     }
     handleOpen(event) {
         console.log('AI-Bot: WebSocket connection opened');
-        this.sendMessage({type:'bot-ready', bot: {username:this.username},opponentName:this.opponentName})
+        this.sendMessage({type: "connect", userID: this.userID});
     }
     handleMessage(event) {
         const data = JSON.parse(event.data);
@@ -52,13 +53,21 @@ class AIBot {
                 console.log("AI-Bot trying a new action after illegal action.")
                 this.doAction()
                 break;
+            case 'userID':
+                this.getUserID(data.userID)
+                break;
             default:
                 break;
         }
     }
+    getUserID(userID){
+        this.userID = userID;
+        this.sendMessage({type:'bot-ready', bot: {username:this.username, userID:this.userID},opponentName:this.opponentName})
+    }
     leaveLobby(){
         setTimeout(() => {
-            this.ws.close() // this should be all we need to leave the lobby
+            this.sendMessage({type:"leave-lobby"})
+            this.ws.close() 
             delete this
         },2000);
     }
@@ -67,6 +76,10 @@ class AIBot {
             this.ws.send(JSON.stringify(data));
         }
     }
+
+/////////////////////// IN GAME THINGS //////////////////////////////////
+
+
     updateBoardState(data){
         this.currentBoard = data.board
         this.opponentName = this.currentBoard.opponentName;
@@ -172,7 +185,6 @@ class AIBot {
     }
     shouldChallenge(){
         let lastAction = this.currentBoard.actionHistory[this.currentBoard.actionHistory.length -1]
-        console.log("lastAction",lastAction)
         if (lastAction.wasCapture || lastAction.declaration == pieces.BOMB){
             return Math.random < 0.45
         } else {
@@ -348,7 +360,6 @@ class AIBot {
             // If no threats are possible, move one of the furthest back pieces forward
             currentAction = this.moveRandomBackPiece()
         }    
-        console.log("AI-Bot: Moving piece", currentAction)
         return currentAction;
     }
     moveRandomBackPiece(){
@@ -416,7 +427,6 @@ class AIBot {
         }
         if (this.currentBoard.legalActions.includes('move')){
             currentAction = this.moveRandomPiece()
-            console.log("AI-Bot: Moving piece", currentAction)
             return currentAction;
         }
     }
@@ -431,8 +441,4 @@ class AIBot {
         return currentAction;
     }
 }
-// // Initialize the AI bot
-// const serverUrl = 'ws://localhost:8080'; // Replace with your server URL
-// const botName = 'AI_Bot';
-// const aiBot = new AIBot(serverUrl, botName);
 module.exports = AIBot;

@@ -1,9 +1,25 @@
 var theWebSocketManager;
 class WebSocketManager {
     constructor() {
+        // Add new properties for reconnection
+        this.maxReconnectAttempts = 60; // 1 minute worth of attempts
+        this.reconnectAttempts = 0;
+        this.reconnectInterval = null;
+        
+        this.userID = this.getUserIDFromCookie();
         this.typeListeners = {};
         this.messageQueue = [];
         this.initializeWebSocket();
+    }
+
+    getUserIDFromCookie() {
+        const cookies = document.cookie.split('; ');
+        const userIDCookie = cookies.find(cookie => cookie.startsWith('userID='));
+        return userIDCookie ? userIDCookie.split('=')[1] : null;
+    }
+    setUserID(userID){
+        this.userID = userID;
+        document.cookie = `userID=${userID}; path=/; max-age=31536000`; // Set cookie to expire in 1 year
     }
 
     initializeWebSocket() {
@@ -22,13 +38,20 @@ class WebSocketManager {
         }
     }
     handleOpen(event) {
+        document.getElementById('loading-gif').style.display = 'none';
         console.log('WebSocket connection opened');
+        // Clear reconnection state if connection is successful
+        this.reconnectAttempts = 0;
+        if (this.reconnectInterval) {
+            clearInterval(this.reconnectInterval);
+            this.reconnectInterval = null;
+        }
         this.sendInitialMessage();
         this.processPendingMessages();
     }
 
     sendInitialMessage() {
-        this.sendMessage({type: "Server", message: "Server Open"});
+        this.sendMessage({type: "connect", userID: this.userID});
     }
 
     processPendingMessages() {
@@ -54,8 +77,30 @@ class WebSocketManager {
 
     handleClose(event) {
         console.log('WebSocket connection closed');
-        alert("Lost Connection!\nSorry, we must refresh now...")
-        window.location.reload()
+        document.getElementById('loading-gif').style.display = 'block';
+        if (this.reconnectAttempts < this.maxReconnectAttempts) {
+            this.attemptReconnect();
+        } else {
+            alert("Lost Connection!\nSorry, we must refresh now...");
+            window.location.reload();
+        }
+    }
+
+    attemptReconnect() {
+        if (!this.reconnectInterval) {
+            this.reconnectInterval = setInterval(() => {
+                console.log(`Reconnection attempt ${this.reconnectAttempts + 1}/${this.maxReconnectAttempts}`);
+                this.reconnectAttempts++;
+                this.initializeWebSocket();
+                
+                if (this.reconnectAttempts >= this.maxReconnectAttempts) {
+                    clearInterval(this.reconnectInterval);
+                    this.reconnectInterval = null;
+                    alert("Lost Connection!\nSorry, we must refresh now...");
+                    window.location.reload();
+                }
+            }, 1000);
+        }
     }
 
     routeMessage(message) {
@@ -89,6 +134,7 @@ document.addEventListener('DOMContentLoaded', function() {
     //Main function that actually runs on setup.
     let myWebSocketManager = new WebSocketManager();
     theWebSocketManager = myWebSocketManager;
+    myWebSocketManager.addTypeListener('userID', (data) => { myWebSocketManager.setUserID(data.userID) });
     //UI functions
     let myUIManager = new UIManager(myWebSocketManager);
     myWebSocketManager.addTypeListener('welcome', (data) => { myUIManager.welcome(data) });
@@ -104,6 +150,4 @@ document.addEventListener('DOMContentLoaded', function() {
     myWebSocketManager.addTypeListener('random-setup-complete', (data) => { myUIManager.randomSetupComplete(data) });
     myWebSocketManager.addTypeListener('illegal-action', (data) => { myUIManager.illegalAction(data) });
     myWebSocketManager.addTypeListener('lobby-state-update', (data) => { myUIManager.postLobbyState(data) });
-    
-
 });

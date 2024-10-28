@@ -1,11 +1,5 @@
 const { Game , Action , Board } = require('./gameEngine');
-const winReasons = {
-    CAPTURED_KING: 0,
-    THRONE: 1,
-    STASH: 2,
-    FORCED_SACRIFICE: 3,
-    TIMEOUT: 4      
-}
+const { colors, pieces, pieceSymbols, actions, winReasons } = require('./utils');
 //Game Arena - coordinates games between players, converts between game engine style variables and frontend style variables
 class GameCoordinator {
     constructor(user1,user2,length,gameNumber,server) {
@@ -46,12 +40,20 @@ class GameCoordinator {
         }
     }
     checkTurnTimeout() {
-        const playerRemainingTime = this.game.playersTimeAvailable[this.game.board.playerTurn];
-        if (Date.now() - this.lastActionTime >= playerRemainingTime) {
-            console.log('Turn timeout reached. Ending game.');
-            this.game.board.setWinner(1 - this.game.board.playerTurn,winReasons.TIMEOUT) 
-            this.endGame();
-            this.broadcastGameState()
+        if (this.game.board.phase === 'play') {
+            this.updateCurrentPlayerTime();
+            const playerRemainingTime = this.game.playersTimeAvailable[this.game.board.playerTurn];
+            if (playerRemainingTime <= 0) {
+                console.log('Turn timeout reached. Ending game.');
+                let username = this.game.players[1 - this.game.board.playerTurn].username
+                console.log(username)
+                this.endGame(username, winReasons.TIMEOUT);
+                this.broadcastGameState()
+            }
+        } else if (this.game.board.phase === 'setup') {
+            if (Date.now() - this.lastActionTime >= 30100) {
+                this.checkAndCompleteSetups();
+            }
         }
     }
     stopGameLoop() {
@@ -60,15 +62,20 @@ class GameCoordinator {
             this.gameLoopInterval = null;
         }
     }
-    endGame() {
+    endGame(username=null,winReason=null) {
+        if(winReason){
+            let winnerIndex = this.game.getPlayerColorIndex(username)
+            this.game.board.setWinner(winnerIndex,winReasons) 
+        }
         this.stopGameLoop();
         this.isComplete = true;
     }
     sendColorState(color) {
-        this.server.routeMessage(this.users[color].websocket,{type:"board-state",board:this.game.getColorState(color)})
+        this.server.routeMessage(this.users[color].userID,{type:"board-state",board:this.game.getColorState(color)})
     }
     broadcastGameState() {
         console.log(`Broadcasting game #${this.gameNumber} state...`)
+        this.updateCurrentPlayerTime();
         this.sendColorState(0)
         this.sendColorState(1)
     }
@@ -77,7 +84,7 @@ class GameCoordinator {
     }
     randomSetup(player){
         const thisPlayerGameState = this.game.randomSetup(this.game.getPlayerColorIndex(player.username));
-        this.server.routeMessage(player.websocket,{type:"random-setup-complete", board:thisPlayerGameState})
+        this.server.routeMessage(player.userID,{type:"random-setup-complete", board:thisPlayerGameState})
         this.checkPlayerSetupCompletion(player)
     }
     gameAction(player,data){
@@ -92,12 +99,15 @@ class GameCoordinator {
             }
             this.broadcastGameState()
         } else {
-            this.server.routeMessage(player.websocket, { type: "illegal-action", message: "Your action was illegal. Please try again." });
+            this.server.routeMessage(player.userID, { type: "illegal-action", message: "Your action was illegal. Please try again." });
         }
     }
     updatePlayerTime(playerColorIndex){
-        const turnTime = Date.now() - this.lastActionTime - this.increment;
-        this.game.playersTimeAvailable[playerColorIndex] -= turnTime;
+        if (this.game.board.phase === 'play') {
+            const turnTime = Date.now() - this.lastActionTime;
+            this.game.playersTimeAvailable[playerColorIndex] -= turnTime;
+            this.game.playersTimeAvailable[playerColorIndex] += this.increment;
+        }
         this.lastActionTime = Date.now();
     }
     submitSetup(player, data) {
@@ -108,7 +118,7 @@ class GameCoordinator {
 
         if (!this.game.trySetup(player.username, data.frontRow, data.onDeck)) {
             console.log("Illegal setup");
-            this.server.routeMessage(player.websocket, { type: "setup-error", message: "Your setup was invalid. Please try again." });
+            this.server.routeMessage(player.userID, { type: "setup-error", message: "Your setup was invalid. Please try again." });
         } else {
             this.checkPlayerSetupCompletion(player)
         }
@@ -132,15 +142,33 @@ class GameCoordinator {
             const otherPlayerBoardState = this.game.getColorState(this.game.getPlayerColorIndex(otherPlayer.username));
             this.game.playStartTime = Date.now();
             this.lastActionTime = Date.now();
-            this.server.routeMessage(player.websocket, { type: "both-setup-complete", board: playerBoardState });
-            this.server.routeMessage(otherPlayer.websocket, { type: "both-setup-complete", board: otherPlayerBoardState });
+            this.server.routeMessage(player.userID, { type: "both-setup-complete", board: playerBoardState });
+            this.server.routeMessage(otherPlayer.userID, { type: "both-setup-complete", board: otherPlayerBoardState });
         } else {
-            this.server.routeMessage(otherPlayer.websocket, { type: "opponent-setup-complete", message: "Your opponent has completed their setup." });
+            this.server.routeMessage(otherPlayer.userID, { type: "opponent-setup-complete", message: "Your opponent has completed their setup." });
         }
     }
    
+    updateCurrentPlayerTime() {
+        const elapsedTime = Date.now() - this.lastActionTime;
+        if (this.game.board.phase === 'play') {
+            const currentPlayerIndex = this.game.board.playerTurn;
+            this.game.playersTimeAvailable[currentPlayerIndex] -= elapsedTime;
+            this.lastActionTime = Date.now();
+        }
+    }
+
+    reconnectUserToGame(user) {
+        const playerIndex = this.game.getPlayerColorIndex(user.username);
+        if (playerIndex !== -1) {
+            this.updateCurrentPlayerTime();
+            const boardState = this.game.getColorState(playerIndex);
+            let messageType = "board-state";
+            this.server.routeMessage(user.userID, { type: messageType, board: boardState });
+        } else {
+            console.error(`User ${user.username} not found in game ${this.gameNumber}`);
+        }
+    }
 }
-
-
 
 module.exports = GameCoordinator;
