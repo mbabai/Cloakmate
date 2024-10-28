@@ -132,6 +132,11 @@ class LobbyManager {
           console.error(`User ${userID} not found in game #${game.gameNumber}`);
         }
       }
+      leaveLobby(userID,data){
+        let user = this.lobby.get(userID)
+        if (!user) return;
+        this.removeUserFromLobby(userID)
+      }
       disconnect(userID){
         let user = this.lobby.get(userID)
         if (!user) return;

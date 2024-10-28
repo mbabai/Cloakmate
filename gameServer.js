@@ -120,6 +120,7 @@ class GameServer {
         let thisUser = new LobbyUser(userID, ws)
         this.userIDs.set(userID, thisUser);
         this.wsToUser.set(ws, thisUser);
+        return thisUser;
     }
     setUserIDWebsocket(userID, ws){
         let thisUser = this.userIDs.get(userID)
@@ -139,6 +140,7 @@ myGameServer.server.listen(myGameServer.port, () => {
 });
 const myLobbyManager = new LobbyManager(myGameServer);
 myGameServer.addTypeListener('user-connect', (userID,data)=>{myLobbyManager.userConnects(userID,data)});
+myGameServer.addTypeListener('leave-lobby', (userID,data)=>{myLobbyManager.leaveLobby(userID,data)});
 myGameServer.addTypeListener('submit-username', (userID,data)=>{myLobbyManager.receiveUsername(userID,data)});
 myGameServer.addTypeListener('disconnect', (userID,data)=>{myLobbyManager.disconnect(userID,data)});
 myGameServer.addTypeListener('enter-queue', (userID,data)=>{myLobbyManager.enterQueue(userID,data)});
