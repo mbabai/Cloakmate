@@ -1026,18 +1026,17 @@ class UIManager {
         }
     }
     handleSetupReconnect(){
-        //////////////////////////
+        //Reconnecting player to the game. 
         if (this.board.phase === 'setup') {
-            document.getElementById('player-clock-time').textContent = this.formatTime(this.board.mySetupTimeRemaining);
-            document.getElementById('opponent-clock-time').textContent = this.formatTime(this.board.opponentSetupTimeRemaining);
-
             if (this.board.mySetupComplete) {
                 this.stopClockTick('player');
                 this.setState('ready');
             }
-            if (this.board.opponentsetupComplete) {
+            if (this.board.opponentSetupComplete) {
                 this.opponentSetupComplete();
             }
+            document.getElementById('player-clock-time').textContent = this.formatTime(this.board.mySetupTimeRemaining);
+            document.getElementById('opponent-clock-time').textContent = this.formatTime(this.board.opponentSetupTimeRemaining);
         }
     }
     //Board State
@@ -1097,8 +1096,8 @@ class UIManager {
             },200)
             return;
         }
-        this.handleSetupReconnect()
         this.updateLegalGameActions();
+        this.handleSetupReconnect()
     }
     gameIsOver(){
         let gameOver = false;

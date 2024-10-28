@@ -155,8 +155,6 @@ class GameCoordinator {
             const currentPlayerIndex = this.game.board.playerTurn;
             this.game.playersTimeAvailable[currentPlayerIndex] -= elapsedTime;
             this.lastActionTime = Date.now();
-        } else if (this.game.board.phase === 'setup') {
-            
         }
     }
 
@@ -166,9 +164,6 @@ class GameCoordinator {
             this.updateCurrentPlayerTime();
             const boardState = this.game.getColorState(playerIndex);
             let messageType = "board-state";
-            // if (this.game.board.phase === 'setup') {
-            //     messageType = this.game.playersSetupComplete[playerIndex] ? "opponent-setup-complete" : "reconnect-setup";
-            // }
             this.server.routeMessage(user.userID, { type: messageType, board: boardState });
         } else {
             console.error(`User ${user.username} not found in game ${this.gameNumber}`);

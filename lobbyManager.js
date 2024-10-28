@@ -289,7 +289,7 @@ class LobbyManager {
       logState(){
         // console.clear();
         console.log(`Current Lobby State (${new Date().toLocaleString()}):`)
-        console.log(`- Lobby (${this.lobby.size}): ${Array.from(this.lobby.values()).map(user => `${user.username}${user.isInGame ? "*": ""}`).join(', ')}`);
+        console.log(`- Lobby (${this.lobby.size}): ${Array.from(this.lobby.values()).map(user => `${user.username}${user.isInGame ? "*": ""}${!user.isConnected ? "~" : ""}`).join(', ')}`);
         console.log(`- Queue (${this.queue.length}): ${this.queue.map(user => user.username).join(', ')}`);
         console.log(`- Games (${this.games.length}): ${this.games.map(game => `${game.logGameState()}`).join('\n\t')}`)
         // this.games.forEach((game, index) => {

@@ -473,6 +473,15 @@ button:hover {
 #cancel-button {
     background-color: red;
 }
+#loading-gif{
+    position:fixed;
+    height:40px;
+    width:40px;
+    top:10px;
+    left:calc(50% - 70px);
+    z-index:100;
+    display: none;
+}
 
 #lobby-container {
     z-index:100;

@@ -1,6 +1,11 @@
 var theWebSocketManager;
 class WebSocketManager {
     constructor() {
+        // Add new properties for reconnection
+        this.maxReconnectAttempts = 60; // 1 minute worth of attempts
+        this.reconnectAttempts = 0;
+        this.reconnectInterval = null;
+        
         this.userID = this.getUserIDFromCookie();
         this.typeListeners = {};
         this.messageQueue = [];
@@ -33,7 +38,14 @@ class WebSocketManager {
         }
     }
     handleOpen(event) {
+        document.getElementById('loading-gif').style.display = 'none';
         console.log('WebSocket connection opened');
+        // Clear reconnection state if connection is successful
+        this.reconnectAttempts = 0;
+        if (this.reconnectInterval) {
+            clearInterval(this.reconnectInterval);
+            this.reconnectInterval = null;
+        }
         this.sendInitialMessage();
         this.processPendingMessages();
     }
@@ -65,8 +77,30 @@ class WebSocketManager {
 
     handleClose(event) {
         console.log('WebSocket connection closed');
-        alert("Lost Connection!\nSorry, we must refresh now...")
-        window.location.reload()
+        document.getElementById('loading-gif').style.display = 'block';
+        if (this.reconnectAttempts < this.maxReconnectAttempts) {
+            this.attemptReconnect();
+        } else {
+            alert("Lost Connection!\nSorry, we must refresh now...");
+            window.location.reload();
+        }
+    }
+
+    attemptReconnect() {
+        if (!this.reconnectInterval) {
+            this.reconnectInterval = setInterval(() => {
+                console.log(`Reconnection attempt ${this.reconnectAttempts + 1}/${this.maxReconnectAttempts}`);
+                this.reconnectAttempts++;
+                this.initializeWebSocket();
+                
+                if (this.reconnectAttempts >= this.maxReconnectAttempts) {
+                    clearInterval(this.reconnectInterval);
+                    this.reconnectInterval = null;
+                    alert("Lost Connection!\nSorry, we must refresh now...");
+                    window.location.reload();
+                }
+            }, 1000);
+        }
     }
 
     routeMessage(message) {
