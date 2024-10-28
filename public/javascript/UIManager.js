@@ -45,8 +45,9 @@ const winReasons = {
     THRONE: 1,
     STASH: 2,
     FORCED_SACRIFICE: 3,
-    TIMEOUT: 4,
-    KING_BLUFF: 5      
+    KING_BLUFF: 4,
+    TIMEOUT: 5,
+    DISCONNECT: 6      
 }
 
 class UIManager {
