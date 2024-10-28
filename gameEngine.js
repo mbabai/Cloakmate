@@ -225,7 +225,7 @@ class Board {
 
     isGameOver(){
         if (this.phase == 'play'){
-            if (this.iskKingInOpponentThroneVictory() || this.IsCapturedKingVictory() ||  this.isTrueKingChallenged() || this.isKingBluffedOut() || this.isKingSacrificeVictory()){
+            if (this.iskKingInOpponentThroneVictory() || this.IsCapturedKingVictory() || this.isKingBluffedOut() ||  this.isTrueKingChallenged() || this.isKingSacrificeVictory()){
                 return true;
             } 
         }

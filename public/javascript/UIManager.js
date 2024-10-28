@@ -325,6 +325,9 @@ class UIManager {
         this.handleStart(e.touches[0]);
     }
     handleStart(e) {
+        if(this.draggedPiece){
+            this.releasePiece().bind(this)
+        }
         this.draggedPiece = null;
         if (e.target.classList.contains('game-piece')) {
             const parentElement = e.target.parentElement;
@@ -1132,8 +1135,8 @@ class UIManager {
                     loseReason = `You ran out of time...`;
                     break;
                 case winReasons.KING_BLUFF:
-                    winReason = `${loserName} (${loserColor}) revealed your king with a failed challenge!`;
-                    loseReason = `You revealed ${winnerName}'s (${winnerColor}) king with a failed challenge...`;
+                    winReason = `You captured ${loserName}'s (${loserColor}) king with a challenge!`;
+                    loseReason = `${winnerName} (${winnerColor}) captured your king with a challenge...`;
                     break;
                 default:
                     winReason = `You won the game!`;
