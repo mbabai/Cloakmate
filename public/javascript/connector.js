@@ -2,7 +2,7 @@ var theWebSocketManager;
 class WebSocketManager {
     constructor() {
         // Add new properties for reconnection
-        this.maxReconnectAttempts = 60; // 1 minute worth of attempts
+        this.maxReconnectAttempts = 3; // 1 minute worth of attempts
         this.reconnectAttempts = 0;
         this.reconnectInterval = null;
         
@@ -96,7 +96,7 @@ class WebSocketManager {
                 if (this.reconnectAttempts >= this.maxReconnectAttempts) {
                     clearInterval(this.reconnectInterval);
                     this.reconnectInterval = null;
-                    alert("Lost Connection!\nSorry, we must refresh now...");
+                    // alert("Lost Connection!\nSorry, we must refresh now...");
                     window.location.reload();
                 }
             }, 1000);
